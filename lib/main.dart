@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
 
 void main() {
   runApp(const RakoonApp());
@@ -327,6 +328,30 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                       ),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ScanCameraScreen(
+                        baseUrl: _urlController.text.trim(),
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.camera_alt, size: 24),
+                label: const Text(
+                  '📷 Uji Fitur Smart Shelf Scan (Kamera/AI)',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
                 ),
               ),
               const SizedBox(height: 16),
