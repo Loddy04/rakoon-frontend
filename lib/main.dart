@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/theme/app_theme.dart';
 
 void main() {
   runApp(const RakoonApp());
@@ -14,21 +15,8 @@ class RakoonApp extends StatelessWidget {
     return MaterialApp(
       title: 'Rakoon Integration Test',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0D9488), // Premium Teal
-          brightness: Brightness.light,
-        ),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0D9488),
-          brightness: Brightness.dark,
-        ),
-      ),
-      themeMode: ThemeMode.system, // Menyesuaikan dengan mode sistem OS
+      theme: AppTheme.light,
+      themeMode: ThemeMode.light, // Menyesuaikan dengan visual referensi light theme
       home: const IntegrationDashboardPage(),
     );
   }
