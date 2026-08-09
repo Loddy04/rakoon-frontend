@@ -26,6 +26,18 @@ class AppColors {
 
   /// Scaffold/screen background color (#EEF2F6)
   static const Color background = Color(0xFFEEF2F6);
+
+  /// Primary error red color (#DC2626)
+  static const Color error = Color(0xFFDC2626);
+
+  /// Soft error red background color (#FEF2F2)
+  static const Color errorSoft = Color(0xFFFEF2F2);
+
+  /// Warning orange/amber color (#D97706)
+  static const Color warning = Color(0xFFD97706);
+
+  /// Soft warning orange/amber background color (#FFFBEB)
+  static const Color warningSoft = Color(0xFFFFFBEB);
 }
 
 /// Constant spacing values aligned with premium card visuals and layouts.
@@ -117,7 +129,8 @@ class AppTheme {
         seedColor: AppColors.accent,
         primary: AppColors.accent,
         surface: AppColors.paper,
-        error: Colors.red,
+        error: AppColors.error,
+        errorContainer: AppColors.errorSoft,
         onPrimary: AppColors.paper,
         onSurface: AppColors.ink,
         brightness: Brightness.light,

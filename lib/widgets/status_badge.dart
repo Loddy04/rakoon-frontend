@@ -22,12 +22,12 @@ class StatusBadge extends StatelessWidget {
     Color textColor;
     
     // Map status colors according to design tokens.
-    if (cleanStatus == 'success' || cleanStatus == 'verified' || cleanStatus == 'terverifikasi') {
+    if (cleanStatus == 'success' || cleanStatus == 'verified' || cleanStatus == 'terverifikasi' || cleanStatus == 'tinggi') {
       backgroundColor = AppColors.accentSoft;
       textColor = AppColors.accent;
-    } else if (cleanStatus == 'pending' || cleanStatus == 'waiting') {
-      backgroundColor = const Color(0xFFFEF3C7); // Soft Amber
-      textColor = const Color(0xFFD97706);       // Dark Amber
+    } else if (cleanStatus == 'pending' || cleanStatus == 'waiting' || cleanStatus == 'warning' || cleanStatus == 'rendah') {
+      backgroundColor = AppColors.warningSoft;
+      textColor = AppColors.warning;
     } else {
       // Default fallback (e.g. general info badge)
       backgroundColor = AppColors.card;
