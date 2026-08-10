@@ -22,10 +22,10 @@ void main() {
 
       final response = PriceHistoryResponse.fromJson(jsonInput);
 
-      expect(response.productId, 1);
+      expect(response.productId, '1');
       expect(response.productName, "Susu UHT Full Cream 1L");
       expect(response.items.length, 1);
-      expect(response.items.first.storeId, 10);
+      expect(response.items.first.storeId, '10');
       expect(response.items.first.storeName, "Indomaret");
       expect(response.items.first.price, 18500.0);
       expect(
@@ -35,11 +35,11 @@ void main() {
 
       expect(response.trend.length, 1);
       expect(response.trend.first.date, "2026-08-10");
-      expect(response.trend.first.storeId, 10);
+      expect(response.trend.first.storeId, '10');
       expect(response.trend.first.price, 18500.0);
 
       final toJsonResult = response.toJson();
-      expect(toJsonResult['product_id'], 1);
+      expect(toJsonResult['product_id'], '1');
       expect(toJsonResult['product_name'], "Susu UHT Full Cream 1L");
       expect((toJsonResult['items'] as List).length, 1);
       expect((toJsonResult['trend'] as List).length, 1);
@@ -55,7 +55,7 @@ void main() {
 
       final response = PriceHistoryResponse.fromJson(emptyJson);
 
-      expect(response.productId, 99);
+      expect(response.productId, '99');
       expect(response.items, isEmpty);
       expect(response.trend, isEmpty);
     });

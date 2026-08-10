@@ -5,7 +5,7 @@ import '../widgets/store_history_list_item.dart';
 
 class PriceHistoryPage extends StatefulWidget {
   final PriceHistoryNotifier notifier;
-  final int productId;
+  final dynamic productId;
   final VoidCallback? onBack;
 
   const PriceHistoryPage({

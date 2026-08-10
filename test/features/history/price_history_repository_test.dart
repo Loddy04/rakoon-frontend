@@ -43,7 +43,7 @@ void main() {
         range: '1m',
       );
 
-      expect(result.productId, 1);
+      expect(result.productId, '1');
       expect(result.productName, 'Susu UHT');
       expect(result.items.length, 1);
       expect(result.trend.length, 1);
@@ -66,7 +66,7 @@ void main() {
       );
       final result = await repository.getPriceHistory(productId: 2);
 
-      expect(result.productId, 2);
+      expect(result.productId, '2');
       expect(result.items, isEmpty);
       expect(result.trend, isEmpty);
     });

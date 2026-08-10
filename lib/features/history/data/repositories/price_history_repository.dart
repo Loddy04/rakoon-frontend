@@ -41,12 +41,12 @@ class PriceHistoryRepository {
 
   PriceHistoryRepository({
     http.Client? client,
-    this.baseUrl = 'http://10.0.2.2:8000',
+    this.baseUrl = 'http://localhost:8000',
   }) : client = client ?? http.Client();
 
   Future<PriceHistoryResponse> getPriceHistory({
-    required int productId,
-    int? storeId,
+    required dynamic productId,
+    dynamic storeId,
     String? range,
   }) async {
     final queryParams = <String, String>{};

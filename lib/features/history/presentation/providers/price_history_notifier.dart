@@ -11,7 +11,7 @@ class PriceHistoryNotifier extends ChangeNotifier {
   PriceHistoryResponse? _response;
   String? _errorMessage;
 
-  int? _selectedStoreId;
+  dynamic _selectedStoreId;
   String _selectedRange = 'all';
 
   PriceHistoryNotifier({required this.repository});
@@ -20,7 +20,7 @@ class PriceHistoryNotifier extends ChangeNotifier {
   PriceHistoryResponse? get response => _response;
   String? get errorMessage => _errorMessage;
 
-  int? get selectedStoreId => _selectedStoreId;
+  dynamic get selectedStoreId => _selectedStoreId;
   String get selectedRange => _selectedRange;
 
   bool get isLoading => _status == PriceHistoryStatus.loading;
@@ -29,8 +29,8 @@ class PriceHistoryNotifier extends ChangeNotifier {
   bool get isError => _status == PriceHistoryStatus.error;
 
   Future<void> fetchPriceHistory({
-    required int productId,
-    int? storeId,
+    required dynamic productId,
+    dynamic storeId,
     String? range,
   }) async {
     if (storeId != null) {
@@ -74,19 +74,19 @@ class PriceHistoryNotifier extends ChangeNotifier {
     }
   }
 
-  void setRange(int productId, String range) {
+  void setRange(dynamic productId, String range) {
     if (_selectedRange == range) return;
     _selectedRange = range;
     fetchPriceHistory(productId: productId);
   }
 
-  void setStoreId(int productId, int? storeId) {
+  void setStoreId(dynamic productId, dynamic storeId) {
     if (_selectedStoreId == storeId) return;
     _selectedStoreId = storeId;
     fetchPriceHistory(productId: productId);
   }
 
-  void clearFilters(int productId) {
+  void clearFilters(dynamic productId) {
     _selectedStoreId = null;
     _selectedRange = 'all';
     fetchPriceHistory(productId: productId);
