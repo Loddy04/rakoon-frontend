@@ -218,10 +218,8 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
     final hasWarningMsg = response.message != null && response.message!.isNotEmpty;
 
     // Check if we should display warning banner
-    final showWarning = isFallback || hasWarningMsg;
-    final warningText = hasWarningMsg 
-        ? response.message! 
-        : 'Peta offline fallback. Menggunakan database lokal.';
+    final showWarning = hasWarningMsg;
+    final warningText = hasWarningMsg ? response.message! : '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
