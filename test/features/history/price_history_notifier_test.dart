@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
-import 'package:rakoon_frontend/features/history/data/models/price_history_item.dart';
 import 'package:rakoon_frontend/features/history/data/repositories/price_history_repository.dart';
 import 'package:rakoon_frontend/features/history/presentation/providers/price_history_notifier.dart';
 
