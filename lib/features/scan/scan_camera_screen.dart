@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
 import 'package:rakoon_frontend/features/scan/scan_result_screen.dart';
+import 'package:rakoon_frontend/theme/app_theme.dart';
 
 class ScanCameraScreen extends StatefulWidget {
   final String baseUrl;
@@ -109,7 +110,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Berhasil memproses scan dan menyimpan hasil ke database!'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.accent,
             ),
           );
         }
@@ -196,9 +197,9 @@ class _ScanCameraScreenState extends State<ScanCameraScreen> {
     return Container(
       height: 300,
       decoration: BoxDecoration(
-        color: Colors.grey.shade200,
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade400),
+        border: Border.all(color: AppColors.muted),
       ),
       clipBehavior: Clip.antiAlias,
       child: _imageFile != null
@@ -261,7 +262,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen> {
 
   Widget _buildErrorCard() {
     return Card(
-      color: Colors.red.shade50,
+      color: AppColors.errorSoft,
       margin: const EdgeInsets.only(top: 16),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -270,12 +271,12 @@ class _ScanCameraScreenState extends State<ScanCameraScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.error_outline, color: Colors.red),
+                const Icon(Icons.error_outline, color: AppColors.error),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _errorMessage!,
-                    style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                    style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],

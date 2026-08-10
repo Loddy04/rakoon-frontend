@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
+import 'package:rakoon_frontend/theme/app_theme.dart';
+import 'package:rakoon_frontend/widgets/status_badge.dart';
 
 class ScanResultScreen extends StatefulWidget {
   final String baseUrl;
@@ -219,7 +221,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
-                      color: item.needsVerification ? Colors.orange : Colors.grey.withValues(alpha: 0.2),
+                      color: item.needsVerification ? AppColors.warning : AppColors.line,
                       width: item.needsVerification ? 1.8 : 1.0,
                     ),
                   ),
@@ -243,16 +245,11 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                                     padding: EdgeInsets.only(right: 6.0),
                                     child: Text(
                                       '⚠️ Perlu Verifikasi',
-                                      style: TextStyle(color: Colors.deepOrange, fontSize: 11, fontWeight: FontWeight.bold),
+                                      style: TextStyle(color: AppColors.warning, fontSize: 11, fontWeight: FontWeight.bold),
                                     ),
                                   ),
-                                Text(
-                                  '[Confidence: ${item.confidence}]',
-                                  style: TextStyle(
-                                    color: item.confidence == 'tinggi' ? Colors.green.shade800 : Colors.orange.shade800,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                StatusBadge(
+                                  status: item.confidence == 'tinggi' ? 'Tinggi' : 'Rendah',
                                 ),
                               ],
                             ),
