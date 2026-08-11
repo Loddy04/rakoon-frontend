@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../providers/price_history_notifier.dart';
 import '../widgets/product_header_card.dart';
 import '../widgets/store_history_list_item.dart';
+import '../widgets/date_range_selector.dart';
+import '../widgets/price_chart.dart';
 
 class PriceHistoryPage extends StatefulWidget {
   final PriceHistoryNotifier notifier;
@@ -168,6 +170,16 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
                           productName: response.productName,
                           items: response.items,
                         ),
+                        const SizedBox(height: 16),
+                        // Date Range Selector
+                        DateRangeSelector(
+                          selectedRange: widget.notifier.selectedRange,
+                          onRangeSelected: (range) =>
+                              widget.notifier.setRange(widget.productId, range),
+                        ),
+                        const SizedBox(height: 12),
+                        // Price Chart
+                        PriceChart(trendPoints: response.trend),
                         const SizedBox(height: 24),
                         // Store Comparison Title
                         Padding(
