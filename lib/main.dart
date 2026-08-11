@@ -261,6 +261,20 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
     );
   }
 
+  void _openPriceHistoryUIForId(dynamic productId) {
+    final String baseUrl = _urlController.text.trim();
+    final repository = PriceHistoryRepository(baseUrl: baseUrl);
+    final notifier = PriceHistoryNotifier(repository: repository);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            PriceHistoryPage(notifier: notifier, productId: productId),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
@@ -596,28 +610,46 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                           final timestamp = item['timestamp'] ?? '-';
                           final verified = item['status_verifikasi'] ?? '-';
 
+                          final itemProductId =
+                              item['product_id'] ??
+                              _productIdGetController.text.trim();
                           return Card(
                             margin: const EdgeInsets.symmetric(vertical: 4),
-                            child: ListTile(
-                              leading: const Icon(
-                                Icons.sell,
-                                color: Colors.teal,
-                              ),
-                              title: Text('Rp $harga'),
-                              subtitle: Text(
-                                'Toko: $storeId\nWaktu: $timestamp',
-                              ),
-                              trailing: Chip(
-                                label: Text(
-                                  verified,
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.black87,
-                                  ),
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                              onTap: () =>
+                                  _openPriceHistoryUIForId(itemProductId),
+                              child: ListTile(
+                                leading: const Icon(
+                                  Icons.analytics_outlined,
+                                  color: Colors.teal,
                                 ),
-                                backgroundColor: verified == 'pending'
-                                    ? Colors.amber.shade200
-                                    : Colors.green.shade200,
+                                title: Text('Rp $harga'),
+                                subtitle: Text(
+                                  'Toko: $storeId\nWaktu: $timestamp',
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Chip(
+                                      label: Text(
+                                        verified,
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      backgroundColor: verified == 'pending'
+                                          ? Colors.amber.shade200
+                                          : Colors.green.shade200,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Icon(
+                                      Icons.chevron_right,
+                                      color: Colors.grey,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           );
