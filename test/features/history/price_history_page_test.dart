@@ -28,7 +28,7 @@ void main() {
       // Trigger frame to run postFrameCallback
       await widgetTester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(ShimmerPlaceholder), findsAtLeastNWidgets(1));
 
       // Complete HTTP request to clean up pending futures
       completer.complete(
