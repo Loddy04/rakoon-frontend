@@ -7,6 +7,8 @@ import 'package:http/testing.dart';
 import 'package:rakoon_frontend/features/history/data/repositories/price_history_repository.dart';
 import 'package:rakoon_frontend/features/history/presentation/pages/price_history_page.dart';
 import 'package:rakoon_frontend/features/history/presentation/providers/price_history_notifier.dart';
+import 'package:rakoon_frontend/features/history/presentation/widgets/date_range_selector.dart';
+import 'package:rakoon_frontend/features/history/presentation/widgets/price_chart.dart';
 
 void main() {
   group('PriceHistoryPage Widget Tests', () {
@@ -88,6 +90,41 @@ void main() {
 
       expect(find.text('Produk tidak ditemukan'), findsOneWidget);
       expect(find.text('Coba Lagi'), findsOneWidget);
+    });
+
+    testWidgets('renders DateRangeSelector and PriceChart on success', (
+      widgetTester,
+    ) async {
+      final mockClient = MockClient((request) async {
+        return http.Response('''{
+            "product_id": 1,
+            "product_name": "Susu UHT 1L",
+            "items": [
+              {"store_id": 10, "store_name": "Indomaret", "price": 18500, "recorded_at": "2026-08-10T12:00:00Z"}
+            ],
+            "trend": [
+              {"date": "2026-08-09", "store_id": 10, "price": 18000},
+              {"date": "2026-08-10", "store_id": 10, "price": 18500}
+            ]
+          }''', 200);
+      });
+
+      final repository = PriceHistoryRepository(client: mockClient);
+      final notifier = PriceHistoryNotifier(repository: repository);
+
+      await widgetTester.pumpWidget(
+        MaterialApp(home: PriceHistoryPage(notifier: notifier, productId: 1)),
+      );
+
+      await widgetTester.pumpAndSettle();
+
+      expect(find.byType(DateRangeSelector), findsOneWidget);
+      expect(find.byType(PriceChart), findsOneWidget);
+
+      expect(find.text('1M'), findsOneWidget);
+      expect(find.text('3M'), findsOneWidget);
+      expect(find.text('6M'), findsOneWidget);
+      expect(find.text('Semua'), findsOneWidget);
     });
   });
 }
