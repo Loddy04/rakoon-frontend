@@ -168,7 +168,7 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: isDark
-                                  ? Colors.red.withOpacity(0.3)
+                                  ? Colors.red.withValues(alpha: 0.3)
                                   : Colors.red.shade100,
                             ),
                           ),
