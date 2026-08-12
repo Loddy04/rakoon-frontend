@@ -11,7 +11,29 @@ import 'package:rakoon_frontend/features/recommendation/recommendation_screen.da
 import 'package:rakoon_frontend/features/budget_shopping/budget_shopping_screen.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 
-void main() {
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Configuration sourced via secure build environment definitions (e.g. --dart-define)
+  const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+  const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+
+  if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
+    throw StateError(
+      'FATAL CONFIGURATION ERROR: Supabase credentials are not configured.\n'
+      'You must run or build the application with build-time environment definitions:\n'
+      '  flutter run --dart-define=SUPABASE_URL=<URL> --dart-define=SUPABASE_ANON_KEY=<ANON_KEY>\n'
+      'Ensure both values are provided and non-empty.'
+    );
+  }
+
+  await Supabase.initialize(
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey, // ignore: deprecated_member_use
+  );
+
   runApp(const RakoonApp());
 }
 
