@@ -110,35 +110,83 @@ class ExcludedProductItem {
   }
 }
 
+class DimensionRecommendationGroup {
+  final String dimension;
+  final String dimensionLabel;
+  final String baseUnit;
+  final bool isComparable;
+  final String? message;
+  final RankedProductItem? bestValue;
+  final List<RankedProductItem> rankedItems;
+
+  DimensionRecommendationGroup({
+    required this.dimension,
+    required this.dimensionLabel,
+    required this.baseUnit,
+    required this.isComparable,
+    this.message,
+    this.bestValue,
+    required this.rankedItems,
+  });
+
+  factory DimensionRecommendationGroup.fromJson(Map<String, dynamic> json) {
+    final List<dynamic> itemsJson = json['ranked_items'] ?? [];
+    return DimensionRecommendationGroup(
+      dimension: json['dimension'] ?? '',
+      dimensionLabel: json['dimension_label'] ?? '',
+      baseUnit: json['base_unit'] ?? '',
+      isComparable: json['is_comparable'] ?? false,
+      message: json['message'],
+      bestValue: json['best_value'] != null
+          ? RankedProductItem.fromJson(json['best_value'])
+          : null,
+      rankedItems: itemsJson.map((e) => RankedProductItem.fromJson(e)).toList(),
+    );
+  }
+}
+
+class CategoryRecommendationGroup {
+  final String kategori;
+  final List<DimensionRecommendationGroup> dimensionGroups;
+
+  CategoryRecommendationGroup({
+    required this.kategori,
+    required this.dimensionGroups,
+  });
+
+  factory CategoryRecommendationGroup.fromJson(Map<String, dynamic> json) {
+    final List<dynamic> dimsJson = json['dimension_groups'] ?? [];
+    return CategoryRecommendationGroup(
+      kategori: json['kategori'] ?? 'Lainnya',
+      dimensionGroups: dimsJson.map((e) => DimensionRecommendationGroup.fromJson(e)).toList(),
+    );
+  }
+}
+
 class RecommendationResponse {
   final int totalEvaluated;
   final int totalValid;
   final int totalExcluded;
-  final RankedProductItem? bestValue;
-  final List<RankedProductItem> rankedItems;
+  final List<CategoryRecommendationGroup> categories;
   final List<ExcludedProductItem> excludedItems;
 
   RecommendationResponse({
     required this.totalEvaluated,
     required this.totalValid,
     required this.totalExcluded,
-    this.bestValue,
-    required this.rankedItems,
+    required this.categories,
     required this.excludedItems,
   });
 
   factory RecommendationResponse.fromJson(Map<String, dynamic> json) {
-    final List<dynamic> rankedJson = json['ranked_items'] ?? [];
+    final List<dynamic> categoriesJson = json['categories'] ?? [];
     final List<dynamic> excludedJson = json['excluded_items'] ?? [];
 
     return RecommendationResponse(
       totalEvaluated: json['total_evaluated'] ?? 0,
       totalValid: json['total_valid'] ?? 0,
       totalExcluded: json['total_excluded'] ?? 0,
-      bestValue: json['best_value'] != null
-          ? RankedProductItem.fromJson(json['best_value'])
-          : null,
-      rankedItems: rankedJson.map((e) => RankedProductItem.fromJson(e)).toList(),
+      categories: categoriesJson.map((e) => CategoryRecommendationGroup.fromJson(e)).toList(),
       excludedItems: excludedJson.map((e) => ExcludedProductItem.fromJson(e)).toList(),
     );
   }
@@ -150,7 +198,6 @@ class RecommendationService {
   /// Sends product candidates to POST /recommendation/evaluate
   static Future<RecommendationResponse> evaluateRecommendation({
     required List<RecommendationCandidate> candidates,
-    String? category,
     String? baseUrl,
   }) async {
     final String activeBaseUrl = baseUrl ?? defaultBaseUrl;
@@ -161,7 +208,6 @@ class RecommendationService {
         uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'category': category,
           'items': candidates.map((e) => e.toJson()).toList(),
         }),
       ).timeout(const Duration(seconds: 15));
