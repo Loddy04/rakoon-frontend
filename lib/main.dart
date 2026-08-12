@@ -1,6 +1,10 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'features/history/data/repositories/price_history_repository.dart';
+import 'features/history/presentation/providers/price_history_notifier.dart';
+import 'features/history/presentation/pages/price_history_page.dart';
 import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
 import 'package:rakoon_frontend/features/nearby/nearby_stores_screen.dart';
 import 'package:rakoon_frontend/features/recommendation/recommendation_screen.dart';
@@ -29,21 +33,34 @@ class IntegrationDashboardPage extends StatefulWidget {
   const IntegrationDashboardPage({super.key});
 
   @override
-  State<IntegrationDashboardPage> createState() => _IntegrationDashboardPageState();
+  State<IntegrationDashboardPage> createState() =>
+      _IntegrationDashboardPageState();
 }
 
 class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
   // Input Controller untuk Base URL Backend FastAPI
-  final TextEditingController _urlController = TextEditingController(text: 'http://10.0.2.2:8000');
+  final TextEditingController _urlController = TextEditingController(
+    text: kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000',
+  );
 
   // Input Controllers untuk POST /price
-  final TextEditingController _productIdPostController = TextEditingController(text: 'product-123');
-  final TextEditingController _storeIdPostController = TextEditingController(text: 'store-456');
-  final TextEditingController _hargaController = TextEditingController(text: '15000');
-  final TextEditingController _userIdController = TextEditingController(text: 'user-001');
+  final TextEditingController _productIdPostController = TextEditingController(
+    text: 'product-123',
+  );
+  final TextEditingController _storeIdPostController = TextEditingController(
+    text: 'store-456',
+  );
+  final TextEditingController _hargaController = TextEditingController(
+    text: '15000',
+  );
+  final TextEditingController _userIdController = TextEditingController(
+    text: 'user-001',
+  );
 
   // Input Controller untuk GET /price/product/{id}
-  final TextEditingController _productIdGetController = TextEditingController(text: 'product-123');
+  final TextEditingController _productIdGetController = TextEditingController(
+    text: '1',
+  );
 
   // State / status variabel
   bool _isLoadingConnection = false;
@@ -51,7 +68,7 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
   bool _isLoadingGet = false;
   String _connectionStatus = 'Belum diuji';
   Color _statusColor = Colors.grey;
-  
+
   Map<String, dynamic>? _backendInfo;
   String _postResult = '';
   List<dynamic> _historyResult = [];
@@ -79,7 +96,8 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
 
     final String baseUrl = _urlController.text.trim();
     try {
-      final response = await http.get(Uri.parse('$baseUrl/health'))
+      final response = await http
+          .get(Uri.parse('$baseUrl/health'))
           .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
@@ -129,25 +147,29 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
     }
 
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/price/'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'product_id': productId,
-          'store_id': storeId,
-          'harga': harga,
-          'sumber_user_id': userId,
-        }),
-      ).timeout(const Duration(seconds: 5));
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/price/'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'product_id': productId,
+              'store_id': storeId,
+              'harga': harga,
+              'sumber_user_id': userId,
+            }),
+          )
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 201) {
         final data = jsonDecode(response.body);
         setState(() {
-          _postResult = 'Sukses Dikirim!\nResponse:\n${const JsonEncoder.withIndent('  ').convert(data)}';
+          _postResult =
+              'Sukses Dikirim!\nResponse:\n${const JsonEncoder.withIndent('  ').convert(data)}';
         });
       } else {
         setState(() {
-          _postResult = 'Gagal (HTTP ${response.statusCode}):\n${response.body}';
+          _postResult =
+              'Gagal (HTTP ${response.statusCode}):\n${response.body}';
         });
       }
     } catch (e) {
@@ -173,9 +195,9 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
     final String productId = _productIdGetController.text.trim();
 
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/price/product/$productId'),
-      ).timeout(const Duration(seconds: 5));
+      final response = await http
+          .get(Uri.parse('$baseUrl/price/product/$productId'))
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         final dynamic decoded = jsonDecode(response.body);
@@ -187,7 +209,9 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
         } else if (decoded is List) {
           setState(() {
             _historyResult = decoded;
-            _historyMessage = _historyResult.isEmpty ? 'Data kosong' : 'Berhasil memuat ${_historyResult.length} riwayat';
+            _historyMessage = _historyResult.isEmpty
+                ? 'Data kosong'
+                : 'Berhasil memuat ${_historyResult.length} riwayat';
           });
         } else {
           setState(() {
@@ -196,7 +220,8 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
         }
       } else {
         setState(() {
-          _historyMessage = 'Gagal (HTTP ${response.statusCode}): ${response.body}';
+          _historyMessage =
+              'Gagal (HTTP ${response.statusCode}): ${response.body}';
         });
       }
     } catch (e) {
@@ -210,13 +235,47 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
     }
   }
 
+  void _openPriceHistoryUI() {
+    final String baseUrl = _urlController.text.trim();
+    final String input = _productIdGetController.text.trim();
+    final dynamic productId = input.isNotEmpty ? input : '1';
+
+    final repository = PriceHistoryRepository(baseUrl: baseUrl);
+    final notifier = PriceHistoryNotifier(repository: repository);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            PriceHistoryPage(notifier: notifier, productId: productId),
+      ),
+    );
+  }
+
+  void _openPriceHistoryUIForId(dynamic productId) {
+    final String baseUrl = _urlController.text.trim();
+    final repository = PriceHistoryRepository(baseUrl: baseUrl);
+    final notifier = PriceHistoryNotifier(repository: repository);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            PriceHistoryPage(notifier: notifier, productId: productId),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Rakoon Dev Integration', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Rakoon Dev Integration',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
       ),
@@ -226,6 +285,63 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // BANNER UTAMA UNTUK MENGUJI UI FEATURE 3 (PRICE HISTORY)
+              Card(
+                color: const Color(0xFF0D9488),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.analytics_outlined,
+                        size: 36,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'UI Price History (F3)',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Tampilan Grafis & Komparasi Harga Toko',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF0D9488),
+                        ),
+                        onPressed: _openPriceHistoryUI,
+                        icon: const Icon(Icons.open_in_new, size: 18),
+                        label: const Text(
+                          'Buka UI',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
               // Tips emulator info
               Card(
                 color: isDark ? const Color(0xFF0F3733) : Colors.teal.shade50,
@@ -238,13 +354,19 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                         '💡 Petunjuk IP Address Backend:',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.teal.shade200 : Colors.teal.shade900,
+                          color: isDark
+                              ? Colors.teal.shade200
+                              : Colors.teal.shade900,
                         ),
                       ),
                       const SizedBox(height: 4),
                       const Text('• Android Emulator: http://10.0.2.2:8000'),
-                      const Text('• iOS Simulator/Web/Windows: http://localhost:8000'),
-                      const Text('• HP Fisik: http://<IP_KOMPUTER_ANDA>:8000 (Hubungkan Wi-Fi sama)'),
+                      const Text(
+                        '• iOS Simulator/Web/Windows: http://localhost:8000',
+                      ),
+                      const Text(
+                        '• HP Fisik: http://<IP_KOMPUTER_ANDA>:8000 (Hubungkan Wi-Fi sama)',
+                      ),
                     ],
                   ),
                 ),
@@ -269,12 +391,16 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                       children: [
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: _isLoadingConnection ? null : _testConnection,
+                            onPressed: _isLoadingConnection
+                                ? null
+                                : _testConnection,
                             icon: _isLoadingConnection
                                 ? const SizedBox(
                                     width: 16,
                                     height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
                                   )
                                 : const Icon(Icons.sync),
                             label: const Text('Cek Koneksi (GET /health)'),
@@ -313,7 +439,7 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                             Text('App Name: ${_backendInfo!['app'] ?? '-'}'),
                             Text('Version: ${_backendInfo!['version'] ?? '-'}'),
                             Text('Status: ${_backendInfo!['status'] ?? '-'}'),
-                          ]
+                          ],
                         ],
                       ),
                     ),
@@ -413,14 +539,20 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                         Expanded(
                           child: TextField(
                             controller: _productIdPostController,
-                            decoration: const InputDecoration(labelText: 'Product ID', border: OutlineInputBorder()),
+                            decoration: const InputDecoration(
+                              labelText: 'Product ID',
+                              border: OutlineInputBorder(),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: TextField(
                             controller: _storeIdPostController,
-                            decoration: const InputDecoration(labelText: 'Store ID', border: OutlineInputBorder()),
+                            decoration: const InputDecoration(
+                              labelText: 'Store ID',
+                              border: OutlineInputBorder(),
+                            ),
                           ),
                         ),
                       ],
@@ -432,14 +564,20 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                           child: TextField(
                             controller: _hargaController,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: 'Harga (Rupiah)', border: OutlineInputBorder()),
+                            decoration: const InputDecoration(
+                              labelText: 'Harga (Rupiah)',
+                              border: OutlineInputBorder(),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: TextField(
                             controller: _userIdController,
-                            decoration: const InputDecoration(labelText: 'Sumber User ID', border: OutlineInputBorder()),
+                            decoration: const InputDecoration(
+                              labelText: 'Sumber User ID',
+                              border: OutlineInputBorder(),
+                            ),
                           ),
                         ),
                       ],
@@ -454,7 +592,9 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                                 ? const SizedBox(
                                     width: 16,
                                     height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
                                   )
                                 : const Icon(Icons.send),
                             label: const Text('Kirim Entri Harga'),
@@ -468,16 +608,21 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.grey.shade900 : Colors.grey.shade100,
+                          color: isDark
+                              ? Colors.grey.shade900
+                              : Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: Colors.grey.shade400),
                         ),
                         child: Text(
                           _postResult,
-                          style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                          ),
                         ),
                       ),
-                    ]
+                    ],
                   ],
                 ),
               ),
@@ -506,7 +651,10 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                               ? const SizedBox(
                                   width: 24,
                                   height: 24,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
                                 )
                               : const Icon(Icons.search),
                         ),
@@ -533,16 +681,47 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                           final storeId = item['store_id'] ?? '-';
                           final timestamp = item['timestamp'] ?? '-';
                           final verified = item['status_verifikasi'] ?? '-';
-                          
+
+                          final itemProductId =
+                              item['product_id'] ??
+                              _productIdGetController.text.trim();
                           return Card(
                             margin: const EdgeInsets.symmetric(vertical: 4),
-                            child: ListTile(
-                              leading: const Icon(Icons.sell, color: Colors.teal),
-                              title: Text('Rp $harga'),
-                              subtitle: Text('Toko: $storeId\nWaktu: $timestamp'),
-                              trailing: Chip(
-                                label: Text(verified, style: const TextStyle(fontSize: 10, color: Colors.black87)),
-                                backgroundColor: verified == 'pending' ? Colors.amber.shade200 : Colors.green.shade200,
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                              onTap: () =>
+                                  _openPriceHistoryUIForId(itemProductId),
+                              child: ListTile(
+                                leading: const Icon(
+                                  Icons.analytics_outlined,
+                                  color: Colors.teal,
+                                ),
+                                title: Text('Rp $harga'),
+                                subtitle: Text(
+                                  'Toko: $storeId\nWaktu: $timestamp',
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Chip(
+                                      label: Text(
+                                        verified,
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      backgroundColor: verified == 'pending'
+                                          ? Colors.amber.shade200
+                                          : Colors.green.shade200,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Icon(
+                                      Icons.chevron_right,
+                                      color: Colors.grey,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           );
