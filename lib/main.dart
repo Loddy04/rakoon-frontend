@@ -12,6 +12,8 @@ import 'package:rakoon_frontend/features/budget_shopping/budget_shopping_screen.
 import 'package:rakoon_frontend/theme/app_theme.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:rakoon_frontend/features/auth/presentation/pages/login_page.dart';
+import 'package:rakoon_frontend/services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +39,8 @@ void main() async {
   runApp(const RakoonApp());
 }
 
+
+
 class RakoonApp extends StatelessWidget {
   const RakoonApp({super.key});
 
@@ -47,13 +51,33 @@ class RakoonApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       themeMode: ThemeMode.light, // Menyesuaikan dengan visual referensi light theme
-      home: const IntegrationDashboardPage(),
+      home: const AuthStateGate(),
+    );
+  }
+}
+
+class AuthStateGate extends StatelessWidget {
+  const AuthStateGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<AuthState>(
+      stream: AuthService.authStateChanges,
+      builder: (context, snapshot) {
+        final session = AuthService.currentSession;
+        if (session != null) {
+          return const IntegrationDashboardPage();
+        } else {
+          return const LoginPage();
+        }
+      },
     );
   }
 }
 
 class IntegrationDashboardPage extends StatefulWidget {
-  const IntegrationDashboardPage({super.key});
+  final http.Client? httpClient;
+  const IntegrationDashboardPage({super.key, this.httpClient});
 
   @override
   State<IntegrationDashboardPage> createState() =>
@@ -96,6 +120,13 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
   String _postResult = '';
   List<dynamic> _historyResult = [];
   String _historyMessage = '';
+
+  // JWT test state variables
+  bool _isLoadingJwtTest = false;
+  String _jwtTestStatus = 'Belum diuji';
+  Color _jwtTestColor = Colors.grey;
+  String? _jwtUserId;
+  String? _jwtTestError;
 
   @override
   void dispose() {
@@ -145,6 +176,75 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
       setState(() {
         _isLoadingConnection = false;
       });
+    }
+  }
+
+  // Fungsi untuk menguji JWT authentication (GET /auth/test-protected)
+  Future<void> _testJwtAuthentication() async {
+    final String baseUrl = _urlController.text.trim();
+    final String targetUrl = baseUrl.isNotEmpty ? baseUrl : 'http://10.0.2.2:8000';
+    
+    setState(() {
+      _isLoadingJwtTest = true;
+      _jwtTestStatus = 'Memproses...';
+      _jwtTestColor = Colors.orange;
+      _jwtUserId = null;
+      _jwtTestError = null;
+    });
+
+    final session = AuthService.currentSession;
+    if (session == null) {
+      setState(() {
+        _isLoadingJwtTest = false;
+        _jwtTestStatus = 'Gagal';
+        _jwtTestColor = Colors.red;
+        _jwtTestError = 'Silakan login terlebih dahulu.';
+      });
+      return;
+    }
+
+    final token = session.accessToken;
+    final client = widget.httpClient ?? http.Client();
+    try {
+      final response = await client.get(
+        Uri.parse('$targetUrl/auth/test-protected'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _jwtTestStatus = 'Sukses';
+          _jwtTestColor = Colors.green;
+          _jwtUserId = data['user_id'];
+        });
+      } else if (response.statusCode == 401) {
+        setState(() {
+          _jwtTestStatus = 'Gagal (401)';
+          _jwtTestColor = Colors.red;
+          _jwtTestError = 'Not authenticated: Token tidak valid atau expired.';
+        });
+      } else {
+        setState(() {
+          _jwtTestStatus = 'Gagal (${response.statusCode})';
+          _jwtTestColor = Colors.red;
+          _jwtTestError = 'Kesalahan server backend.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _jwtTestStatus = 'Gagal';
+        _jwtTestColor = Colors.red;
+        _jwtTestError = 'Koneksi bermasalah. Coba lagi.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingJwtTest = false;
+        });
+      }
     }
   }
 
@@ -301,6 +401,15 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
         ),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        actions: [
+          IconButton(
+            key: const Key('logout_button'),
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await AuthService.signOut();
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -529,6 +638,86 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                             Text('App Name: ${_backendInfo!['app'] ?? '-'}'),
                             Text('Version: ${_backendInfo!['version'] ?? '-'}'),
                             Text('Status: ${_backendInfo!['status'] ?? '-'}'),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // SECTION 1.1: TEST AUTH JWT VALIDATION
+              _buildSectionCard(
+                title: '🔐 Uji Token JWT Auth (FastAPI /auth/test-protected)',
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            key: const Key('test_jwt_button'),
+                            onPressed: _isLoadingJwtTest
+                                ? null
+                                : _testJwtAuthentication,
+                            icon: _isLoadingJwtTest
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.security),
+                            label: const Text('Kirim Token Bearer JWT'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _jwtTestColor.withValues(alpha: 0.15),
+                        border: Border.all(color: _jwtTestColor),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.info_outline, color: _jwtTestColor),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Status Uji JWT: $_jwtTestStatus',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: _jwtTestColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (_jwtUserId != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Authenticated: YES',
+                              style: TextStyle(color: Colors.green.shade800, fontWeight: FontWeight.bold),
+                            ),
+                            Text('Validated Subject (user_id):'),
+                            SelectableText(
+                              _jwtUserId!,
+                              style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                          if (_jwtTestError != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Error: $_jwtTestError',
+                              style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                            ),
                           ],
                         ],
                       ),
