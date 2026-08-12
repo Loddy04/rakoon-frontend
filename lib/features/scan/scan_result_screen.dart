@@ -36,6 +36,9 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
   final List<TextEditingController> _priceControllers = [];
   final List<TextEditingController> _sizeControllers = [];
   final List<TextEditingController> _unitControllers = [];
+  
+  // Selected categories for each detected item
+  final List<String> _selectedCategories = [];
 
   @override
   void initState() {
@@ -43,12 +46,18 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     _storeIdController = TextEditingController(text: widget.defaultStoreId);
     _userIdController = TextEditingController(text: widget.defaultUserId);
 
-    // Initialize text controllers for each detected item
+    // Initialize text controllers and category values for each detected item
     for (var item in widget.detectedItems) {
       _nameControllers.add(TextEditingController(text: item.namaProduk ?? ''));
       _priceControllers.add(TextEditingController(text: item.harga?.toInt().toString() ?? ''));
       _sizeControllers.add(TextEditingController(text: item.ukuran?.toString() ?? ''));
       _unitControllers.add(TextEditingController(text: item.satuan ?? ''));
+      
+      String itemCategory = item.kategori ?? 'Lainnya';
+      if (!productCategories.contains(itemCategory)) {
+        itemCategory = 'Lainnya';
+      }
+      _selectedCategories.add(itemCategory);
     }
   }
 
@@ -118,6 +127,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
         harga: price,
         ukuran: size,
         satuan: unit.isEmpty ? null : unit,
+        kategori: _selectedCategories[i],
         confidence: widget.detectedItems[i].confidence,
         needsVerification: widget.detectedItems[i].needsVerification,
       ));
@@ -186,6 +196,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
           harga: price,
           ukuran: size,
           satuan: unit.isEmpty ? null : unit,
+          kategori: _selectedCategories[i],
         ),
       );
     }
@@ -299,6 +310,30 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                             border: OutlineInputBorder(),
                             contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           ),
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Kategori Dropdown
+                        DropdownButtonFormField<String>(
+                          initialValue: _selectedCategories[index],
+                          decoration: const InputDecoration(
+                            labelText: 'Kategori',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          ),
+                          items: productCategories.map((String category) {
+                            return DropdownMenuItem<String>(
+                              value: category,
+                              child: Text(category),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              setState(() {
+                                _selectedCategories[index] = newValue;
+                              });
+                            }
+                          },
                         ),
                         const SizedBox(height: 10),
 
