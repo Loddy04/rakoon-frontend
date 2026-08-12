@@ -2,11 +2,26 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 
+const List<String> productCategories = [
+  'Makanan Pokok',
+  'Makanan Instan',
+  'Camilan',
+  'Minuman',
+  'Susu & Olahan',
+  'Bumbu & Saus',
+  'Perawatan Diri',
+  'Produk Rumah Tangga',
+  'Kesehatan',
+  'Bayi',
+  'Lainnya',
+];
+
 class ScanResultItem {
   String? namaProduk;
   double? harga;
   double? ukuran;
   String? satuan;
+  String? kategori;
   String confidence;
   bool needsVerification;
 
@@ -15,6 +30,7 @@ class ScanResultItem {
     this.harga,
     this.ukuran,
     this.satuan,
+    this.kategori,
     required this.confidence,
     required this.needsVerification,
   });
@@ -25,6 +41,7 @@ class ScanResultItem {
       harga: json['harga'] != null ? (json['harga'] as num).toDouble() : null,
       ukuran: json['ukuran'] != null ? (json['ukuran'] as num).toDouble() : null,
       satuan: json['satuan'],
+      kategori: json['kategori'] ?? 'Lainnya',
       confidence: json['confidence'] ?? 'rendah',
       needsVerification: json['needs_verification'] ?? true,
     );
@@ -36,6 +53,7 @@ class ScanResultItem {
       'harga': harga,
       'ukuran': ukuran,
       'satuan': satuan,
+      'kategori': kategori,
       'confidence': confidence,
       'needs_verification': needsVerification,
     };
@@ -47,6 +65,7 @@ class ScanResultItem {
       'harga': harga?.toInt() ?? 0,
       'ukuran': ukuran,
       'satuan': satuan,
+      'kategori': kategori ?? 'Lainnya',
     };
   }
 }
