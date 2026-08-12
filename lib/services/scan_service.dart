@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/services/auth_service.dart';
 
 const List<String> productCategories = [
   'Makanan Pokok',
@@ -131,10 +132,20 @@ class ScanService {
     final String activeBaseUrl = baseUrl ?? defaultBaseUrl;
     final uri = Uri.parse('$activeBaseUrl/scan/confirm');
     
+    // Get authenticated session token
+    final session = AuthService.currentSession;
+    if (session == null) {
+      throw Exception('Silakan login terlebih dahulu untuk menyimpan konfirmasi scan.');
+    }
+    final token = session.accessToken;
+
     try {
       final response = await http.post(
         uri,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
         body: jsonEncode({
           'store_id': storeId,
           'user_id': userId,
