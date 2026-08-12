@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:rakoon_frontend/features/recommendation/recommendation_screen.dart';
+import 'package:rakoon_frontend/services/recommendation_service.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
@@ -168,6 +170,37 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     }
   }
 
+  /// Collects current form inputs and navigates to RecommendationScreen
+  void _evaluateBestValue() {
+    final List<RecommendationCandidate> candidates = [];
+    for (int i = 0; i < widget.detectedItems.length; i++) {
+      final String name = _nameControllers[i].text.trim();
+      final double? price = double.tryParse(_priceControllers[i].text.trim());
+      final double? size = double.tryParse(_sizeControllers[i].text.trim());
+      final String unit = _unitControllers[i].text.trim();
+
+      candidates.add(
+        RecommendationCandidate(
+          productId: 'item-${i + 1}',
+          namaProduk: name.isEmpty ? null : name,
+          harga: price,
+          ukuran: size,
+          satuan: unit.isEmpty ? null : unit,
+        ),
+      );
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RecommendationScreen(
+          baseUrl: widget.baseUrl,
+          initialCandidates: candidates,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -313,6 +346,25 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                   ),
                 );
               },
+            ),
+
+            const SizedBox(height: 16),
+
+            // Button to evaluate Best Value Recommendation directly from scan results
+            ElevatedButton.icon(
+              onPressed: _evaluateBestValue,
+              icon: const Icon(Icons.emoji_events, size: 24),
+              label: const Text('🏆 Hitung Best Value Recommendation'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                backgroundColor: AppColors.accentSoft,
+                foregroundColor: AppColors.accent,
+                side: const BorderSide(color: AppColors.accent, width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.l),
+                ),
+                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ),
 
             const SizedBox(height: 16),
