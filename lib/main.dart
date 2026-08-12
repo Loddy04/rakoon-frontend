@@ -5,6 +5,9 @@ import 'package:http/http.dart' as http;
 import 'features/history/data/repositories/price_history_repository.dart';
 import 'features/history/presentation/providers/price_history_notifier.dart';
 import 'features/history/presentation/pages/price_history_page.dart';
+import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
+import 'package:rakoon_frontend/features/nearby/nearby_stores_screen.dart';
+import 'package:rakoon_frontend/theme/app_theme.dart';
 
 void main() {
   runApp(const RakoonApp());
@@ -18,21 +21,8 @@ class RakoonApp extends StatelessWidget {
     return MaterialApp(
       title: 'Rakoon Integration Test',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0D9488), // Premium Teal
-          brightness: Brightness.light,
-        ),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0D9488),
-          brightness: Brightness.dark,
-        ),
-      ),
-      themeMode: ThemeMode.system, // Menyesuaikan dengan mode sistem OS
+      theme: AppTheme.light,
+      themeMode: ThemeMode.light, // Menyesuaikan dengan visual referensi light theme
       home: const IntegrationDashboardPage(),
     );
   }
@@ -453,6 +443,60 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                       ),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ScanCameraScreen(
+                        baseUrl: _urlController.text.trim(),
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.camera_alt, size: 24),
+                label: const Text(
+                  '📷 Uji Fitur Smart Shelf Scan (Kamera/AI)',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  backgroundColor: AppColors.accentSoft,
+                  foregroundColor: AppColors.accent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.l),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => NearbyStoresScreen(
+                        baseUrl: _urlController.text.trim(),
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.location_on, size: 24),
+                label: const Text(
+                  '📍 Uji Fitur Toko Terdekat (Nearby Stores)',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  backgroundColor: AppColors.accentSoft,
+                  foregroundColor: AppColors.accent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.l),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
