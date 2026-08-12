@@ -8,6 +8,7 @@ import 'features/history/presentation/pages/price_history_page.dart';
 import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
 import 'package:rakoon_frontend/features/nearby/nearby_stores_screen.dart';
 import 'package:rakoon_frontend/features/recommendation/recommendation_screen.dart';
+import 'package:rakoon_frontend/features/budget_shopping/budget_shopping_screen.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 
 void main() {
@@ -333,6 +334,73 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                         icon: const Icon(Icons.open_in_new, size: 18),
                         label: const Text(
                           'Buka UI',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // BANNER UTAMA UNTUK MENGUJI FEATURE BARU (SMART BUDGET SHOPPING)
+              Card(
+                color: const Color(0xFF059669),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.account_balance_wallet_outlined,
+                        size: 36,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'Smart Budget Shopping',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Rekomendasi Toko & Alokasi Budget',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF059669),
+                        ),
+                        onPressed: () {
+                          final String baseUrl = _urlController.text.trim();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => BudgetShoppingScreen(
+                                baseUrl: baseUrl.isNotEmpty ? baseUrl : 'http://10.0.2.2:8000',
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.shopping_cart_checkout, size: 18),
+                        label: const Text(
+                          'Uji Fitur',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
