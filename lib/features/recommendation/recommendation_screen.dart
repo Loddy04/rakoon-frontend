@@ -29,8 +29,8 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
   @override
   void initState() {
     super.initState();
-    // Default Mock Candidates if none provided
-    if (widget.initialCandidates != null && widget.initialCandidates!.isNotEmpty) {
+    // Use passed candidates if provided, otherwise default to mock candidates for dev testing
+    if (widget.initialCandidates != null) {
       _candidates = widget.initialCandidates!;
     } else {
       _candidates = [
