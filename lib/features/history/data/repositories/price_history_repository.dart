@@ -58,7 +58,7 @@ class PriceHistoryRepository {
     }
 
     final uri = Uri.parse(
-      '$baseUrl/api/v1/products/$productId/price-history',
+      '$baseUrl/price/api/v1/products/$productId/price-history',
     ).replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
 
     try {
