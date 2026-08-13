@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:rakoon_frontend/services/location_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
+import 'package:rakoon_frontend/widgets/rakoon_location_map.dart';
+
 
 class PriceComparisonScreen extends StatefulWidget {
   final String productId;
@@ -22,10 +26,15 @@ class PriceComparisonScreen extends StatefulWidget {
 }
 
 class _PriceComparisonScreenState extends State<PriceComparisonScreen> {
+  final MapController _mapController = MapController();
   bool _isLoading = true;
   String? _errorMessage;
   PriceCompareResponse? _comparisonResponse;
   int? _minPrice;
+  String? _selectedStoreId;
+  double? _userLat;
+  double? _userLng;
+
 
   @override
   void initState() {
@@ -39,11 +48,14 @@ class _PriceComparisonScreenState extends State<PriceComparisonScreen> {
       _isLoading = true;
       _errorMessage = null;
       _minPrice = null;
+      _selectedStoreId = null;
     });
 
     try {
       // 1. Get GPS coordinates
       final position = await LocationService.getCurrentLocation();
+      _userLat = position.latitude;
+      _userLng = position.longitude;
 
       // 2. Query price comparison from backend
       final response = await StoresService.getPriceComparison(
@@ -55,10 +67,12 @@ class _PriceComparisonScreenState extends State<PriceComparisonScreen> {
 
       // 3. Find the lowest non-null price in the list for badge highlighting
       int? lowestPrice;
+      String? cheapestId;
       for (var item in response.comparison) {
         if (item.hargaTerbaru != null) {
           if (lowestPrice == null || item.hargaTerbaru! < lowestPrice) {
             lowestPrice = item.hargaTerbaru;
+            cheapestId = item.storeId;
           }
         }
       }
@@ -66,6 +80,7 @@ class _PriceComparisonScreenState extends State<PriceComparisonScreen> {
       setState(() {
         _comparisonResponse = response;
         _minPrice = lowestPrice;
+        _selectedStoreId = cheapestId;
         _isLoading = false;
       });
     } catch (e) {
@@ -75,6 +90,7 @@ class _PriceComparisonScreenState extends State<PriceComparisonScreen> {
       });
     }
   }
+
 
   /// Formats price integers as standard Indonesian Rupiah (e.g. Rp 18.500)
   String _formatRp(int price) {
@@ -226,12 +242,25 @@ class _PriceComparisonScreenState extends State<PriceComparisonScreen> {
     final response = _comparisonResponse!;
     final items = response.comparison;
 
+    // Build MapStoreMarker list with price sublabel
+    final mapMarkers = items
+        .where((i) => i.lat != 0.0 || i.lng != 0.0)
+        .map((i) => MapStoreMarker(
+              storeId: i.storeId,
+              lat: i.lat,
+              lng: i.lng,
+              label: i.namaToko,
+              sublabel: i.hargaTerbaru != null ? _formatRp(i.hargaTerbaru!) : null,
+            ))
+        .toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Product header card
         Container(
-          margin: const EdgeInsets.all(AppSpacing.l),
+          margin: const EdgeInsets.fromLTRB(
+            AppSpacing.l, AppSpacing.l, AppSpacing.l, AppSpacing.s),
           padding: const EdgeInsets.all(AppSpacing.l),
           decoration: BoxDecoration(
             color: AppColors.paper,
@@ -277,6 +306,21 @@ class _PriceComparisonScreenState extends State<PriceComparisonScreen> {
           ),
         ),
 
+        // Map context — shows store locations relative to user
+        if (_userLat != null && _userLng != null)
+          RakoonLocationMap(
+            userLat: _userLat!,
+            userLng: _userLng!,
+            mapController: _mapController,
+            heroTag: 'price_compare_recenter',
+            height: 220,
+            markers: mapMarkers,
+            selectedStoreId: _selectedStoreId,
+            onMarkerTap: (storeId) {
+              setState(() => _selectedStoreId = storeId);
+            },
+          ),
+
         // Comparison list header
         Padding(
           padding: const EdgeInsets.symmetric(
@@ -304,121 +348,157 @@ class _PriceComparisonScreenState extends State<PriceComparisonScreen> {
                   itemBuilder: (context, index) {
                     final item = items[index];
                     final isCheapest = item.hargaTerbaru != null && item.hargaTerbaru == _minPrice;
+                    final isSelected = _selectedStoreId == item.storeId;
                     final hasPrice = item.hargaTerbaru != null;
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: AppSpacing.m),
-                      padding: const EdgeInsets.all(AppSpacing.l),
-                      decoration: BoxDecoration(
-                        color: AppColors.paper,
-                        borderRadius: BorderRadius.circular(AppRadius.xl),
-                        border: Border.all(
-                          color: isCheapest ? AppColors.accent : AppColors.line,
-                          width: isCheapest ? 1.8 : 1.0,
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() => _selectedStoreId = item.storeId);
+                        if (item.lat != 0.0 || item.lng != 0.0) {
+                          _mapController.move(
+                            LatLng(item.lat, item.lng),
+                            15.0,
+                          );
+                        }
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: AppSpacing.m),
+                        padding: const EdgeInsets.all(AppSpacing.l),
+                        decoration: BoxDecoration(
+                          color: AppColors.paper,
+                          borderRadius: BorderRadius.circular(AppRadius.xl),
+                          border: Border.all(
+                            // cheapest always keeps accent border; selected also gets accent
+                            color: (isCheapest || isSelected) ? AppColors.accent : AppColors.line,
+                            width: (isCheapest || isSelected) ? 1.8 : 1.0,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.ink.withValues(
+                                alpha: isCheapest ? 0.05 : 0.02),
+                              blurRadius: isCheapest ? 10 : 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.ink.withValues(alpha: isCheapest ? 0.05 : 0.02),
-                            blurRadius: isCheapest ? 10 : 6,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Top row: Store Name & Status Badges
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  item.namaToko,
-                                  style: AppTextStyles.bodyLarge.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: AppSpacing.xs),
-                              if (isCheapest)
-                                const StatusBadge(status: 'Termurah')
-                              else if (!hasPrice)
-                                const StatusBadge(status: 'Belum ada data'),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.s),
-                          
-                          // Divider line
-                          const Divider(),
-                          const SizedBox(height: AppSpacing.s),
-
-                          // Details row
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              // Distance info
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.directions_walk,
-                                    size: 14.0,
-                                    color: AppColors.muted,
-                                  ),
-                                  const SizedBox(width: 4.0),
-                                  Text(
-                                    '${item.jarakKm.toStringAsFixed(2)} km',
-                                    style: AppTextStyles.bodySmall,
-                                  ),
-                                ],
-                              ),
-                              // Price or Message
-                              if (hasPrice)
-                                Text(
-                                  _formatRp(item.hargaTerbaru!),
-                                  style: AppTextStyles.bodyLarge.copyWith(
-                                    color: isCheapest ? AppColors.accent : AppColors.ink,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16.0,
-                                  ),
-                                )
-                              else
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Top row: Store Name & Status Badges
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Expanded(
                                   child: Text(
-                                    item.pesan ?? 'Data tidak tersedia',
-                                    textAlign: TextAlign.right,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTextStyles.bodySmall.copyWith(
-                                      fontStyle: FontStyle.italic,
+                                    item.namaToko,
+                                    style: AppTextStyles.bodyLarge.copyWith(
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.s),
+                                const SizedBox(width: AppSpacing.xs),
+                                if (isCheapest)
+                                  const StatusBadge(status: 'Termurah')
+                                else if (!hasPrice)
+                                  const StatusBadge(status: 'Belum ada data'),
+                              ],
+                            ),
+                            const SizedBox(height: AppSpacing.s),
 
-                          // Footer row: Update time & validation status
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Update: ${_formatDateTime(item.tanggalUpdate)}',
-                                style: AppTextStyles.bodySmall.copyWith(fontSize: 10),
-                              ),
-                              if (item.statusVerifikasi != null)
-                                Text(
-                                  'Status: ${item.statusVerifikasi}',
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: item.statusVerifikasi == 'verified' 
-                                        ? AppColors.accent 
-                                        : AppColors.warning,
+                            // Divider line
+                            const Divider(),
+                            const SizedBox(height: AppSpacing.s),
+
+                            // Details row
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Distance info
+                                Flexible(
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.directions_walk,
+                                        size: 14.0,
+                                        color: AppColors.muted,
+                                      ),
+                                      const SizedBox(width: 4.0),
+                                      Flexible(
+                                        child: Text(
+                                          '${item.jarakKm.toStringAsFixed(2)} km',
+                                          style: AppTextStyles.bodySmall,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                            ],
-                          ),
-                        ],
+                                const SizedBox(width: AppSpacing.s),
+                                // Price or Message
+                                if (hasPrice)
+                                  Flexible(
+                                    child: Text(
+                                      _formatRp(item.hargaTerbaru!),
+                                      textAlign: TextAlign.end,
+                                      style: AppTextStyles.bodyLarge.copyWith(
+                                        color: isCheapest
+                                            ? AppColors.accent
+                                            : AppColors.ink,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16.0,
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  Expanded(
+                                    child: Text(
+                                      item.pesan ?? 'Data tidak tersedia',
+                                      textAlign: TextAlign.right,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+
+                            const SizedBox(height: AppSpacing.s),
+
+                            // Footer row: Update time & validation status
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    'Update: ${_formatDateTime(item.tanggalUpdate)}',
+                                    style: AppTextStyles.bodySmall.copyWith(fontSize: 10),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (item.statusVerifikasi != null) ...[
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      'Status: ${item.statusVerifikasi}',
+                                      textAlign: TextAlign.end,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: item.statusVerifikasi == 'verified'
+                                            ? AppColors.accent
+                                            : AppColors.warning,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -427,6 +507,7 @@ class _PriceComparisonScreenState extends State<PriceComparisonScreen> {
       ],
     );
   }
+
 
   /// Empty state widget
   Widget _buildEmptyState() {

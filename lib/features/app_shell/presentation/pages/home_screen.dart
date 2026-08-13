@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:rakoon_frontend/features/budget_shopping/budget_shopping_screen.dart';
 import 'package:rakoon_frontend/features/history/presentation/pages/product_history_list_page.dart';
 import 'package:rakoon_frontend/features/nearby/nearby_stores_screen.dart';
+import 'package:rakoon_frontend/features/nearby/price_comparison_screen.dart';
 import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
@@ -21,6 +22,40 @@ class HomeScreen extends StatelessWidget {
     return kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
   }
 
+  void _showProductSelector(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
+      ),
+      backgroundColor: AppColors.paper,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: ProductSelectorBottomSheet(
+            baseUrl: _getBaseUrl(),
+            onProductSelected: (prod) {
+              Navigator.pop(context); // Close bottom sheet
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PriceComparisonScreen(
+                    productId: prod.id,
+                    productName: prod.nama,
+                    baseUrl: _getBaseUrl(),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -35,52 +70,54 @@ class HomeScreen extends StatelessWidget {
                 vertical: AppSpacing.l,
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Rakoon', style: AppTextStyles.titleLarge),
-
-                  // Location Pill & Logout Button
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.m,
-                          vertical: AppSpacing.s,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.paper,
-                          borderRadius: BorderRadius.circular(AppRadius.full),
-                          border: Border.all(color: AppColors.line),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              color: AppColors.accent,
-                              size: 14,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
+                  const SizedBox(width: AppSpacing.m),
+                  // Location Pill — fills remaining width, clips text on narrow screens
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.m,
+                        vertical: AppSpacing.s,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.paper,
+                        borderRadius: BorderRadius.circular(AppRadius.full),
+                        border: Border.all(color: AppColors.line),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.location_on,
+                            color: AppColors.accent,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
                               'Indomaret · Jl. Sudirman',
                               style: AppTextStyles.bodySmall.copyWith(
                                 color: AppColors.ink,
                                 fontWeight: FontWeight.bold,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: AppSpacing.s),
-                      IconButton(
-                        key: const Key('logout_button'),
-                        icon: const Icon(Icons.logout, color: AppColors.muted),
-                        onPressed: () async {
-                          await AuthService.signOut();
-                        },
-                        tooltip: 'Logout',
-                      ),
-                    ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.s),
+                  // Compact logout — avoids 48dp IconButton minimum
+                  GestureDetector(
+                    key: const Key('logout_button'),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () async => AuthService.signOut(),
+                    child: const Padding(
+                      padding: EdgeInsets.all(6),
+                      child: Icon(Icons.logout, color: AppColors.muted, size: 22),
+                    ),
                   ),
                 ],
               ),
@@ -235,14 +272,136 @@ class HomeScreen extends StatelessWidget {
 
                         // Right Card: Toko Terdekat
                         Expanded(
+                          child: Semantics(
+                            label: 'Toko Terdekat, cari toko di sekitar kamu',
+                            button: true,
+                            container: true,
+                            excludeSemantics: true,
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => NearbyStoresScreen(
+                                      baseUrl: _getBaseUrl(),
+                                    ),
+                                  ),
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(AppRadius.xl),
+                              child: Container(
+                                padding: const EdgeInsets.all(AppSpacing.l),
+                                decoration: BoxDecoration(
+                                  color: AppColors.paper,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.xl,
+                                  ),
+                                  border: Border.all(color: AppColors.line),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.background,
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadius.l,
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.storefront_outlined,
+                                        color: AppColors.ink,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.m),
+                                    Text(
+                                      'Toko Terdekat',
+                                      style: AppTextStyles.bodyLarge,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Cari toko di sekitar kamu',
+                                      style: AppTextStyles.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.m),
+
+                    Row(
+                      children: [
+                        // Left Card: Bandingkan Harga
+                        Expanded(
+                          child: Semantics(
+                            label: 'Bandingkan Harga, cari dan bandingkan harga produk',
+                            button: true,
+                            container: true,
+                            excludeSemantics: true,
+                            child: InkWell(
+                              onTap: () => _showProductSelector(context),
+                              borderRadius: BorderRadius.circular(AppRadius.xl),
+                              child: Container(
+                                padding: const EdgeInsets.all(AppSpacing.l),
+                                decoration: BoxDecoration(
+                                  color: AppColors.paper,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.xl,
+                                  ),
+                                  border: Border.all(color: AppColors.line),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.background,
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadius.l,
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.compare_arrows,
+                                        color: AppColors.ink,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.m),
+                                    Text(
+                                      'Bandingkan Harga',
+                                      style: AppTextStyles.bodyLarge,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Temukan harga terbaik di toko sekitar',
+                                      style: AppTextStyles.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.m),
+
+                        // Right Card: Smart Budget Shopping
+                        Expanded(
                           child: InkWell(
                             onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => NearbyStoresScreen(
-                                    baseUrl: _getBaseUrl(),
-                                  ),
+                                  builder: (context) =>
+                                      BudgetShoppingScreen(baseUrl: _getBaseUrl()),
                                 ),
                               );
                             },
@@ -269,20 +428,24 @@ class HomeScreen extends StatelessWidget {
                                       ),
                                     ),
                                     child: const Icon(
-                                      Icons.storefront_outlined,
+                                      Icons.account_balance_wallet_outlined,
                                       color: AppColors.ink,
                                       size: 20,
                                     ),
                                   ),
                                   const SizedBox(height: AppSpacing.m),
                                   Text(
-                                    'Toko Terdekat',
+                                    'Smart Budget',
                                     style: AppTextStyles.bodyLarge,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'Lihat detail outlet ritel',
+                                    'Alokasi budget belanja',
                                     style: AppTextStyles.bodySmall,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),
@@ -291,78 +454,21 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: AppSpacing.m),
-
-                    // Additional Row/Card: Budget Shopping
-                    InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                BudgetShoppingScreen(baseUrl: _getBaseUrl()),
-                          ),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(AppRadius.xl),
-                      child: Container(
-                        padding: const EdgeInsets.all(AppSpacing.l),
-                        decoration: BoxDecoration(
-                          color: AppColors.paper,
-                          borderRadius: BorderRadius.circular(AppRadius.xl),
-                          border: Border.all(color: AppColors.line),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: AppColors.background,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.l,
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.account_balance_wallet_outlined,
-                                color: AppColors.ink,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.l),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Smart Budget Shopping',
-                                    style: AppTextStyles.bodyLarge,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Optimalkan belanja dengan alokasi budget cerdas',
-                                    style: AppTextStyles.bodySmall,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Icon(
-                              Icons.chevron_right,
-                              color: AppColors.muted,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
                     const SizedBox(height: AppSpacing.xxl),
 
                     // 3. Scan Terakhir Feed
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Scan Terakhir', style: AppTextStyles.titleSmall),
-                        TextButton(
-                          onPressed: () {
+                        Expanded(
+                          child: Text(
+                            'Scan Terakhir',
+                            style: AppTextStyles.titleSmall,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -372,14 +478,19 @@ class HomeScreen extends StatelessWidget {
                               ),
                             );
                           },
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.accent,
-                            padding: EdgeInsets.zero,
-                          ),
-                          child: Text(
-                            'Lihat semua',
-                            style: AppTextStyles.labelSmall.copyWith(
-                              fontSize: 12,
+                          borderRadius: BorderRadius.circular(AppRadius.s),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 4,
+                              horizontal: 8,
+                            ),
+                            child: Text(
+                              'Lihat semua',
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: AppColors.accent,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
@@ -427,8 +538,9 @@ class HomeScreen extends StatelessWidget {
                               '${item.store} · ${item.volume}',
                               style: AppTextStyles.bodySmall,
                             ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
+                            trailing: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
                                   item.price,
@@ -436,8 +548,8 @@ class HomeScreen extends StatelessWidget {
                                     color: AppColors.ink,
                                   ),
                                 ),
-                                const SizedBox(width: AppSpacing.s),
-                                if (item.isBestValue)
+                                if (item.isBestValue) ...[
+                                  const SizedBox(height: 4),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: AppSpacing.s,
@@ -465,13 +577,15 @@ class HomeScreen extends StatelessWidget {
                                         ),
                                       ],
                                     ),
-                                  )
-                                else
+                                  ),
+                                ] else ...[
+                                  const SizedBox(height: 4),
                                   const Icon(
                                     Icons.chevron_right,
                                     color: AppColors.muted,
                                     size: 16,
                                   ),
+                                ],
                               ],
                             ),
                           );

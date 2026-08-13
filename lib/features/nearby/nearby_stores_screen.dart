@@ -8,7 +8,8 @@ import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/services/products_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
-import 'package:rakoon_frontend/features/nearby/price_comparison_screen.dart';
+import 'package:rakoon_frontend/widgets/rakoon_location_map.dart';
+
 
 class NearbyStoresScreen extends StatefulWidget {
   final String baseUrl;
@@ -25,37 +26,98 @@ class NearbyStoresScreen extends StatefulWidget {
 class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
   final MapController _mapController = MapController();
 
-  void _showProductSelector(BuildContext context) {
+  void _showStoreDetail(BuildContext context, StoreNearby store) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
       ),
       backgroundColor: AppColors.paper,
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: ProductSelectorBottomSheet(
-            baseUrl: widget.baseUrl,
-            onProductSelected: (prod) {
-              Navigator.pop(context); // Close bottom sheet
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PriceComparisonScreen(
-                    productId: prod.id,
-                    productName: prod.nama,
-                    baseUrl: widget.baseUrl,
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      store.nama,
+                      style: AppTextStyles.titleSmall.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18.0,
+                      ),
+                    ),
                   ),
+                  const SizedBox(width: AppSpacing.s),
+                  Icon(
+                    Icons.storefront,
+                    color: AppColors.accent,
+                    size: 28,
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.m),
+              const Divider(color: AppColors.line),
+              const SizedBox(height: AppSpacing.m),
+              _buildDetailRow(Icons.pin_drop_outlined, 'Koordinat', 'Lat: ${store.lat.toStringAsFixed(6)}, Lng: ${store.lng.toStringAsFixed(6)}'),
+              const SizedBox(height: AppSpacing.s),
+              _buildDetailRow(Icons.directions_walk, 'Jarak dari lokasi Anda', '${store.jarakKm.toStringAsFixed(2)} km'),
+              const SizedBox(height: AppSpacing.s),
+              _buildDetailRow(Icons.cloud_queue_outlined, 'Sumber Data POI', store.source == 'osm' ? 'OpenStreetMap' : 'Database Lokal'),
+              const SizedBox(height: AppSpacing.xl),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: AppColors.paper,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.l),
+                    ),
+                  ),
+                  child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
-              );
-            },
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: AppColors.muted),
+        const SizedBox(width: AppSpacing.m),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.ink,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
   
@@ -224,134 +286,34 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 1. OpenStreetMap Section
+        // 1. Map Section — via shared RakoonLocationMap
         Expanded(
           flex: 4,
-          child: Container(
-            margin: const EdgeInsets.all(AppSpacing.l),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-              border: Border.all(color: AppColors.line, width: 1.2),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.ink.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              children: [
-                FlutterMap(
-                  mapController: _mapController,
-                  options: MapOptions(
-                    initialCenter: LatLng(
-                      _userPosition!.latitude,
-                      _userPosition!.longitude,
-                    ),
-                    initialZoom: 14.0,
-                  ),
-                  children: [
-                    TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.rakoon.rakoon_frontend',
-                    ),
-                    MarkerLayer(
-                      markers: [
-                        // User position marker (Blue)
-                        Marker(
-                          point: LatLng(
-                            _userPosition!.latitude,
-                            _userPosition!.longitude,
-                          ),
-                          width: 45.0,
-                          height: 45.0,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF3B82F6).withValues(alpha: 0.2),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: const Color(0xFF2563EB),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.my_location,
-                                color: Color(0xFF1D4ED8),
-                                size: 20.0,
-                              ),
-                            ),
-                          ),
-                        ),
-                        // Stores markers (Emerald Green Accent)
-                        ...stores.map((store) {
-                          final isSelected = _selectedStore?.storeId == store.storeId;
-                          
-                          return Marker(
-                            point: LatLng(store.lat, store.lng),
-                            width: 50.0,
-                            height: 50.0,
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _selectedStore = store;
-                                });
-                                _mapController.move(
-                                  LatLng(store.lat, store.lng),
-                                  _mapController.camera.zoom,
-                                );
-                              },
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 250),
-                                decoration: isSelected
-                                    ? BoxDecoration(
-                                        color: AppColors.accentSoft,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: AppColors.accent,
-                                          width: 2.0,
-                                        ),
-                                      )
-                                    : const BoxDecoration(),
-                                child: Icon(
-                                  Icons.store,
-                                  color: isSelected
-                                      ? AppColors.accent
-                                      : AppColors.accent.withValues(alpha: 0.75),
-                                  size: isSelected ? 32.0 : 26.0,
-                                ),
-                              ),
-                            ),
-                          );
-                        }),
-                      ],
-                    ),
-                  ],
-                ),
-                
-                // Recenter button
-                Positioned(
-                  bottom: AppSpacing.m,
-                  right: AppSpacing.m,
-                  child: FloatingActionButton.small(
-                    heroTag: 'recenter_btn',
-                    backgroundColor: AppColors.paper,
-                    foregroundColor: AppColors.ink,
-                    onPressed: () {
-                      if (_userPosition != null) {
-                        _mapController.move(
-                          LatLng(_userPosition!.latitude, _userPosition!.longitude),
-                          14.0,
-                        );
-                      }
-                    },
-                    child: const Icon(Icons.gps_fixed),
-                  ),
-                ),
-              ],
-            ),
+          child: RakoonLocationMap(
+            userLat: _userPosition!.latitude,
+            userLng: _userPosition!.longitude,
+            mapController: _mapController,
+            heroTag: 'nearby_stores_recenter',
+            selectedStoreId: _selectedStore?.storeId,
+            onMarkerTap: (storeId) {
+              final store = stores.firstWhere(
+                (s) => s.storeId == storeId,
+                orElse: () => stores.first,
+              );
+              setState(() => _selectedStore = store);
+              _mapController.move(
+                LatLng(store.lat, store.lng),
+                _mapController.camera.zoom,
+              );
+            },
+            markers: stores
+                .map((s) => MapStoreMarker(
+                      storeId: s.storeId,
+                      lat: s.lat,
+                      lng: s.lng,
+                      label: s.nama,
+                    ))
+                .toList(),
           ),
         ),
 
@@ -453,7 +415,10 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
           horizontal: AppSpacing.s,
           vertical: AppSpacing.s,
         ),
-        padding: const EdgeInsets.all(AppSpacing.l),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.l,
+          vertical: AppSpacing.s,
+        ),
         decoration: BoxDecoration(
           color: AppColors.paper,
           borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -500,7 +465,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  'ID: ${store.storeId.substring(0, 8)}...',
+                  'ID: ${store.storeId.length > 8 ? store.storeId.substring(0, 8) : store.storeId}...',
                   style: AppTextStyles.bodySmall,
                 ),
               ],
@@ -530,14 +495,14 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.s),
+            const SizedBox(height: 4.0),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () => _showProductSelector(context),
-                icon: const Icon(Icons.compare_arrows, size: 14.0),
+                onPressed: () => _showStoreDetail(context, store),
+                icon: const Icon(Icons.info_outline, size: 14.0),
                 label: const Text(
-                  'Bandingkan Harga',
+                  'Detail Toko',
                   style: TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
