@@ -368,25 +368,133 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Text('Simpan Berhasil'),
-            content: Text(
-              '$msg\n\n'
-              '• Entri Harga Baru: $saved\n'
-              '• Produk Baru Dibuat: $created',
+          builder: (context) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  Navigator.pop(
-                    context,
-                    true,
-                  ); // Pop back to camera screen with success result
-                },
-                child: const Text('Selesai'),
+            elevation: 8,
+            backgroundColor: AppColors.paper,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xxl),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.m),
+                    decoration: const BoxDecoration(
+                      color: AppColors.accentSoft,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check_circle_rounded,
+                      color: AppColors.accent,
+                      size: 48,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.l),
+                  Text(
+                    'Simpan Berhasil',
+                    style: AppTextStyles.titleMedium.copyWith(
+                      color: AppColors.ink,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.s),
+                  Text(
+                    msg,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.muted,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.l),
+                    decoration: BoxDecoration(
+                      color: AppColors.card,
+                      borderRadius: BorderRadius.circular(AppRadius.l),
+                      border: Border.all(color: AppColors.line),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.receipt_long_rounded, size: 18, color: AppColors.accent),
+                                const SizedBox(width: AppSpacing.s),
+                                Text('Entri Harga Baru', style: AppTextStyles.bodyMedium),
+                              ],
+                            ),
+                            Text(
+                              '$saved',
+                              style: AppTextStyles.bodyLarge.copyWith(
+                                color: AppColors.ink,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: AppSpacing.s),
+                          child: Divider(),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.add_box_rounded, size: 18, color: AppColors.onboardingAccent1),
+                                const SizedBox(width: AppSpacing.s),
+                                Text('Produk Baru Dibuat', style: AppTextStyles.bodyMedium),
+                              ],
+                            ),
+                            Text(
+                              '$created',
+                              style: AppTextStyles.bodyLarge.copyWith(
+                                color: AppColors.ink,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context); // Close dialog
+                        Navigator.pop(
+                          context,
+                          true,
+                        ); // Pop back to camera screen with success result
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accent,
+                        foregroundColor: AppColors.paper,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.l),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.l),
+                        ),
+                      ),
+                      child: Text(
+                        'Selesai',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          color: AppColors.paper,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         );
       }
