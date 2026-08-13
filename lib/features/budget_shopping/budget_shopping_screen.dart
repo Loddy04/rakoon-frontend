@@ -368,20 +368,41 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                               IconButton(
                                 icon: const Icon(Icons.remove_circle_outline, size: 20),
                                 color: AppColors.muted,
+                                constraints: const BoxConstraints(
+                                  minWidth: 48,
+                                  minHeight: 48,
+                                ),
+                                padding: EdgeInsets.zero,
                                 onPressed: () => _updateQuantity(index, -1),
                               ),
+                              const SizedBox(width: AppSpacing.s),
                               Text(
                                 '${item.qty}',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
                               ),
+                              const SizedBox(width: AppSpacing.s),
                               IconButton(
                                 icon: const Icon(Icons.add_circle_outline, size: 20),
                                 color: AppColors.accent,
+                                constraints: const BoxConstraints(
+                                  minWidth: 48,
+                                  minHeight: 48,
+                                ),
+                                padding: EdgeInsets.zero,
                                 onPressed: () => _updateQuantity(index, 1),
                               ),
+                              const SizedBox(width: AppSpacing.m),
                               IconButton(
                                 icon: const Icon(Icons.delete_outline, size: 20),
                                 color: AppColors.error,
+                                constraints: const BoxConstraints(
+                                  minWidth: 48,
+                                  minHeight: 48,
+                                ),
+                                padding: EdgeInsets.zero,
                                 onPressed: () {
                                   setState(() {
                                     _selectedItems.removeAt(index);
