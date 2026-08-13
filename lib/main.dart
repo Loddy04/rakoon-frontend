@@ -17,6 +17,7 @@ import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/splash_screen.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/onboarding_screen.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/home_screen.dart';
+import 'package:rakoon_frontend/features/app_shell/presentation/pages/app_shell.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -69,7 +70,7 @@ class AuthStateGate extends StatelessWidget {
       builder: (context, snapshot) {
         final session = AuthService.currentSession;
         if (session != null) {
-          return const IntegrationDashboardPage();
+          return const AppShell();
         } else {
           return const LoginPage();
         }

@@ -10,6 +10,9 @@ import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:rakoon_frontend/features/app_shell/presentation/pages/app_shell.dart';
+import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
+import 'package:rakoon_frontend/features/history/presentation/pages/product_history_list_page.dart';
 
 void main() {
   setUpAll(() async {
@@ -302,6 +305,92 @@ void main() {
 
         // The mock access token string 'mock-es256-access-token-xyz' should never be visible in UI elements
         expect(find.textContaining('mock-es256-access-token-xyz'), findsNothing);
+      });
+    });
+
+    group('AppShell and AuthStateGate Tests', () {
+      late Session mockSession;
+
+      setUp(() {
+        mockSession = Session(
+          accessToken: 'mock-es256-access-token-xyz',
+          refreshToken: 'mock-refresh-token',
+          expiresIn: 3600,
+          tokenType: 'bearer',
+          user: User(
+            id: 'mock-user-uuid-123',
+            appMetadata: {},
+            userMetadata: {},
+            aud: 'authenticated',
+            createdAt: DateTime.now().toIso8601String(),
+          ),
+        );
+      });
+
+      tearDown(() {
+        AuthService.mockSession = null;
+      });
+
+      testWidgets('AuthStateGate redirects to LoginPage when session is null', (WidgetTester tester) async {
+        AuthService.mockSession = null;
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: AuthStateGate(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(LoginPage), findsOneWidget);
+        expect(find.byType(AppShell), findsNothing);
+      });
+
+      testWidgets('AuthStateGate redirects to AppShell when session is non-null', (WidgetTester tester) async {
+        AuthService.mockSession = mockSession;
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: AuthStateGate(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AppShell), findsOneWidget);
+        expect(find.byType(LoginPage), findsNothing);
+      });
+
+      testWidgets('AppShell tab switching works', (WidgetTester tester) async {
+        AuthService.mockSession = mockSession;
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: AppShell(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Initially shows Home tab (Index 0)
+        expect(find.text('Rakoon'), findsOneWidget);
+        expect(find.byKey(const Key('nav_tab_0')), findsOneWidget);
+        expect(find.byKey(const Key('nav_tab_1')), findsOneWidget);
+        expect(find.byKey(const Key('nav_tab_2')), findsOneWidget);
+
+        // Tap History tab (Index 2)
+        await tester.tap(find.byKey(const Key('nav_tab_2')));
+        await tester.pumpAndSettle();
+
+        // Now shows History tab
+        expect(find.byType(ProductHistoryListPage), findsOneWidget);
+        // Bottom nav is still visible
+        expect(find.byKey(const Key('nav_tab_2')), findsOneWidget);
+
+        // Tap Scan tab (Index 1)
+        await tester.tap(find.byKey(const Key('nav_tab_1')));
+        await tester.pumpAndSettle();
+
+        // Bottom nav should be hidden in scan mode
+        expect(find.byKey(const Key('nav_tab_1')), findsNothing);
+        expect(find.byType(ScanCameraScreen), findsOneWidget);
       });
     });
   });
