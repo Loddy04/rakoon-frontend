@@ -471,7 +471,9 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const SplashScreen(),
+                                  builder: (context) => SplashScreen(
+                                    baseUrl: _urlController.text.trim(),
+                                  ),
                                 ),
                               );
                             },
@@ -487,8 +489,9 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) =>
-                                      const OnboardingScreen(),
+                                  builder: (context) => OnboardingScreen(
+                                    baseUrl: _urlController.text.trim(),
+                                  ),
                                 ),
                               );
                             },
@@ -504,7 +507,9 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const HomeScreen(),
+                                  builder: (context) => HomeScreen(
+                                    baseUrl: _urlController.text.trim(),
+                                  ),
                                 ),
                               );
                             },

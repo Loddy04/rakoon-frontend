@@ -5,7 +5,11 @@ import 'package:rakoon_frontend/features/app_shell/presentation/pages/onboarding
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  // TODO: [Temporary] baseUrl is loaded from development dashboard parameters.
+  // Replace with dynamic configuration / client settings container during Production migration (Task A6).
+  final String? baseUrl;
+
+  const SplashScreen({super.key, this.baseUrl});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -60,12 +64,16 @@ class _SplashScreenState extends State<SplashScreen>
     if (hasCompletedOnboarding) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(baseUrl: widget.baseUrl),
+        ),
       );
     } else {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+        MaterialPageRoute(
+          builder: (context) => OnboardingScreen(baseUrl: widget.baseUrl),
+        ),
       );
     }
   }

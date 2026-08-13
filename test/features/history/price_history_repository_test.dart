@@ -10,7 +10,7 @@ void main() {
 
     test('getPriceHistory returns PriceHistoryResponse on 200 OK', () async {
       final mockClient = MockClient((request) async {
-        expect(request.url.path, '/api/v1/products/1/price-history');
+        expect(request.url.path, '/price/api/v1/products/1/price-history');
         expect(request.url.queryParameters['store_id'], '10');
         expect(request.url.queryParameters['range'], '1m');
 

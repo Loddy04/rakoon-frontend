@@ -1,10 +1,29 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:rakoon_frontend/features/budget_shopping/budget_shopping_screen.dart';
+import 'package:rakoon_frontend/features/nearby/nearby_stores_screen.dart';
+import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  // TODO: [Temporary] baseUrl is loaded from development dashboard parameters.
+  // Replace with dynamic configuration / client settings container during Production migration (Task A6).
+  final String? baseUrl;
+
+  const HomeScreen({super.key, this.baseUrl});
+
+  String _getBaseUrl() {
+    if (baseUrl != null && baseUrl!.isNotEmpty) {
+      return baseUrl!;
+    }
+    return kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
+  }
 
   void _showNavigationPlaceholder(BuildContext context, String featureName) {
+    final String contentText = featureName == 'Riwayat Harga'
+        ? 'Halaman daftar produk/riwayat pindai (Product List/Scan History) untuk fitur ini belum diimplementasikan di codebase. Fitur akan terhubung setelah halaman daftar tersebut selesai dibuat.'
+        : 'Menu "$featureName" berhasil dibuat!\n\nSesuai instruksi, menu ini masih berupa pratinjau (placeholder).';
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -19,7 +38,7 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
         content: Text(
-          'Menu "$featureName" berhasil dibuat!\n\nSesuai instruksi, menu ini masih berupa pratinjau (placeholder) dan akan dihubungkan ke halaman fitur asli pada Task A4.',
+          contentText,
           style: AppTextStyles.bodyMedium.copyWith(color: AppColors.muted),
         ),
         actions: [
@@ -97,10 +116,15 @@ class HomeScreen extends StatelessWidget {
 
                     // 1. Scan Hero Card
                     InkWell(
-                      onTap: () => _showNavigationPlaceholder(
-                        context,
-                        'Scan Rak Produk',
-                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ScanCameraScreen(baseUrl: _getBaseUrl()),
+                          ),
+                        );
+                      },
                       borderRadius: BorderRadius.circular(AppRadius.xl),
                       child: Container(
                         padding: const EdgeInsets.all(AppSpacing.xxl),
@@ -224,10 +248,16 @@ class HomeScreen extends StatelessWidget {
                         // Right Card: Toko Terdekat
                         Expanded(
                           child: InkWell(
-                            onTap: () => _showNavigationPlaceholder(
-                              context,
-                              'Toko Terdekat',
-                            ),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => NearbyStoresScreen(
+                                    baseUrl: _getBaseUrl(),
+                                  ),
+                                ),
+                              );
+                            },
                             borderRadius: BorderRadius.circular(AppRadius.xl),
                             child: Container(
                               padding: const EdgeInsets.all(AppSpacing.l),
@@ -277,10 +307,15 @@ class HomeScreen extends StatelessWidget {
 
                     // Additional Row/Card: Budget Shopping
                     InkWell(
-                      onTap: () => _showNavigationPlaceholder(
-                        context,
-                        'Smart Budget Shopping',
-                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                BudgetShoppingScreen(baseUrl: _getBaseUrl()),
+                          ),
+                        );
+                      },
                       borderRadius: BorderRadius.circular(AppRadius.xl),
                       child: Container(
                         padding: const EdgeInsets.all(AppSpacing.l),

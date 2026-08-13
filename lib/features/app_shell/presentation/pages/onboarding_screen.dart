@@ -5,7 +5,11 @@ import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/home_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key});
+  // TODO: [Temporary] baseUrl is loaded from development dashboard parameters.
+  // Replace with dynamic configuration / client settings container during Production migration (Task A6).
+  final String? baseUrl;
+
+  const OnboardingScreen({super.key, this.baseUrl});
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -141,7 +145,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
+      MaterialPageRoute(
+        builder: (context) => HomeScreen(baseUrl: widget.baseUrl),
+      ),
     );
   }
 
