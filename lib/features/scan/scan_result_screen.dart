@@ -6,6 +6,10 @@ import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/features/auth/presentation/widgets/login_bottom_sheet.dart';
+import 'package:rakoon_frontend/services/products_service.dart';
+import 'package:rakoon_frontend/features/history/data/repositories/price_history_repository.dart';
+import 'package:rakoon_frontend/features/history/presentation/pages/price_history_page.dart';
+import 'package:rakoon_frontend/features/history/presentation/providers/price_history_notifier.dart';
 
 class ScanResultScreen extends StatefulWidget {
   final String baseUrl;
@@ -252,6 +256,85 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     );
   }
 
+  /// Queries backend to find exact product match and redirects to history,/
+  /// otherwise warns that the item has no history.
+  Future<void> _checkAndNavigateToHistory(String productName) async {
+    if (productName.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nama produk tidak boleh kosong.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: AppColors.accent),
+      ),
+    );
+
+    try {
+      final products = await ProductsService.getProducts(
+        baseUrl: widget.baseUrl,
+        search: productName.trim(),
+      );
+
+      if (mounted) {
+        Navigator.pop(context); // Close loading indicator
+      }
+
+      Product? matchedProduct;
+      for (final p in products) {
+        if (p.nama.trim().toLowerCase() == productName.trim().toLowerCase()) {
+          matchedProduct = p;
+          break;
+        }
+      }
+
+      if (matchedProduct != null) {
+        final repository = PriceHistoryRepository(baseUrl: widget.baseUrl);
+        final notifier = PriceHistoryNotifier(repository: repository);
+
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PriceHistoryPage(
+                notifier: notifier,
+                productId: matchedProduct!.id,
+              ),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Produk "${productName.trim()}" belum terdaftar di database. Silakan simpan konfirmasi terlebih dahulu untuk merekam riwayat.',
+              ),
+              backgroundColor: AppColors.warning,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memeriksa riwayat: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -442,6 +525,33 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton.icon(
+                            onPressed: () => _checkAndNavigateToHistory(
+                              _nameControllers[index].text,
+                            ),
+                            icon: const Icon(
+                              Icons.analytics_outlined,
+                              size: 16,
+                              color: AppColors.accent,
+                            ),
+                            label: const Text(
+                              'Lihat riwayat harga',
+                              style: TextStyle(
+                                color: AppColors.accent,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size(0, 0),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
                         ),
                       ],
                     ),
