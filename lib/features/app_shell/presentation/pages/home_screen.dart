@@ -20,39 +20,6 @@ class HomeScreen extends StatelessWidget {
     return kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
   }
 
-  void _showNavigationPlaceholder(BuildContext context, String featureName) {
-    final String contentText = featureName == 'Riwayat Harga'
-        ? 'Halaman daftar produk/riwayat pindai (Product List/Scan History) untuk fitur ini belum diimplementasikan di codebase. Fitur akan terhubung setelah halaman daftar tersebut selesai dibuat.'
-        : 'Menu "$featureName" berhasil dibuat!\n\nSesuai instruksi, menu ini masih berupa pratinjau (placeholder).';
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-        ),
-        title: Row(
-          children: [
-            const Icon(Icons.info_outline, color: AppColors.accent),
-            const SizedBox(width: AppSpacing.s),
-            Text('Info Navigasi', style: AppTextStyles.titleMedium),
-          ],
-        ),
-        content: Text(
-          contentText,
-          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.muted),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(foregroundColor: AppColors.ink),
-            child: const Text('Tutup'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -381,10 +348,16 @@ class HomeScreen extends StatelessWidget {
                       children: [
                         Text('Scan Terakhir', style: AppTextStyles.titleSmall),
                         TextButton(
-                          onPressed: () => _showNavigationPlaceholder(
-                            context,
-                            'Lihat semua scan',
-                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ProductHistoryListPage(
+                                  baseUrl: _getBaseUrl(),
+                                ),
+                              ),
+                            );
+                          },
                           style: TextButton.styleFrom(
                             foregroundColor: AppColors.accent,
                             padding: EdgeInsets.zero,
