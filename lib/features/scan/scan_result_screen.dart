@@ -547,9 +547,11 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                               ),
                             ),
                             style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12.0,
+                                horizontal: 8.0,
+                              ),
                               minimumSize: const Size(0, 0),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                           ),
                         ),
