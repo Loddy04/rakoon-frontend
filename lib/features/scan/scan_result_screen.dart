@@ -585,31 +585,39 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 8),
-            const Text(
-              '💾 Konfigurasi Penyimpanan Database:',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
+            Visibility(
+              visible: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '💾 Konfigurasi Penyimpanan Database:',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
 
-            // Store UUID Input
-            TextField(
-              controller: _storeIdController,
-              decoration: const InputDecoration(
-                labelText: 'Store UUID (Database)',
-                border: OutlineInputBorder(),
+                  // Store UUID Input
+                  TextField(
+                    controller: _storeIdController,
+                    decoration: const InputDecoration(
+                      labelText: 'Store UUID (Database)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // User UUID Input
+                  TextField(
+                    controller: _userIdController,
+                    decoration: const InputDecoration(
+                      labelText: 'User UUID (Database)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
               ),
             ),
-            const SizedBox(height: 10),
-
-            // User UUID Input
-            TextField(
-              controller: _userIdController,
-              decoration: const InputDecoration(
-                labelText: 'User UUID (Database)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 24),
 
             // Save Button
             ElevatedButton.icon(
