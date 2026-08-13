@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
-import 'package:rakoon_frontend/features/app_shell/presentation/pages/home_screen.dart';
+import 'package:rakoon_frontend/features/app_shell/presentation/pages/app_shell.dart';
 
 class OnboardingScreen extends StatefulWidget {
   // TODO: [Temporary] baseUrl is loaded from development dashboard parameters.
@@ -146,7 +146,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => HomeScreen(baseUrl: widget.baseUrl),
+        builder: (context) => AppShell(baseUrl: widget.baseUrl),
       ),
     );
   }
