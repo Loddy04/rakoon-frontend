@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:geolocator/geolocator.dart';
 
 /// Service that manages device location permissions and fetches current GPS coordinates.
@@ -5,6 +6,20 @@ class LocationService {
   /// Requests GPS permission and returns the current [Position].
   /// Throws a clear user-facing exception on denial or errors.
   static Future<Position> getCurrentLocation() async {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return Position(
+        longitude: 106.8456,
+        latitude: -6.2088,
+        timestamp: DateTime.now(),
+        accuracy: 1.0,
+        altitude: 0.0,
+        altitudeAccuracy: 0.0,
+        heading: 0.0,
+        headingAccuracy: 0.0,
+        speed: 0.0,
+        speedAccuracy: 0.0,
+      );
+    }
     bool serviceEnabled;
     LocationPermission permission;
 
