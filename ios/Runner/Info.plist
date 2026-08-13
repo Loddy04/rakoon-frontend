@@ -70,5 +70,7 @@
 	<string>Aplikasi memerlukan izin lokasi untuk mencari toko terdekat di sekitar Anda.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Aplikasi memerlukan izin lokasi untuk mencari toko terdekat di sekitar Anda.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Aplikasi memerlukan akses kamera untuk memindai rak produk.</string>
 </dict>
 </plist>

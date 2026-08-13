@@ -43,6 +43,7 @@ dependencies:
   latlong2: ^0.9.0
   supabase_flutter: ^2.17.1
   shared_preferences: ^2.2.0
+  camera: ^0.10.6
 
 dev_dependencies:
   flutter_test:
