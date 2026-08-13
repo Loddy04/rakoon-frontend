@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
+import 'package:rakoon_frontend/features/auth/presentation/pages/register_page.dart';
 import 'login_form.dart';
 
 class LoginBottomSheet extends StatelessWidget {
@@ -81,6 +82,37 @@ class LoginBottomSheet extends StatelessWidget {
                   // Pass true to signal successful authentication to the caller
                   Navigator.pop(context, true);
                 },
+              ),
+              const SizedBox(height: AppSpacing.xl),
+
+              // Register Navigation
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Belum punya akun? ',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.muted,
+                    ),
+                  ),
+                  GestureDetector(
+                    key: const Key('goto_register_button'),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RegisterPage(),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'Daftar Sekarang',
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: AppColors.accent,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: AppSpacing.l),
             ],
