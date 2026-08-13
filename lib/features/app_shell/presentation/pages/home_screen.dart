@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:rakoon_frontend/features/budget_shopping/budget_shopping_screen.dart';
+import 'package:rakoon_frontend/features/history/presentation/pages/product_history_list_page.dart';
 import 'package:rakoon_frontend/features/nearby/nearby_stores_screen.dart';
 import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
@@ -196,10 +197,16 @@ class HomeScreen extends StatelessWidget {
                         // Left Card: Riwayat Harga
                         Expanded(
                           child: InkWell(
-                            onTap: () => _showNavigationPlaceholder(
-                              context,
-                              'Riwayat Harga',
-                            ),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ProductHistoryListPage(
+                                    baseUrl: _getBaseUrl(),
+                                  ),
+                                ),
+                              );
+                            },
                             borderRadius: BorderRadius.circular(AppRadius.xl),
                             child: Container(
                               padding: const EdgeInsets.all(AppSpacing.l),
