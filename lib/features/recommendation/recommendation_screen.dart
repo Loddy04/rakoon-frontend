@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
+import 'package:http/http.dart' as http;
 
 class RecommendationScreen extends StatefulWidget {
   final String baseUrl;
   final List<RecommendationCandidate>? initialCandidates;
+  final http.Client? httpClient;
 
   const RecommendationScreen({
     super.key,
     required this.baseUrl,
     this.initialCandidates,
+    this.httpClient,
   });
 
   @override
@@ -88,6 +91,7 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
       final res = await RecommendationService.evaluateRecommendation(
         candidates: _candidates,
         baseUrl: widget.baseUrl,
+        client: widget.httpClient,
       );
 
       setState(() {

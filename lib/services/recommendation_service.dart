@@ -199,12 +199,14 @@ class RecommendationService {
   static Future<RecommendationResponse> evaluateRecommendation({
     required List<RecommendationCandidate> candidates,
     String? baseUrl,
+    http.Client? client,
   }) async {
     final String activeBaseUrl = baseUrl ?? defaultBaseUrl;
     final uri = Uri.parse('$activeBaseUrl/recommendation/evaluate');
+    final httpClient = client ?? http.Client();
 
     try {
-      final response = await http.post(
+      final response = await httpClient.post(
         uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
