@@ -1,55 +1,187 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:camera/camera.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
 import 'package:rakoon_frontend/features/scan/scan_result_screen.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 
 class ScanCameraScreen extends StatefulWidget {
   final String baseUrl;
+  final VoidCallback? onClose;
 
   const ScanCameraScreen({
     super.key,
     required this.baseUrl,
+    this.onClose,
   });
 
   @override
   State<ScanCameraScreen> createState() => _ScanCameraScreenState();
 }
 
-class _ScanCameraScreenState extends State<ScanCameraScreen> {
+class _ScanCameraScreenState extends State<ScanCameraScreen>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final ImagePicker _picker = ImagePicker();
   File? _imageFile;
   bool _isScanning = false;
   String? _errorMessage;
 
-  /// Opens the device camera to capture a photo
-  Future<void> _takePhoto() async {
-    setState(() {
-      _errorMessage = null;
-    });
+  // Camera settings
+  List<CameraDescription> _cameras = [];
+  CameraController? _cameraController;
+  bool _isCameraInitialized = false;
+  bool _isCameraPermissionDenied = false;
+  bool _isCameraInitializing = false; // Initialized to false to work with the initialization gate
 
-    try {
-      final XFile? photo = await _picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 85, // Balance file size and resolution
-      );
+  // Scanline animation settings
+  late AnimationController _scanlineController;
+  late Animation<double> _scanlineAnimation;
 
-      if (photo != null) {
-        setState(() {
-          _imageFile = File(photo.path);
-        });
-        // Automatically start the scanning process
-        await _scanPhoto();
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initializeCamera();
+    _initScanlineAnimation();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _cameraController?.dispose();
+    _scanlineController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final CameraController? cameraController = _cameraController;
+
+    // If camera controller doesn't exist or is not initialized, do nothing
+    if (cameraController == null || !cameraController.value.isInitialized) {
+      return;
+    }
+
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+      _deinitializeCamera();
+    } else if (state == AppLifecycleState.resumed) {
+      if (mounted) {
+        _initializeCamera();
       }
-    } catch (e) {
+    }
+  }
+
+  Future<void> _deinitializeCamera() async {
+    final controller = _cameraController;
+    _cameraController = null;
+    if (controller != null) {
+      await controller.dispose();
+    }
+    if (mounted) {
       setState(() {
-        _errorMessage = 'Gagal mengakses kamera: $e';
+        _isCameraInitialized = false;
+        _isCameraInitializing = false;
       });
     }
   }
 
-  /// Opens the gallery to select a photo
+  Future<void> _initializeCamera() async {
+    if (_isCameraInitializing) return;
+
+    setState(() {
+      _isCameraInitializing = true;
+      _isCameraPermissionDenied = false;
+    });
+
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      setState(() {
+        _isCameraInitializing = false;
+        _isCameraInitialized = false;
+      });
+      return;
+    }
+
+    try {
+      _cameras = await availableCameras();
+      if (!mounted) return;
+
+      if (_cameras.isEmpty) {
+        setState(() {
+          _isCameraInitializing = false;
+          _isCameraInitialized = false;
+        });
+        return;
+      }
+
+      final controller = CameraController(
+        _cameras.first,
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
+
+      _cameraController = controller;
+      await controller.initialize();
+
+      if (!mounted) {
+        // If screen was disposed during initialization, clean up controller immediately
+        await controller.dispose();
+        return;
+      }
+
+      setState(() {
+        _isCameraInitialized = true;
+        _isCameraInitializing = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isCameraInitializing = false;
+          _isCameraInitialized = false;
+          if (e is CameraException && e.code == 'CameraAccessDenied') {
+            _isCameraPermissionDenied = true;
+          }
+        });
+      }
+    }
+  }
+
+  void _initScanlineAnimation() {
+    _scanlineController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    );
+    _scanlineAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _scanlineController, curve: Curves.easeInOut),
+    );
+    if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+      _scanlineController.repeat(reverse: true);
+    }
+  }
+
+  /// Takes picture using in-app camera viewfinder
+  Future<void> _captureImage() async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return;
+    }
+
+    try {
+      final XFile photo = await _cameraController!.takePicture();
+      if (!mounted) return;
+      setState(() {
+        _imageFile = File(photo.path);
+      });
+      await _scanPhoto();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Gagal mengambil gambar: $e';
+        });
+      }
+    }
+  }
+
+  /// Opens the gallery to select a photo as fallback
   Future<void> _pickFromGallery() async {
     setState(() {
       _errorMessage = null;
@@ -58,20 +190,22 @@ class _ScanCameraScreenState extends State<ScanCameraScreen> {
     try {
       final XFile? photo = await _picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 85, // Balance file size and resolution
+        imageQuality: 85,
       );
 
+      if (!mounted) return;
       if (photo != null) {
         setState(() {
           _imageFile = File(photo.path);
         });
-        // Automatically start the scanning process
         await _scanPhoto();
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Gagal mengakses galeri: $e';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Gagal mengakses galeri: $e';
+        });
+      }
     }
   }
 
@@ -90,207 +224,495 @@ class _ScanCameraScreenState extends State<ScanCameraScreen> {
         baseUrl: widget.baseUrl,
       );
 
-      if (mounted) {
-        // Navigate to the result correction screen
-        final bool? saved = await Navigator.push<bool>(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ScanResultScreen(
-              baseUrl: widget.baseUrl,
-              detectedItems: items,
-            ),
+      if (!mounted) return;
+
+      final bool? saved = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ScanResultScreen(
+            baseUrl: widget.baseUrl,
+            detectedItems: items,
+          ),
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (saved == true) {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else if (widget.onClose != null) {
+          widget.onClose!();
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Berhasil memproses scan dan menyimpan hasil ke database!'),
+            backgroundColor: AppColors.accent,
           ),
         );
-
-        if (saved == true && mounted) {
-          // If successfully saved, return to the home dashboard page
-          Navigator.pop(context);
-          
-          // Show a floating success snackbar on the home dashboard
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Berhasil memproses scan dan menyimpan hasil ke database!'),
-              backgroundColor: AppColors.accent,
-            ),
-          );
-        }
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        });
+      }
     } finally {
-      setState(() {
-        _isScanning = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isScanning = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Smart Shelf Scan'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Instructions Card
-            const Card(
-              child: Padding(
-                padding: EdgeInsets.all(12.0),
-                child: Text(
-                  'Ambil foto rak produk supermarket. AI akan secara otomatis '
-                  'mendeteksi nama, harga, dan ukuran produk untuk divalidasi.',
-                  style: TextStyle(fontSize: 14),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final double width = constraints.maxWidth;
+            final double height = constraints.maxHeight;
 
-            // Camera preview / image selected box
-            _buildImageBox(),
-            const SizedBox(height: 20),
+            // Determine 3:4 Scan Frame dimensions and position
+            final double rectWidth = width * 0.85;
+            final double rectHeight = rectWidth * (4 / 3);
+            final double rectLeft = (width - rectWidth) / 2;
+            final double rectTop = (height - rectHeight) / 2 - 40;
+            final Rect scanRect = Rect.fromLTWH(rectLeft, rectTop, rectWidth, rectHeight);
 
-            // Action Buttons for Camera or Gallery source
-            if (_imageFile == null && !_isScanning)
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _takePhoto,
-                      icon: const Icon(Icons.camera_alt),
-                      label: const Text('Kamera'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _pickFromGallery,
-                      icon: const Icon(Icons.photo_library),
-                      label: const Text('Galeri'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-            // Display loading indicator during AI analysis
-            if (_isScanning) _buildScanningIndicator(),
-
-            // Error display card
-            if (_errorMessage != null) _buildErrorCard(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildImageBox() {
-    return Container(
-      height: 300,
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.muted),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: _imageFile != null
-          ? Stack(
+            return Stack(
               fit: StackFit.expand,
               children: [
-                Image.file(
-                  _imageFile!,
-                  fit: BoxFit.cover,
-                ),
-                if (!_isScanning)
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: CircleAvatar(
-                      backgroundColor: Colors.black54,
-                      child: IconButton(
-                        icon: const Icon(Icons.refresh, color: Colors.white),
-                        onPressed: () => setState(() => _imageFile = null),
-                        tooltip: 'Hapus & Pilih Ulang',
+                // 1. Camera Preview or Fallback View
+                if (_isCameraInitialized && _cameraController != null && _imageFile == null)
+                  Center(
+                    child: AspectRatio(
+                      aspectRatio: _cameraController!.value.aspectRatio,
+                      child: CameraPreview(_cameraController!),
+                    ),
+                  )
+                else
+                  _buildCameraFallbackView(),
+
+                // 2. Dark Overlay & Corner decorations
+                if (_isCameraInitialized && !_isScanning && _imageFile == null && !_isCameraPermissionDenied)
+                  CustomPaint(
+                    painter: ViewfinderPainter(scanRect: scanRect),
+                  ),
+
+                // 3. Animated Scanline
+                if (_isCameraInitialized && !_isScanning && _imageFile == null && !_isCameraPermissionDenied)
+                  AnimatedBuilder(
+                    animation: _scanlineAnimation,
+                    builder: (context, child) {
+                      final double topOffset = rectTop + (_scanlineAnimation.value * rectHeight);
+                      return Positioned(
+                        left: rectLeft + 8,
+                        right: rectLeft + 8,
+                        top: topOffset,
+                        child: Container(
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: AppColors.accent,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.accent.withOpacity(0.8),
+                                blurRadius: 8,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                // 4. Header (Close button & Title)
+                Positioned(
+                  top: 16,
+                  left: 16,
+                  right: 16,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        key: const Key('scan_close_button'),
+                        icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                        onPressed: widget.onClose ?? () => Navigator.pop(context),
                       ),
+                      Text(
+                        'Pindai Rak',
+                        style: AppTextStyles.titleMedium.copyWith(color: Colors.white),
+                      ),
+                      const SizedBox(width: 48), // Spacer to balance close button
+                    ],
+                  ),
+                ),
+
+                // 5. Instruction text
+                if (_imageFile == null && !_isScanning && _isCameraInitialized && !_isCameraPermissionDenied)
+                  Positioned(
+                    top: rectTop + rectHeight + 20,
+                    left: 24,
+                    right: 24,
+                    child: Text(
+                      'Posisikan label harga di dalam bingkai',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
-              ],
-            )
-          : const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.photo_camera, size: 64, color: Colors.grey),
-                  SizedBox(height: 8),
-                  Text('Belum ada foto', style: TextStyle(color: Colors.grey)),
-                ],
-              ),
-            ),
-    );
-  }
 
-  Widget _buildScanningIndicator() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 24.0),
-      child: Column(
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 14),
-          Text(
-            'Menganalisis rak dengan AI...',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 4),
-          Text(
-            'Model Vision sedang memproses foto Anda. Mohon tunggu...',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-        ],
+                // 6. Bottom Control Area
+                if (_imageFile == null && !_isScanning && _isCameraInitialized && !_isCameraPermissionDenied)
+                  Positioned(
+                    bottom: 40,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // Gallery Button
+                        Semantics(
+                          label: 'Pilih dari galeri',
+                          child: InkWell(
+                            key: const Key('gallery_fallback_button'),
+                            onTap: _pickFromGallery,
+                            child: const CircleAvatar(
+                              radius: 26,
+                              backgroundColor: Colors.white24,
+                              child: Icon(Icons.photo_library, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                        // Capture Button
+                        Semantics(
+                          label: 'Ambil foto rak',
+                          child: InkWell(
+                            key: const Key('capture_button'),
+                            onTap: _captureImage,
+                            child: Container(
+                              width: 76,
+                              height: 76,
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Container(
+                                  width: 64,
+                                  height: 64,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: AppColors.accent, width: 4),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Spacer
+                        const SizedBox(width: 52),
+                      ],
+                    ),
+                  ),
+
+                // 7. Processing / Error overlay
+                if (_isScanning)
+                  _buildScanningIndicatorOverlay(scanRect),
+
+                if (_errorMessage != null)
+                  _buildErrorOverlay(scanRect),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildErrorCard() {
-    return Card(
-      color: AppColors.errorSoft,
-      margin: const EdgeInsets.only(top: 16),
+  Widget _buildCameraFallbackView() {
+    return Center(
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.symmetric(horizontal: 32.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.error_outline, color: AppColors.error),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _errorMessage!,
-                    style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
+            const Icon(Icons.camera_enhance_outlined, size: 64, color: AppColors.muted),
+            const SizedBox(height: 16),
+            Text(
+              _isCameraPermissionDenied
+                  ? 'Izin Kamera Ditolak'
+                  : _isCameraInitializing
+                      ? 'Memulai kamera...'
+                      : 'Kamera Tidak Tersedia',
+              style: AppTextStyles.titleSmall.copyWith(color: Colors.white),
             ),
-            if (_imageFile != null) ...[
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: _scanPhoto,
-                child: const Text('Coba Scan Ulang'),
+            const SizedBox(height: 8),
+            Text(
+              _isCameraPermissionDenied
+                  ? 'Aktifkan izin kamera di pengaturan perangkat untuk memindai.'
+                  : _isCameraInitializing
+                      ? 'Harap tunggu saat kami menghubungkan ke sensor kamera.'
+                      : 'Perangkat ini tidak memiliki kamera aktif atau sedang berjalan di emulator.',
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.muted),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              key: const Key('gallery_picker_fallback_btn'),
+              onPressed: _pickFromGallery,
+              icon: const Icon(Icons.photo_library),
+              label: const Text('Pilih dari Galeri'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.l),
+                ),
               ),
-            ]
+            ),
+            if (_isCameraPermissionDenied) ...[
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: _initializeCamera,
+                child: const Text('Coba Minta Izin Lagi', style: TextStyle(color: AppColors.accent)),
+              ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildScanningIndicatorOverlay(Rect scanRect) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (_imageFile != null)
+          Positioned.fill(
+            child: Image.file(_imageFile!, fit: BoxFit.cover),
+          ),
+        Positioned.fill(
+          child: Container(
+            color: Colors.black.withOpacity(0.6),
+          ),
+        ),
+        Center(
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.xxl),
+            margin: const EdgeInsets.symmetric(horizontal: 32.0),
+            decoration: BoxDecoration(
+              color: Colors.black87,
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              border: Border.all(color: AppColors.accent, width: 1.5),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.accent),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Menganalisis rak...',
+                  style: AppTextStyles.titleSmall.copyWith(color: Colors.white),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'AI sedang mengenali produk dan harga.',
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.muted),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildErrorOverlay(Rect scanRect) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (_imageFile != null)
+          Positioned.fill(
+            child: Image.file(_imageFile!, fit: BoxFit.cover),
+          ),
+        Positioned.fill(
+          child: Container(
+            color: Colors.black.withOpacity(0.7),
+          ),
+        ),
+        Center(
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            margin: const EdgeInsets.symmetric(horizontal: 24.0),
+            decoration: BoxDecoration(
+              color: AppColors.paper,
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: AppColors.error, size: 28),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Analisis Gagal',
+                        style: AppTextStyles.titleSmall.copyWith(color: AppColors.ink),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _errorMessage!,
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.ink),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        key: const Key('retake_button'),
+                        onPressed: () {
+                          setState(() {
+                            _imageFile = null;
+                            _errorMessage = null;
+                          });
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: const BorderSide(color: AppColors.muted),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.l),
+                          ),
+                        ),
+                        child: Text(
+                          'Foto Baru',
+                          style: TextStyle(color: AppColors.ink),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        key: const Key('retry_scan_button'),
+                        onPressed: _scanPhoto,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.accent,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.l),
+                          ),
+                        ),
+                        child: const Text('Coba Lagi'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class ViewfinderPainter extends CustomPainter {
+  final Rect scanRect;
+
+  ViewfinderPainter({required this.scanRect});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // 1. Darken overlay outside scanRect
+    final paint = Paint()..color = Colors.black.withOpacity(0.5);
+    final outerPath = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    final innerPath = Path()..addRRect(RRect.fromRectAndRadius(scanRect, const Radius.circular(16)));
+    final path = Path.combine(PathOperation.difference, outerPath, innerPath);
+    canvas.drawPath(path, paint);
+
+    // 2. Draw emerald framing corners
+    final borderPaint = Paint()
+      ..color = AppColors.accent
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0;
+
+    const double cornerLength = 24.0;
+    const double radius = 16.0;
+
+    // Top-Left
+    canvas.drawPath(
+      Path()
+        ..moveTo(scanRect.left, scanRect.top + cornerLength)
+        ..lineTo(scanRect.left, scanRect.top + radius)
+        ..quadraticBezierTo(scanRect.left, scanRect.top, scanRect.left + radius, scanRect.top)
+        ..lineTo(scanRect.left + cornerLength, scanRect.top),
+      borderPaint,
+    );
+
+    // Top-Right
+    canvas.drawPath(
+      Path()
+        ..moveTo(scanRect.right - cornerLength, scanRect.top)
+        ..lineTo(scanRect.right - radius, scanRect.top)
+        ..quadraticBezierTo(scanRect.right, scanRect.top, scanRect.right, scanRect.top + radius)
+        ..lineTo(scanRect.right, scanRect.top + cornerLength),
+      borderPaint,
+    );
+
+    // Bottom-Left
+    canvas.drawPath(
+      Path()
+        ..moveTo(scanRect.left, scanRect.bottom - cornerLength)
+        ..lineTo(scanRect.left, scanRect.bottom - radius)
+        ..quadraticBezierTo(scanRect.left, scanRect.bottom, scanRect.left + radius, scanRect.bottom)
+        ..lineTo(scanRect.left + cornerLength, scanRect.bottom),
+      borderPaint,
+    );
+
+    // Bottom-Right
+    canvas.drawPath(
+      Path()
+        ..moveTo(scanRect.right - cornerLength, scanRect.bottom)
+        ..lineTo(scanRect.right - radius, scanRect.bottom)
+        ..quadraticBezierTo(scanRect.right, scanRect.bottom, scanRect.right, scanRect.bottom - radius)
+        ..lineTo(scanRect.right, scanRect.bottom - cornerLength),
+      borderPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant ViewfinderPainter oldDelegate) {
+    return oldDelegate.scanRect != scanRect;
   }
 }
