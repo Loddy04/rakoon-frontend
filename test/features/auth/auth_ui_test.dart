@@ -12,7 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/app_shell.dart';
 import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
-import 'package:rakoon_frontend/features/history/presentation/pages/product_history_list_page.dart';
+import 'package:rakoon_frontend/features/profile/presentation/pages/profile_page.dart';
 
 void main() {
   setUpAll(() async {
@@ -31,11 +31,7 @@ void main() {
 
   group('Auth UI Tests', () {
     testWidgets('Login screen renders correctly', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: LoginPage(),
-        ),
-      );
+      await tester.pumpWidget(const MaterialApp(home: LoginPage()));
 
       // Verify header and fields
       expect(find.text('Rakoon'), findsOneWidget);
@@ -46,12 +42,10 @@ void main() {
       expect(find.text('Daftar Sekarang'), findsOneWidget);
     });
 
-    testWidgets('Register screen renders correctly', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: RegisterPage(),
-        ),
-      );
+    testWidgets('Register screen renders correctly', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const MaterialApp(home: RegisterPage()));
 
       // Verify header and fields
       expect(find.text('Daftar Rakoon'), findsOneWidget);
@@ -63,12 +57,10 @@ void main() {
       expect(find.text('Masuk'), findsOneWidget);
     });
 
-    testWidgets('Empty email validation displays error', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: LoginPage(),
-        ),
-      );
+    testWidgets('Empty email validation displays error', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const MaterialApp(home: LoginPage()));
 
       // Tap login button with empty fields
       await tester.tap(find.byKey(const Key('login_button')));
@@ -78,15 +70,16 @@ void main() {
       expect(find.text('Password tidak boleh kosong.'), findsOneWidget);
     });
 
-    testWidgets('Empty password validation displays error', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: LoginPage(),
-        ),
-      );
+    testWidgets('Empty password validation displays error', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const MaterialApp(home: LoginPage()));
 
       // Enter email but leave password empty
-      await tester.enterText(find.byKey(const Key('email_field')), 'test@example.com');
+      await tester.enterText(
+        find.byKey(const Key('email_field')),
+        'test@example.com',
+      );
       await tester.tap(find.byKey(const Key('login_button')));
       await tester.pumpAndSettle();
 
@@ -94,17 +87,24 @@ void main() {
       expect(find.text('Password tidak boleh kosong.'), findsOneWidget);
     });
 
-    testWidgets('Confirm password mismatch validation displays error', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: RegisterPage(),
-        ),
-      );
+    testWidgets('Confirm password mismatch validation displays error', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const MaterialApp(home: RegisterPage()));
 
       // Enter valid email and password, but mismatched confirm password
-      await tester.enterText(find.byKey(const Key('email_field')), 'test@example.com');
-      await tester.enterText(find.byKey(const Key('password_field')), 'password123');
-      await tester.enterText(find.byKey(const Key('confirm_password_field')), 'password456');
+      await tester.enterText(
+        find.byKey(const Key('email_field')),
+        'test@example.com',
+      );
+      await tester.enterText(
+        find.byKey(const Key('password_field')),
+        'password123',
+      );
+      await tester.enterText(
+        find.byKey(const Key('confirm_password_field')),
+        'password456',
+      );
 
       await tester.tap(find.byKey(const Key('register_button')));
       await tester.pumpAndSettle();
@@ -112,12 +112,10 @@ void main() {
       expect(find.text('Konfirmasi password tidak cocok.'), findsOneWidget);
     });
 
-    testWidgets('Navigation Login to Register screen works', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: LoginPage(),
-        ),
-      );
+    testWidgets('Navigation Login to Register screen works', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const MaterialApp(home: LoginPage()));
 
       // Tap Register navigation text/button
       await tester.tap(find.byKey(const Key('goto_register_button')));
@@ -128,12 +126,10 @@ void main() {
       expect(find.text('Buat Akun Baru'), findsOneWidget);
     });
 
-    testWidgets('Navigation Register to Login screen works', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: RegisterPage(),
-        ),
-      );
+    testWidgets('Navigation Register to Login screen works', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const MaterialApp(home: RegisterPage()));
 
       // Tap Login navigation text/button
       await tester.tap(find.byKey(const Key('goto_login_button')));
@@ -168,37 +164,45 @@ void main() {
         AuthService.mockSession = null;
       });
 
-      testWidgets('1. authenticated request menghasilkan Authorization Bearer header', (WidgetTester tester) async {
-        AuthService.mockSession = mockSession;
+      testWidgets(
+        '1. authenticated request menghasilkan Authorization Bearer header',
+        (WidgetTester tester) async {
+          AuthService.mockSession = mockSession;
 
-        String? capturedHeader;
-        final mockClient = MockClient((request) async {
-          capturedHeader = request.headers['Authorization'];
-          return http.Response(
-            jsonEncode({'authenticated': true, 'user_id': 'mock-user-uuid-123'}),
-            200,
-          );
-        });
+          String? capturedHeader;
+          final mockClient = MockClient((request) async {
+            capturedHeader = request.headers['Authorization'];
+            return http.Response(
+              jsonEncode({
+                'authenticated': true,
+                'user_id': 'mock-user-uuid-123',
+              }),
+              200,
+            );
+          });
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: IntegrationDashboardPage(httpClient: mockClient),
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: IntegrationDashboardPage(httpClient: mockClient),
+              ),
             ),
-          ),
-        );
+          );
 
-        // Tap on "Kirim Token Bearer JWT"
-        await tester.ensureVisible(find.byKey(const Key('test_jwt_button')));
-        await tester.tap(find.byKey(const Key('test_jwt_button')));
-        await tester.pumpAndSettle();
+          // Tap on "Kirim Token Bearer JWT"
+          await tester.ensureVisible(find.byKey(const Key('test_jwt_button')));
+          await tester.tap(find.byKey(const Key('test_jwt_button')));
+          await tester.pumpAndSettle();
 
-        expect(capturedHeader, equals('Bearer mock-es256-access-token-xyz'));
-        expect(find.text('Status Uji JWT: Sukses'), findsOneWidget);
-        expect(find.text('mock-user-uuid-123'), findsOneWidget);
-      });
+          expect(capturedHeader, equals('Bearer mock-es256-access-token-xyz'));
+          expect(find.text('Status Uji JWT: Sukses'), findsOneWidget);
+          expect(find.text('mock-user-uuid-123'), findsOneWidget);
+        },
+      );
 
-      testWidgets('2. no session tidak mengirim request', (WidgetTester tester) async {
+      testWidgets('2. no session tidak mengirim request', (
+        WidgetTester tester,
+      ) async {
         // No session
         AuthService.mockSession = null;
 
@@ -223,14 +227,22 @@ void main() {
 
         expect(requestSent, isFalse);
         expect(find.text('Status Uji JWT: Gagal'), findsOneWidget);
-        expect(find.text('Error: Silakan login terlebih dahulu.'), findsOneWidget);
+        expect(
+          find.text('Error: Silakan login terlebih dahulu.'),
+          findsOneWidget,
+        );
       });
 
-      testWidgets('3. backend 401 menghasilkan error state', (WidgetTester tester) async {
+      testWidgets('3. backend 401 menghasilkan error state', (
+        WidgetTester tester,
+      ) async {
         AuthService.mockSession = mockSession;
 
         final mockClient = MockClient((request) async {
-          return http.Response(jsonEncode({'detail': 'Not authenticated'}), 401);
+          return http.Response(
+            jsonEncode({'detail': 'Not authenticated'}),
+            401,
+          );
         });
 
         await tester.pumpWidget(
@@ -248,17 +260,24 @@ void main() {
 
         expect(find.text('Status Uji JWT: Gagal (401)'), findsOneWidget);
         expect(
-          find.text('Error: Not authenticated: Token tidak valid atau expired.'),
+          find.text(
+            'Error: Not authenticated: Token tidak valid atau expired.',
+          ),
           findsOneWidget,
         );
       });
 
-      testWidgets('4. successful response membaca user_id', (WidgetTester tester) async {
+      testWidgets('4. successful response membaca user_id', (
+        WidgetTester tester,
+      ) async {
         AuthService.mockSession = mockSession;
 
         final mockClient = MockClient((request) async {
           return http.Response(
-            jsonEncode({'authenticated': true, 'user_id': 'another-mock-user-id'}),
+            jsonEncode({
+              'authenticated': true,
+              'user_id': 'another-mock-user-id',
+            }),
             200,
           );
         });
@@ -280,12 +299,17 @@ void main() {
         expect(find.text('another-mock-user-id'), findsOneWidget);
       });
 
-      testWidgets('5. access token tidak muncul dalam UI/log test', (WidgetTester tester) async {
+      testWidgets('5. access token tidak muncul dalam UI/log test', (
+        WidgetTester tester,
+      ) async {
         AuthService.mockSession = mockSession;
 
         final mockClient = MockClient((request) async {
           return http.Response(
-            jsonEncode({'authenticated': true, 'user_id': 'mock-user-uuid-123'}),
+            jsonEncode({
+              'authenticated': true,
+              'user_id': 'mock-user-uuid-123',
+            }),
             200,
           );
         });
@@ -304,7 +328,10 @@ void main() {
         await tester.pumpAndSettle();
 
         // The mock access token string 'mock-es256-access-token-xyz' should never be visible in UI elements
-        expect(find.textContaining('mock-es256-access-token-xyz'), findsNothing);
+        expect(
+          find.textContaining('mock-es256-access-token-xyz'),
+          findsNothing,
+        );
       });
     });
 
@@ -331,42 +358,35 @@ void main() {
         AuthService.mockSession = null;
       });
 
-      testWidgets('AuthStateGate redirects to LoginPage when session is null', (WidgetTester tester) async {
+      testWidgets('AuthStateGate redirects to LoginPage when session is null', (
+        WidgetTester tester,
+      ) async {
         AuthService.mockSession = null;
 
-        await tester.pumpWidget(
-          const MaterialApp(
-            home: AuthStateGate(),
-          ),
-        );
+        await tester.pumpWidget(const MaterialApp(home: AuthStateGate()));
         await tester.pumpAndSettle();
 
         expect(find.byType(LoginPage), findsOneWidget);
         expect(find.byType(AppShell), findsNothing);
       });
 
-      testWidgets('AuthStateGate redirects to AppShell when session is non-null', (WidgetTester tester) async {
-        AuthService.mockSession = mockSession;
+      testWidgets(
+        'AuthStateGate redirects to AppShell when session is non-null',
+        (WidgetTester tester) async {
+          AuthService.mockSession = mockSession;
 
-        await tester.pumpWidget(
-          const MaterialApp(
-            home: AuthStateGate(),
-          ),
-        );
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(const MaterialApp(home: AuthStateGate()));
+          await tester.pumpAndSettle();
 
-        expect(find.byType(AppShell), findsOneWidget);
-        expect(find.byType(LoginPage), findsNothing);
-      });
+          expect(find.byType(AppShell), findsOneWidget);
+          expect(find.byType(LoginPage), findsNothing);
+        },
+      );
 
       testWidgets('AppShell tab switching works', (WidgetTester tester) async {
         AuthService.mockSession = mockSession;
 
-        await tester.pumpWidget(
-          const MaterialApp(
-            home: AppShell(),
-          ),
-        );
+        await tester.pumpWidget(const MaterialApp(home: AppShell()));
         await tester.pumpAndSettle();
 
         // Initially shows Home tab (Index 0)
@@ -379,8 +399,8 @@ void main() {
         await tester.tap(find.byKey(const Key('nav_tab_2')));
         await tester.pumpAndSettle();
 
-        // Now shows History tab
-        expect(find.byType(ProductHistoryListPage), findsOneWidget);
+        // Now shows Profil tab
+        expect(find.byType(ProfilePage), findsOneWidget);
         // Bottom nav is still visible
         expect(find.byKey(const Key('nav_tab_2')), findsOneWidget);
 
