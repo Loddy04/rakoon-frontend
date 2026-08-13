@@ -14,6 +14,9 @@ import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rakoon_frontend/features/auth/presentation/pages/login_page.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
+import 'package:rakoon_frontend/features/app_shell/presentation/pages/splash_screen.dart';
+import 'package:rakoon_frontend/features/app_shell/presentation/pages/onboarding_screen.dart';
+import 'package:rakoon_frontend/features/app_shell/presentation/pages/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +30,7 @@ void main() async {
       'FATAL CONFIGURATION ERROR: Supabase credentials are not configured.\n'
       'You must run or build the application with build-time environment definitions:\n'
       '  flutter run --dart-define=SUPABASE_URL=<URL> --dart-define=SUPABASE_ANON_KEY=<ANON_KEY>\n'
-      'Ensure both values are provided and non-empty.'
+      'Ensure both values are provided and non-empty.',
     );
   }
 
@@ -39,8 +42,6 @@ void main() async {
   runApp(const RakoonApp());
 }
 
-
-
 class RakoonApp extends StatelessWidget {
   const RakoonApp({super.key});
 
@@ -50,7 +51,8 @@ class RakoonApp extends StatelessWidget {
       title: 'Rakoon Integration Test',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      themeMode: ThemeMode.light, // Menyesuaikan dengan visual referensi light theme
+      themeMode:
+          ThemeMode.light, // Menyesuaikan dengan visual referensi light theme
       home: const AuthStateGate(),
     );
   }
@@ -182,8 +184,10 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
   // Fungsi untuk menguji JWT authentication (GET /auth/test-protected)
   Future<void> _testJwtAuthentication() async {
     final String baseUrl = _urlController.text.trim();
-    final String targetUrl = baseUrl.isNotEmpty ? baseUrl : 'http://10.0.2.2:8000';
-    
+    final String targetUrl = baseUrl.isNotEmpty
+        ? baseUrl
+        : 'http://10.0.2.2:8000';
+
     setState(() {
       _isLoadingJwtTest = true;
       _jwtTestStatus = 'Memproses...';
@@ -206,12 +210,12 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
     final token = session.accessToken;
     final client = widget.httpClient ?? http.Client();
     try {
-      final response = await client.get(
-        Uri.parse('$targetUrl/auth/test-protected'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
-      ).timeout(const Duration(seconds: 5));
+      final response = await client
+          .get(
+            Uri.parse('$targetUrl/auth/test-protected'),
+            headers: {'Authorization': 'Bearer $token'},
+          )
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -417,6 +421,103 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // BANNER PRATINJAU APP SHELL (SPLASH, ONBOARDING, HOME)
+              Card(
+                color: const Color(0xFF0F172A),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.layers_outlined,
+                            size: 32,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              'Pratinjau App Shell',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Uji coba transisi antarmuka Splash, Onboarding secara lokal.',
+                        style: TextStyle(fontSize: 12, color: Colors.white70),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white24,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const SplashScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text('Splash'),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white24,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const OnboardingScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text('Onboarding'),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white24,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const HomeScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text('Home'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
               // BANNER UTAMA UNTUK MENGUJI UI FEATURE 3 (PRICE HISTORY)
               Card(
                 color: const Color(0xFF0D9488),
@@ -524,12 +625,17 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                             context,
                             MaterialPageRoute(
                               builder: (context) => BudgetShoppingScreen(
-                                baseUrl: baseUrl.isNotEmpty ? baseUrl : 'http://10.0.2.2:8000',
+                                baseUrl: baseUrl.isNotEmpty
+                                    ? baseUrl
+                                    : 'http://10.0.2.2:8000',
                               ),
                             ),
                           );
                         },
-                        icon: const Icon(Icons.shopping_cart_checkout, size: 18),
+                        icon: const Icon(
+                          Icons.shopping_cart_checkout,
+                          size: 18,
+                        ),
                         label: const Text(
                           'Uji Fitur',
                           style: TextStyle(fontWeight: FontWeight.bold),
@@ -704,19 +810,28 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                             const SizedBox(height: 8),
                             Text(
                               'Authenticated: YES',
-                              style: TextStyle(color: Colors.green.shade800, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: Colors.green.shade800,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             Text('Validated Subject (user_id):'),
                             SelectableText(
                               _jwtUserId!,
-                              style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                           if (_jwtTestError != null) ...[
                             const SizedBox(height: 8),
                             Text(
                               'Error: $_jwtTestError',
-                              style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         ],
@@ -732,9 +847,8 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ScanCameraScreen(
-                        baseUrl: _urlController.text.trim(),
-                      ),
+                      builder: (context) =>
+                          ScanCameraScreen(baseUrl: _urlController.text.trim()),
                     ),
                   );
                 },
