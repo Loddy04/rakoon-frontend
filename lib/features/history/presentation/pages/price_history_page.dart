@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rakoon_frontend/theme/app_theme.dart';
 import '../providers/price_history_notifier.dart';
 import '../widgets/product_header_card.dart';
 import '../widgets/store_history_list_item.dart';
@@ -22,6 +23,8 @@ class PriceHistoryPage extends StatefulWidget {
 }
 
 class _PriceHistoryPageState extends State<PriceHistoryPage> {
+  List<Map<String, String>> _availableStores = [];
+
   @override
   void initState() {
     super.initState();
@@ -33,14 +36,18 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
   }
 
   @override
+  void dispose() {
+    widget.notifier.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF0F172A)
-          : const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -297,6 +304,39 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
                     return const SizedBox.shrink();
                   }
 
+                  // Safely update available store filters when store filter is cleared / showing all
+                  if (widget.notifier.selectedStoreId == null && response.items.isNotEmpty) {
+                    final seen = <String>{};
+                    final List<Map<String, String>> stores = [];
+                    for (final item in response.items) {
+                      if (!seen.contains(item.storeId)) {
+                        seen.add(item.storeId);
+                        stores.add({'id': item.storeId, 'name': item.storeName});
+                      }
+                    }
+                    stores.sort((a, b) => (a['name'] ?? '').compareTo(b['name'] ?? ''));
+
+                    bool hasChanged = _availableStores.length != stores.length;
+                    if (!hasChanged) {
+                      for (int i = 0; i < stores.length; i++) {
+                        if (_availableStores[i]['id'] != stores[i]['id']) {
+                          hasChanged = true;
+                          break;
+                        }
+                      }
+                    }
+
+                    if (hasChanged) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          setState(() {
+                            _availableStores = stores;
+                          });
+                        }
+                      });
+                    }
+                  }
+
                   return SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.symmetric(
@@ -312,11 +352,23 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
                           items: response.items,
                         ),
                         const SizedBox(height: 16),
-                        // Date Range Selector
-                        DateRangeSelector(
-                          selectedRange: widget.notifier.selectedRange,
-                          onRangeSelected: (range) =>
-                              widget.notifier.setRange(widget.productId, range),
+                        // Date Range Selector (Wrapped to prevent overflow on small viewports)
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          child: DateRangeSelector(
+                            selectedRange: widget.notifier.selectedRange,
+                            onRangeSelected: (range) =>
+                                widget.notifier.setRange(widget.productId, range),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Store Filter Control
+                        StoreFilterSelector(
+                          selectedStoreId: widget.notifier.selectedStoreId,
+                          stores: _availableStores,
+                          onStoreSelected: (storeId) =>
+                              widget.notifier.setStoreId(widget.productId, storeId),
                         ),
                         const SizedBox(height: 12),
                         // Price Chart
@@ -409,6 +461,95 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder>
           ),
         );
       },
+    );
+  }
+}
+
+class StoreFilterSelector extends StatelessWidget {
+  final dynamic selectedStoreId;
+  final List<Map<String, String>> stores;
+  final Function(String?) onStoreSelected;
+
+  const StoreFilterSelector({
+    super.key,
+    required this.selectedStoreId,
+    required this.stores,
+    required this.onStoreSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          _buildChip(
+            context,
+            label: 'Semua Toko',
+            isSelected: selectedStoreId == null,
+            onTap: () => onStoreSelected(null),
+            isDark: isDark,
+          ),
+          ...stores.map((s) {
+            final isSelected = selectedStoreId == s['id'];
+            return _buildChip(
+              context,
+              label: s['name'] ?? 'Toko',
+              isSelected: isSelected,
+              onTap: () => onStoreSelected(s['id']),
+              isDark: isDark,
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChip(
+    BuildContext context, {
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (isDark ? Colors.white : const Color(0xFF0F172A))
+                : (isDark ? const Color(0xFF1E293B) : Colors.white),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected
+                  ? Colors.transparent
+                  : (isDark
+                        ? const Color(0xFF334155)
+                        : const Color(0xFFE2E8F0)),
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isSelected
+                  ? (isDark ? const Color(0xFF0F172A) : Colors.white)
+                  : (isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B)),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -17,9 +17,27 @@ class StoreHistoryListView extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final double lowestPrice = items
-        .map((e) => e.price)
-        .reduce((a, b) => a < b ? a : b);
+    // Sort chronologically ascending to ensure later items represent the latest state
+    final chronologicalItems = List<PriceHistoryItem>.from(items)
+      ..sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
+
+    // Group by storeId to get the latest price entry per store
+    final Map<String, PriceHistoryItem> latestStorePrices = {};
+    for (final item in chronologicalItems) {
+      latestStorePrices[item.storeId] = item;
+    }
+    final List<PriceHistoryItem> uniqueItems = latestStorePrices.values.toList();
+
+    // Sort by price ascending (cheapest first)
+    uniqueItems.sort((a, b) => a.price.compareTo(b.price));
+
+    // Determine the cheapest price and its count among unique stores
+    double lowestPrice = 0.0;
+    int lowestPriceCount = 0;
+    if (uniqueItems.isNotEmpty) {
+      lowestPrice = uniqueItems.map((e) => e.price).reduce((a, b) => a < b ? a : b);
+      lowestPriceCount = uniqueItems.where((e) => e.price == lowestPrice).length;
+    }
 
     return Container(
       decoration: BoxDecoration(
@@ -66,15 +84,17 @@ class StoreHistoryListView extends StatelessWidget {
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: items.length,
+            itemCount: uniqueItems.length,
             separatorBuilder: (context, index) => Divider(
               height: 1,
               thickness: 1,
               color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
             ),
             itemBuilder: (context, index) {
-              final item = items[index];
+              final item = uniqueItems[index];
               final isLowest = item.price == lowestPrice;
+              final showTermurah = isLowest && lowestPriceCount == 1;
+              final showHargaSama = isLowest && lowestPriceCount > 1;
 
               return Padding(
                 padding: const EdgeInsets.symmetric(
@@ -90,25 +110,25 @@ class StoreHistoryListView extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Row(
+                      child: Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 4,
                         children: [
-                          Flexible(
-                            child: Text(
-                              item.storeName,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: isDark
-                                    ? Colors.white
-                                    : const Color(0xFF0F172A),
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                          Text(
+                            item.storeName,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF0F172A),
                             ),
                           ),
-                          if (isLowest) ...[
-                            const SizedBox(width: 8),
+                          if (showTermurah)
                             const StatusBadge(status: 'Termurah'),
-                          ],
+                          if (showHargaSama)
+                            const StatusBadge(status: 'Harga sama'),
                         ],
                       ),
                     ),

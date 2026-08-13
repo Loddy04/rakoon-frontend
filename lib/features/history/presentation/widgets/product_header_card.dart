@@ -19,13 +19,36 @@ class ProductHeaderCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     final prices = items.map((e) => e.price).toList();
-    final double currentPrice = prices.isNotEmpty ? prices.first : 0.0;
+    final double currentPrice = prices.isNotEmpty ? prices.last : 0.0;
     final double lowestPrice = prices.isNotEmpty
         ? prices.reduce((a, b) => a < b ? a : b)
         : 0.0;
     final double highestPrice = prices.isNotEmpty
         ? prices.reduce((a, b) => a > b ? a : b)
         : 0.0;
+
+    // Calculate trend from valid prices chronologically
+    final validItems = items.where((e) => e.price > 0).toList();
+    validItems.sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
+
+    String trendStatus = 'Belum cukup data';
+    IconData trendIcon = Icons.info_outline;
+
+    if (validItems.length >= 2) {
+      final double oldestPrice = validItems.first.price;
+      final double latestPrice = validItems.last.price;
+
+      if (latestPrice > oldestPrice) {
+        trendStatus = 'Harga naik';
+        trendIcon = Icons.trending_up;
+      } else if (latestPrice < oldestPrice) {
+        trendStatus = 'Harga turun';
+        trendIcon = Icons.trending_down;
+      } else {
+        trendStatus = 'Harga stabil';
+        trendIcon = Icons.trending_flat;
+      }
+    }
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -56,8 +79,10 @@ class ProductHeaderCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               Text(
                 formatRp(currentPrice),
@@ -68,12 +93,13 @@ class ProductHeaderCard extends StatelessWidget {
                   color: isDark ? Colors.white : const Color(0xFF0F172A),
                 ),
               ),
-              const SizedBox(width: 8),
-              const StatusBadge(status: 'Stabil', icon: Icons.trending_down),
+              StatusBadge(status: trendStatus, icon: trendIcon),
             ],
           ),
           const SizedBox(height: 12),
-          Row(
+          Wrap(
+            spacing: 16,
+            runSpacing: 4,
             children: [
               Text.rich(
                 TextSpan(
@@ -98,7 +124,6 @@ class ProductHeaderCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
               Text.rich(
                 TextSpan(
                   children: [

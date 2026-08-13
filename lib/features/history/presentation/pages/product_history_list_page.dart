@@ -46,11 +46,13 @@ class _ProductHistoryListPageState extends State<ProductHistoryListPage> {
         baseUrl: widget.baseUrl,
         search: search,
       );
+      if (!mounted) return;
       setState(() {
         _products = products;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
         _isLoading = false;

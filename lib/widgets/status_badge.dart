@@ -29,9 +29,14 @@ class StatusBadge extends StatelessWidget {
         cleanStatus == 'termurah' ||
         cleanStatus == 'best value' ||
         cleanStatus == '100% full match' ||
-        cleanStatus == 'stabil') {
+        cleanStatus == 'stabil' ||
+        cleanStatus == 'harga stabil' ||
+        cleanStatus == 'harga turun') {
       backgroundColor = AppColors.accentSoft;
       textColor = AppColors.accent;
+    } else if (cleanStatus == 'harga naik') {
+      backgroundColor = AppColors.errorSoft;
+      textColor = AppColors.error;
     } else if (cleanStatus == 'pending' ||
         cleanStatus == 'waiting' ||
         cleanStatus == 'warning' ||
@@ -40,7 +45,7 @@ class StatusBadge extends StatelessWidget {
       backgroundColor = AppColors.warningSoft;
       textColor = AppColors.warning;
     } else {
-      // Default fallback (e.g. general info badge)
+      // Default fallback (e.g. general info badge, belum cukup data)
       backgroundColor = AppColors.card;
       textColor = AppColors.muted;
     }
@@ -65,12 +70,15 @@ class StatusBadge extends StatelessWidget {
             ),
             const SizedBox(width: 4.0),
           ],
-          Text(
-            status,
-            style: GoogleFonts.inter(
-              fontSize: 11.0,
-              fontWeight: FontWeight.bold,
-              color: textColor,
+          Flexible(
+            child: Text(
+              status,
+              style: GoogleFonts.inter(
+                fontSize: 11.0,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

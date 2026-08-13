@@ -14,6 +14,9 @@ class PriceHistoryNotifier extends ChangeNotifier {
   dynamic _selectedStoreId;
   String _selectedRange = 'all';
 
+  bool _isDisposed = false;
+  int _currentRequestCount = 0;
+
   PriceHistoryNotifier({required this.repository});
 
   PriceHistoryStatus get status => _status;
@@ -28,11 +31,27 @@ class PriceHistoryNotifier extends ChangeNotifier {
   bool get isEmpty => _status == PriceHistoryStatus.empty;
   bool get isError => _status == PriceHistoryStatus.error;
 
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_isDisposed) {
+      super.notifyListeners();
+    }
+  }
+
   Future<void> fetchPriceHistory({
     required dynamic productId,
     dynamic storeId,
     String? range,
   }) async {
+    _currentRequestCount++;
+    final requestToken = _currentRequestCount;
+
     if (storeId != null) {
       _selectedStoreId = storeId;
     }
@@ -51,6 +70,8 @@ class PriceHistoryNotifier extends ChangeNotifier {
         range: _selectedRange,
       );
 
+      if (requestToken != _currentRequestCount || _isDisposed) return;
+
       _response = res;
       if (res.items.isEmpty && res.trend.isEmpty) {
         _status = PriceHistoryStatus.empty;
@@ -58,19 +79,25 @@ class PriceHistoryNotifier extends ChangeNotifier {
         _status = PriceHistoryStatus.success;
       }
     } on ProductNotFoundException catch (e) {
+      if (requestToken != _currentRequestCount || _isDisposed) return;
       _status = PriceHistoryStatus.error;
       _errorMessage = e.message;
     } on PriceHistoryNetworkException catch (e) {
+      if (requestToken != _currentRequestCount || _isDisposed) return;
       _status = PriceHistoryStatus.error;
       _errorMessage = e.message;
     } on PriceHistoryApiException catch (e) {
+      if (requestToken != _currentRequestCount || _isDisposed) return;
       _status = PriceHistoryStatus.error;
       _errorMessage = e.message;
     } catch (e) {
+      if (requestToken != _currentRequestCount || _isDisposed) return;
       _status = PriceHistoryStatus.error;
       _errorMessage = 'Terjadi kesalahan: $e';
     } finally {
-      notifyListeners();
+      if (requestToken == _currentRequestCount && !_isDisposed) {
+        notifyListeners();
+      }
     }
   }
 
