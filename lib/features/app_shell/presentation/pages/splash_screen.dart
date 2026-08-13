@@ -127,11 +127,11 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                       ],
                     ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.analytics_outlined,
-                        size: 54,
-                        color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Image.asset(
+                        'assets/logo/rakoon_logo.png',
+                        fit: BoxFit.contain,
                       ),
                     ),
                   ),
