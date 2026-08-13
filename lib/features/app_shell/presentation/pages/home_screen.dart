@@ -6,7 +6,6 @@ import 'package:rakoon_frontend/features/nearby/nearby_stores_screen.dart';
 import 'package:rakoon_frontend/features/nearby/price_comparison_screen.dart';
 import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
-import 'package:rakoon_frontend/services/auth_service.dart';
 
 class HomeScreen extends StatelessWidget {
   // TODO: [Temporary] baseUrl is loaded from development dashboard parameters.
@@ -70,60 +69,7 @@ class HomeScreen extends StatelessWidget {
                 vertical: AppSpacing.l,
               ),
               child: Row(
-                children: [
-                  Text('Rakoon', style: AppTextStyles.titleLarge),
-                  const SizedBox(width: AppSpacing.m),
-                  // Location Pill — fills remaining width, clips text on narrow screens
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.m,
-                        vertical: AppSpacing.s,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.paper,
-                        borderRadius: BorderRadius.circular(AppRadius.full),
-                        border: Border.all(color: AppColors.line),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.location_on,
-                            color: AppColors.accent,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              'Indomaret · Jl. Sudirman',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.ink,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.s),
-                  // Compact logout — avoids 48dp IconButton minimum
-                  GestureDetector(
-                    key: const Key('logout_button'),
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () async => AuthService.signOut(),
-                    child: const Padding(
-                      padding: EdgeInsets.all(6),
-                      child: Icon(
-                        Icons.logout,
-                        color: AppColors.muted,
-                        size: 22,
-                      ),
-                    ),
-                  ),
-                ],
+                children: [Text('Rakoon', style: AppTextStyles.titleLarge)],
               ),
             ),
 
