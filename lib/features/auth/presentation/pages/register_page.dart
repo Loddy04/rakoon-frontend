@@ -114,7 +114,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             ),
                             const SizedBox(height: AppSpacing.m),
                             Text(
-                              'Akun kamu berhasil dibuat. Silakan klik tombol di bawah untuk masuk.',
+                              'Registrasi berhasil. Silakan periksa kotak masuk email Anda untuk melakukan verifikasi sebelum masuk ke akun Rakoon.',
                               style: AppTextStyles.bodyMedium,
                               textAlign: TextAlign.center,
                             ),

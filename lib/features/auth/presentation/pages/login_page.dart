@@ -44,9 +44,15 @@ class LoginPage extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.xl),
                 ),
-                child: const Padding(
-                  padding: EdgeInsets.all(AppSpacing.xxl),
-                  child: LoginForm(),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xxl),
+                  child: LoginForm(
+                    onSuccess: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
                 ),
               ),
               const SizedBox(height: AppSpacing.xxl),
