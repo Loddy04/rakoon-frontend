@@ -38,6 +38,12 @@ class AppColors {
 
   /// Soft warning orange/amber background color (#FFFBEB)
   static const Color warningSoft = Color(0xFFFFFBEB);
+
+  /// Sky blue accent color for onboarding slide 2 (#0369A1)
+  static const Color onboardingAccent1 = Color(0xFF0369A1);
+
+  /// Purple accent color for onboarding slide 3 (#6B21A8)
+  static const Color onboardingAccent2 = Color(0xFF6B21A8);
 }
 
 /// Constant spacing values aligned with premium card visuals and layouts.

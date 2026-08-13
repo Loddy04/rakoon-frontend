@@ -39,7 +39,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       'description':
           'Tentukan pagu belanja Anda. Aplikasi akan pintar membagi budget ke daftar barang belanjaan Anda berdasarkan toko dengan harga terendah.',
       'icon': Icons.account_balance_wallet_outlined,
-      'color': Color(0xFF0369A1), // Sky Blue Accent
+      'color': AppColors.onboardingAccent1, // Sky Blue Accent
     },
     {
       'title': 'Riwayat & Tren Harga',
@@ -47,7 +47,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       'description':
           'Pantau fluktuasi naik-turun harga barang dari waktu ke waktu secara akurat untuk menghindari membeli produk saat harga sedang melambung tinggi.',
       'icon': Icons.analytics_outlined,
-      'color': Color(0xFF6B21A8), // Purple Accent
+      'color': AppColors.onboardingAccent2, // Purple Accent
     },
     {
       'title': 'Izin Akses Perangkat',
