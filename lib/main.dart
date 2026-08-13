@@ -53,11 +53,12 @@ class RakoonApp extends StatelessWidget {
       theme: AppTheme.light,
       themeMode:
           ThemeMode.light, // Menyesuaikan dengan visual referensi light theme
-      home: const AuthStateGate(),
+      home: const IntegrationDashboardPage(),
     );
   }
 }
 
+// TODO: Remove or refactor AuthStateGate in Task A6, as it is a mandatory auth gate that conflicts with progressive login production plans.
 class AuthStateGate extends StatelessWidget {
   const AuthStateGate({super.key});
 
