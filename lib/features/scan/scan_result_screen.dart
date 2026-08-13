@@ -10,6 +10,8 @@ import 'package:rakoon_frontend/services/products_service.dart';
 import 'package:rakoon_frontend/features/history/data/repositories/price_history_repository.dart';
 import 'package:rakoon_frontend/features/history/presentation/pages/price_history_page.dart';
 import 'package:rakoon_frontend/features/history/presentation/providers/price_history_notifier.dart';
+import 'package:rakoon_frontend/services/location_service.dart';
+import 'package:rakoon_frontend/services/stores_service.dart';
 
 class ScanResultScreen extends StatefulWidget {
   final String baseUrl;
@@ -34,6 +36,12 @@ class ScanResultScreen extends StatefulWidget {
 class _ScanResultScreenState extends State<ScanResultScreen> {
   bool _isSaving = false;
   String? _errorMessage;
+
+  // Store selection state
+  bool _isLoadingStores = true;
+  String? _storesError;
+  List<StoreNearby> _nearbyStores = [];
+  StoreNearby? _selectedStore;
 
   // Controllers for Store & User information
   late TextEditingController _storeIdController;
@@ -73,6 +81,159 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
       }
       _selectedCategories.add(itemCategory);
     }
+    _fetchNearbyStores();
+  }
+
+  Future<void> _fetchNearbyStores() async {
+    setState(() {
+      _isLoadingStores = true;
+      _storesError = null;
+    });
+
+    try {
+      final position = await LocationService.getCurrentLocation();
+      final response = await StoresService.getNearbyStores(
+        lat: position.latitude,
+        lng: position.longitude,
+        baseUrl: widget.baseUrl,
+      );
+
+      setState(() {
+        _nearbyStores = response.stores;
+        if (response.stores.isNotEmpty) {
+          _selectedStore = response.stores.first;
+          _storeIdController.text = response.stores.first.storeId;
+        } else {
+          _selectedStore = null;
+          _storeIdController.text = '';
+        }
+        _isLoadingStores = false;
+      });
+    } catch (e) {
+      setState(() {
+        _storesError = e.toString().replaceFirst('Exception: ', '');
+        _isLoadingStores = false;
+        _selectedStore = null;
+        _storeIdController.text = '';
+      });
+    }
+  }
+
+  Widget _buildStoreSelectionArea() {
+    if (_isLoadingStores) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(AppRadius.l),
+          border: Border.all(color: AppColors.line),
+        ),
+        child: const Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.accent,
+              ),
+            ),
+            SizedBox(width: 12),
+            Text('Mencari toko terdekat...', style: TextStyle(fontSize: 14)),
+          ],
+        ),
+      );
+    }
+
+    if (_storesError != null) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.errorSoft,
+          borderRadius: BorderRadius.circular(AppRadius.l),
+          border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.error_outline, color: AppColors.error, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Gagal memuat toko: $_storesError',
+                    style: const TextStyle(color: AppColors.error, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _fetchNearbyStores,
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Coba Lagi', style: TextStyle(fontSize: 12)),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_nearbyStores.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(AppRadius.l),
+          border: Border.all(color: AppColors.line),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.location_off_outlined, color: AppColors.muted),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Tidak ada toko terdekat ditemukan',
+                style: TextStyle(color: AppColors.muted, fontSize: 14),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return DropdownButtonFormField<StoreNearby>(
+      initialValue: _selectedStore,
+      isExpanded: true,
+      decoration: const InputDecoration(
+        labelText: 'Konfirmasi Lokasi Toko',
+        border: OutlineInputBorder(),
+        prefixIcon: Icon(Icons.storefront, color: AppColors.accent),
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      ),
+      items: _nearbyStores.map((StoreNearby store) {
+        return DropdownMenuItem<StoreNearby>(
+          value: store,
+          child: Text(
+            '${store.nama} (${store.jarakKm.toStringAsFixed(2)} km)',
+            overflow: TextOverflow.ellipsis,
+          ),
+        );
+      }).toList(),
+      onChanged: (StoreNearby? newValue) {
+        setState(() {
+          _selectedStore = newValue;
+          _storeIdController.text = newValue?.storeId ?? '';
+        });
+      },
+    );
   }
 
   @override
@@ -602,7 +763,9 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
             const SizedBox(height: 16),
             const Divider(),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
+            _buildStoreSelectionArea(),
+            const SizedBox(height: 16),
             Visibility(
               visible: false,
               child: Column(
@@ -639,7 +802,9 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
             // Save Button
             ElevatedButton.icon(
-              onPressed: _isSaving ? null : _saveResults,
+              onPressed: _isSaving || _isLoadingStores || _selectedStore == null
+                  ? null
+                  : _saveResults,
               icon: _isSaving
                   ? const SizedBox(
                       width: 20,
