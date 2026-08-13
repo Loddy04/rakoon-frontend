@@ -16,7 +16,6 @@ import 'package:rakoon_frontend/features/auth/presentation/pages/login_page.dart
 import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/splash_screen.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/onboarding_screen.dart';
-import 'package:rakoon_frontend/features/app_shell/presentation/pages/home_screen.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/app_shell.dart';
 
 void main() async {
@@ -509,7 +508,7 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => HomeScreen(
+                                  builder: (context) => AppShell(
                                     baseUrl: _urlController.text.trim(),
                                   ),
                                 ),
