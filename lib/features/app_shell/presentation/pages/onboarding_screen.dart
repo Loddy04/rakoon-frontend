@@ -72,6 +72,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         permission = await Geolocator.requestPermission();
       }
 
+      if (!mounted) return;
+
       if (permission == LocationPermission.always ||
           permission == LocationPermission.whileInUse) {
         setState(() {
@@ -92,6 +94,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Gagal meminta izin lokasi: $e'),
@@ -99,9 +102,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
       );
     } finally {
-      setState(() {
-        _isRequestingLocation = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isRequestingLocation = false;
+        });
+      }
     }
   }
 
