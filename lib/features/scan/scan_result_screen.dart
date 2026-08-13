@@ -52,7 +52,9 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
   void initState() {
     super.initState();
     _storeIdController = TextEditingController(text: widget.defaultStoreId);
-    _userIdController = TextEditingController(text: widget.defaultUserId);
+    _userIdController = TextEditingController(
+      text: AuthService.currentUser?.id ?? widget.defaultUserId,
+    );
 
     // Initialize text controllers and category values for each detected item
     for (var item in widget.detectedItems) {
@@ -121,13 +123,27 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
       }
     }
 
+    // Force real-time validation of user session
+    final user = AuthService.currentUser;
+    if (user == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sesi login tidak valid, silakan login ulang.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+      return;
+    }
+    final String userId = user.id;
+
     setState(() {
       _isSaving = true;
       _errorMessage = null;
     });
 
     final String storeId = _storeIdController.text.trim();
-    final String userId = _userIdController.text.trim();
 
     if (storeId.isEmpty || userId.isEmpty) {
       setState(() {
