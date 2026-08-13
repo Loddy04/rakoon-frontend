@@ -22,7 +22,7 @@ class StatusBadge extends StatelessWidget {
     Color textColor;
     
     // Map status colors according to design tokens.
-    if (cleanStatus == 'success' || cleanStatus == 'verified' || cleanStatus == 'terverifikasi' || cleanStatus == 'tinggi') {
+    if (cleanStatus == 'success' || cleanStatus == 'verified' || cleanStatus == 'terverifikasi' || cleanStatus == 'tinggi' || cleanStatus == 'termurah') {
       backgroundColor = AppColors.accentSoft;
       textColor = AppColors.accent;
     } else if (cleanStatus == 'pending' || cleanStatus == 'waiting' || cleanStatus == 'warning' || cleanStatus == 'rendah') {
