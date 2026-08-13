@@ -543,21 +543,7 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
                                   ),
                                 ),
                                 if (item.isBestValue)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.amber.shade100,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      '🏆 Best Value',
-                                      style: TextStyle(
-                                        color: Colors.amber.shade900,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
+                                  const StatusBadge(status: 'Best Value'),
                               ],
                             ),
                             const SizedBox(height: 4),
