@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rakoon_frontend/services/products_service.dart';
 import 'package:rakoon_frontend/services/budget_shopping_service.dart';
 import 'package:rakoon_frontend/features/budget_shopping/budget_result_screen.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
+import 'package:rakoon_frontend/features/budget_shopping/utils/budget_parser.dart';
 
 class SelectedBudgetItem {
   final Product product;
@@ -32,16 +34,30 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
 
   List<Product> _searchResults = [];
   bool _isSearching = false;
+  int _searchRequestToken = 0;
+  Timer? _searchDebounce;
 
   final List<SelectedBudgetItem> _selectedItems = [];
   bool _isEvaluating = false;
   String? _errorMessage;
 
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _budgetController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _searchProducts(String query) async {
+    _searchRequestToken++;
+    final currentToken = _searchRequestToken;
+
     final cleanQuery = query.trim();
     if (cleanQuery.isEmpty) {
       setState(() {
         _searchResults = [];
+        _isSearching = false;
       });
       return;
     }
@@ -57,11 +73,17 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
         search: cleanQuery,
       );
 
+      if (!mounted) return;
+      if (currentToken != _searchRequestToken) return;
+
       setState(() {
         _searchResults = results;
         _isSearching = false;
       });
     } catch (e) {
+      if (!mounted) return;
+      if (currentToken != _searchRequestToken) return;
+
       setState(() {
         _isSearching = false;
         _errorMessage = 'Gagal mencari produk: $e';
@@ -70,7 +92,6 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
   }
 
   void _addSelectedProduct(Product product) {
-    // Deduplikasi via product_id
     final existingIndex = _selectedItems.indexWhere((item) => item.product.id == product.id);
     if (existingIndex >= 0) {
       setState(() {
@@ -82,7 +103,6 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
       });
     }
 
-    // Reset search
     _searchController.clear();
     setState(() {
       _searchResults = [];
@@ -92,26 +112,43 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
   void _updateQuantity(int index, int delta) {
     setState(() {
       final newQty = _selectedItems[index].qty + delta;
-      if (newQty <= 0) {
-        _selectedItems.removeAt(index);
-      } else {
-        _selectedItems[index].qty = newQty;
+      if (newQty < 1) {
+        // Minimum quantity = 1. Decrement must never create zero/negative quantity. Remove must be explicit.
+        return;
       }
+      _selectedItems[index].qty = newQty;
     });
   }
 
   Future<void> _evaluateBudget() async {
-    final double? budget = double.tryParse(_budgetController.text.trim());
+    final String rawText = _budgetController.text.trim();
+    if (rawText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Masukkan budget terlebih dahulu.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    final double? budget = BudgetParser.parse(rawText);
     if (budget == null || budget <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Masukkan total budget yang valid (harus > 0).')),
+        const SnackBar(
+          content: Text('Budget harus lebih dari Rp0.'),
+          backgroundColor: AppColors.error,
+        ),
       );
       return;
     }
 
     if (_selectedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih setidaknya 1 produk yang ingin dibeli.')),
+        const SnackBar(
+          content: Text('Pilih setidaknya 1 produk yang ingin dibeli.'),
+          backgroundColor: AppColors.error,
+        ),
       );
       return;
     }
@@ -200,290 +237,383 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
         }
       },
       child: Scaffold(
+        backgroundColor: AppColors.background,
         appBar: AppBar(
           title: const Text('Smart Budget Shopping'),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // 1. INPUT BUDGET
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.l),
-                side: const BorderSide(color: AppColors.accent, width: 1.2),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(14.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '💰 Total Budget Belanja (Rupiah)',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _budgetController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        hintText: 'Misal: 100000',
-                        prefixText: 'Rp ',
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // 2. SEARCH PRODUCTS BAR
-            const Text(
-              '🔍 Cari & Tambah Barang Kebutuhan:',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _searchController,
-              onChanged: (val) => _searchProducts(val),
-              decoration: InputDecoration(
-                hintText: 'Ketik nama produk (contoh: "susu", "roti")',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _isSearching
-                    ? const Padding(
-                        padding: EdgeInsets.all(12.0),
-                        child: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    : _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              _searchProducts('');
-                            },
-                          )
-                        : null,
-                border: const OutlineInputBorder(),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              ),
-            ),
-
-            // Search Results Dropdown List
-            if (_searchResults.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.only(top: 4),
-                constraints: const BoxConstraints(maxHeight: 200),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(AppRadius.m),
-                  border: Border.all(color: AppColors.line),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-                  ],
-                ),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: _searchResults.length,
-                  itemBuilder: (context, index) {
-                    final item = _searchResults[index];
-                    return ListTile(
-                      dense: true,
-                      title: Text(item.nama, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text('${item.ukuran} ${item.satuan} • Kategori: ${item.kategori}'),
-                      trailing: const Icon(Icons.add_circle_outline, color: AppColors.accent),
-                      onTap: () => _addSelectedProduct(item),
-                    );
-                  },
-                ),
-              ),
-
-            const SizedBox(height: 16),
-
-            // ERROR DISPLAY
-            if (_errorMessage != null)
-              Card(
-                color: Colors.red.shade50,
-                margin: const EdgeInsets.only(bottom: 16),
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline, color: Colors.red),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: TextStyle(color: Colors.red.shade900, fontSize: 13),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-            // 3. DAFTAR BARANG TERPILIH
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          centerTitle: true,
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  '📋 Daftar Belanja Anda',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                ),
-                Chip(
-                  label: Text('${_selectedItems.length} Produk'),
-                  backgroundColor: AppColors.accentSoft,
-                  labelStyle: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold, fontSize: 11),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            if (_selectedItems.isEmpty)
-              Card(
-                color: Colors.grey.shade50,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.m),
-                  side: const BorderSide(color: AppColors.line),
-                ),
-                child: const Padding(
-                  padding: EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      Icon(Icons.shopping_basket_outlined, size: 40, color: AppColors.muted),
-                      SizedBox(height: 8),
-                      Text(
-                        'Belum ada produk terpilih.\nGunakan kolom di atas untuk mencari produk.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.muted, fontSize: 13),
-                      ),
-                    ],
+                // 1. INPUT BUDGET
+                Card(
+                  elevation: 1,
+                  color: AppColors.paper,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.l),
+                    side: const BorderSide(color: AppColors.line, width: 1.0),
                   ),
-                ),
-              )
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _selectedItems.length,
-                itemBuilder: (context, index) {
-                  final item = _selectedItems[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.m),
-                      side: const BorderSide(color: AppColors.line),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.product.nama,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                ),
-                                Text(
-                                  'Ukuran: ${item.product.ukuran} ${item.product.satuan}',
-                                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
-                                ),
-                              ],
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '💰 Total Budget Belanja (Rupiah)',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.ink),
+                        ),
+                        const SizedBox(height: 8),
+                        Semantics(
+                          label: 'Kolom input budget belanja',
+                          container: true,
+                          child: TextField(
+                            controller: _budgetController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              hintText: 'Misal: 100000',
+                              prefixText: 'Rp ',
+                              prefixStyle: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.ink),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(AppRadius.m),
+                                borderSide: const BorderSide(color: AppColors.line),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(AppRadius.m),
+                                borderSide: const BorderSide(color: AppColors.line),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(AppRadius.m),
+                                borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                             ),
                           ),
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.remove_circle_outline, size: 20),
-                                color: AppColors.muted,
-                                constraints: const BoxConstraints(
-                                  minWidth: 48,
-                                  minHeight: 48,
-                                ),
-                                padding: EdgeInsets.zero,
-                                onPressed: () => _updateQuantity(index, -1),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // 2. SEARCH PRODUCTS BAR
+                const Text(
+                  '🔍 Cari & Tambah Barang Kebutuhan',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.ink),
+                ),
+                const SizedBox(height: 8),
+                Semantics(
+                  label: 'Kolom pencarian barang kebutuhan',
+                  container: true,
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (val) {
+                      _searchDebounce?.cancel();
+                      _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+                        _searchProducts(val);
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Ketik nama produk (contoh: "susu", "roti")',
+                      prefixIcon: const Icon(Icons.search, color: AppColors.muted),
+                      suffixIcon: _isSearching
+                          ? const Padding(
+                              padding: EdgeInsets.all(12.0),
+                              child: SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent),
                               ),
-                              const SizedBox(width: AppSpacing.s),
-                              Text(
-                                '${item.qty}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
-                              ),
-                              const SizedBox(width: AppSpacing.s),
-                              IconButton(
-                                icon: const Icon(Icons.add_circle_outline, size: 20),
-                                color: AppColors.accent,
-                                constraints: const BoxConstraints(
-                                  minWidth: 48,
-                                  minHeight: 48,
-                                ),
-                                padding: EdgeInsets.zero,
-                                onPressed: () => _updateQuantity(index, 1),
-                              ),
-                              const SizedBox(width: AppSpacing.m),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline, size: 20),
-                                color: AppColors.error,
-                                constraints: const BoxConstraints(
-                                  minWidth: 48,
-                                  minHeight: 48,
-                                ),
-                                padding: EdgeInsets.zero,
-                                onPressed: () {
-                                  setState(() {
-                                    _selectedItems.removeAt(index);
-                                  });
-                                },
-                              ),
-                            ],
+                            )
+                          : _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, color: AppColors.muted),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    _searchProducts('');
+                                  },
+                                )
+                              : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.m),
+                        borderSide: const BorderSide(color: AppColors.line),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.m),
+                        borderSide: const BorderSide(color: AppColors.line),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.m),
+                        borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    ),
+                  ),
+                ),
+
+                // Search Results Dropdown List
+                if (_searchResults.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    constraints: const BoxConstraints(maxHeight: 200),
+                    decoration: BoxDecoration(
+                      color: AppColors.paper,
+                      borderRadius: BorderRadius.circular(AppRadius.m),
+                      border: Border.all(color: AppColors.line),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: _searchResults.length,
+                        itemBuilder: (context, index) {
+                          final item = _searchResults[index];
+                          return ListTile(
+                            dense: true,
+                            title: Text(item.nama, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.ink)),
+                            subtitle: Text('${item.ukuran} ${item.satuan} • Kategori: ${item.kategori}', style: const TextStyle(color: AppColors.muted)),
+                            trailing: const Icon(Icons.add_circle_outline, color: AppColors.accent),
+                            onTap: () => _addSelectedProduct(item),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+
+                if (_searchController.text.isNotEmpty && _searchResults.isEmpty && !_isSearching)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0, left: 4.0),
+                    child: Text(
+                      'Tidak ada produk yang ditemukan untuk "${_searchController.text}"',
+                      style: const TextStyle(color: AppColors.muted, fontSize: 13, fontStyle: FontStyle.italic),
+                    ),
+                  ),
+
+                const SizedBox(height: 16),
+
+                // ERROR DISPLAY
+                if (_errorMessage != null)
+                  Card(
+                    color: AppColors.errorSoft,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.m),
+                      side: const BorderSide(color: AppColors.error, width: 1.0),
+                    ),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline, color: AppColors.error),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: const TextStyle(color: AppColors.error, fontSize: 13),
+                            ),
                           ),
                         ],
                       ),
                     ),
-                  );
-                },
-              ),
+                  ),
 
-            const SizedBox(height: 24),
-
-            // 4. SUBMIT BUTTON
-            ElevatedButton.icon(
-              onPressed: _isEvaluating ? null : _evaluateBudget,
-              icon: _isEvaluating
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Icon(Icons.calculate_outlined, size: 22),
-              label: Text(_isEvaluating ? 'Menghitung Rekomendasi...' : '🏆 Hitung Rekomendasi Belanja'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                backgroundColor: AppColors.accent,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.l),
+                // 3. DAFTAR BARANG TERPILIH
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    const Text(
+                      '📋 Daftar Belanja Anda',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.ink),
+                    ),
+                    Chip(
+                      label: Text('${_selectedItems.length} Produk'),
+                      backgroundColor: AppColors.accentSoft,
+                      side: BorderSide.none,
+                      labelStyle: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold, fontSize: 11),
+                    ),
+                  ],
                 ),
-                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
+                const SizedBox(height: 8),
+
+                if (_selectedItems.isEmpty)
+                  Card(
+                    color: AppColors.paper,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.m),
+                      side: const BorderSide(color: AppColors.line),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.all(24.0),
+                      child: Column(
+                        children: [
+                          Icon(Icons.shopping_basket_outlined, size: 40, color: AppColors.muted),
+                          SizedBox(height: 8),
+                          Text(
+                            'Belum ada produk terpilih.\nGunakan kolom di atas untuk mencari produk.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: AppColors.muted, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _selectedItems.length,
+                    itemBuilder: (context, index) {
+                      final item = _selectedItems[index];
+                      return Card(
+                        color: AppColors.paper,
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.m),
+                          side: const BorderSide(color: AppColors.line),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.product.nama,
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.ink),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Ukuran: ${item.product.ukuran} ${item.product.satuan}',
+                                          style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Semantics(
+                                    label: 'Hapus barang ${item.product.nama} dari daftar belanja',
+                                    container: true,
+                                    child: IconButton(
+                                      icon: const Icon(Icons.delete_outline, size: 20),
+                                      color: AppColors.error,
+                                      constraints: const BoxConstraints(
+                                        minWidth: 48,
+                                        minHeight: 48,
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      onPressed: () {
+                                        setState(() {
+                                          _selectedItems.removeAt(index);
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Divider(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  const Text('Jumlah:', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                                  const Spacer(),
+                                  Semantics(
+                                    label: 'Kurangi kuantitas ${item.product.nama}',
+                                    container: true,
+                                    child: IconButton(
+                                      icon: const Icon(Icons.remove_circle_outline, size: 20),
+                                      color: AppColors.muted,
+                                      constraints: const BoxConstraints(
+                                        minWidth: 48,
+                                        minHeight: 48,
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      onPressed: () => _updateQuantity(index, -1),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  SizedBox(
+                                    width: 32,
+                                    child: Text(
+                                      '${item.qty}',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        color: AppColors.ink,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Semantics(
+                                    label: 'Tambah kuantitas ${item.product.nama}',
+                                    container: true,
+                                    child: IconButton(
+                                      icon: const Icon(Icons.add_circle_outline, size: 20),
+                                      color: AppColors.accent,
+                                      constraints: const BoxConstraints(
+                                        minWidth: 48,
+                                        minHeight: 48,
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      onPressed: () => _updateQuantity(index, 1),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                const SizedBox(height: 24),
+
+                // 4. SUBMIT BUTTON
+                Semantics(
+                  label: 'Hitung rekomendasi belanja',
+                  container: true,
+                  child: ElevatedButton.icon(
+                    onPressed: _isEvaluating ? null : _evaluateBudget,
+                    icon: _isEvaluating
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.calculate_outlined, size: 22),
+                    label: Text(_isEvaluating ? 'Menghitung Rekomendasi...' : '🏆 Hitung Rekomendasi Belanja'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: AppColors.accent.withValues(alpha: 0.6),
+                      disabledForegroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.l),
+                      ),
+                      textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

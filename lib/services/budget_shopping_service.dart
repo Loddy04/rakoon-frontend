@@ -83,6 +83,64 @@ class StoreInfoOutput {
   }
 }
 
+class ProductAvailability {
+  final String productId;
+  final String namaProduk;
+  final bool isAvailable;
+  final double? hargaTerendah;
+  final String? tokoTerendah;
+
+  ProductAvailability({
+    required this.productId,
+    required this.namaProduk,
+    required this.isAvailable,
+    this.hargaTerendah,
+    this.tokoTerendah,
+  });
+
+  factory ProductAvailability.fromJson(Map<String, dynamic> json) {
+    return ProductAvailability(
+      productId: json['product_id'] as String? ?? '',
+      namaProduk: json['nama_produk'] as String? ?? 'Produk',
+      isAvailable: json['is_available'] as bool? ?? false,
+      hargaTerendah: (json['harga_terendah'] as num?)?.toDouble(),
+      tokoTerendah: json['toko_terendah'] as String?,
+    );
+  }
+}
+
+class AlternativeStoreOutput {
+  final StoreInfoOutput storeInfo;
+  final double totalCost;
+  final double remainingBudget;
+  final bool isFullMatch;
+  final int matchedProductsCount;
+  final List<BudgetItemResult> items;
+
+  AlternativeStoreOutput({
+    required this.storeInfo,
+    required this.totalCost,
+    required this.remainingBudget,
+    required this.isFullMatch,
+    required this.matchedProductsCount,
+    required this.items,
+  });
+
+  factory AlternativeStoreOutput.fromJson(Map<String, dynamic> json) {
+    return AlternativeStoreOutput(
+      storeInfo: StoreInfoOutput.fromJson(json['store_info'] as Map<String, dynamic>),
+      totalCost: (json['total_cost'] as num? ?? 0).toDouble(),
+      remainingBudget: (json['remaining_budget'] as num? ?? 0).toDouble(),
+      isFullMatch: json['is_full_match'] as bool? ?? false,
+      matchedProductsCount: json['matched_products_count'] as int? ?? 0,
+      items: (json['items'] as List<dynamic>?)
+              ?.map((item) => BudgetItemResult.fromJson(item as Map<String, dynamic>))
+              .toList() ??
+          [],
+    );
+  }
+}
+
 class BudgetRecommendResponse {
   final double budget;
   final double totalCost;
@@ -91,6 +149,8 @@ class BudgetRecommendResponse {
   final StoreInfoOutput? recommendedStore;
   final List<BudgetItemResult> items;
   final String explanation;
+  final List<ProductAvailability>? productAvailabilities;
+  final List<AlternativeStoreOutput>? storeAlternatives;
 
   BudgetRecommendResponse({
     required this.budget,
@@ -100,6 +160,8 @@ class BudgetRecommendResponse {
     this.recommendedStore,
     required this.items,
     required this.explanation,
+    this.productAvailabilities,
+    this.storeAlternatives,
   });
 
   factory BudgetRecommendResponse.fromJson(Map<String, dynamic> json) {
@@ -116,6 +178,12 @@ class BudgetRecommendResponse {
               .toList() ??
           [],
       explanation: json['explanation'] as String? ?? '',
+      productAvailabilities: (json['product_availabilities'] as List<dynamic>?)
+          ?.map((e) => ProductAvailability.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      storeAlternatives: (json['store_alternatives'] as List<dynamic>?)
+          ?.map((e) => AlternativeStoreOutput.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }
