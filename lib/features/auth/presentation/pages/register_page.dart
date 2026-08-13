@@ -102,7 +102,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             const Icon(
-                              Icons.mark_email_unread_outlined,
+                              Icons.check_circle_outline_rounded,
                               size: 60,
                               color: AppColors.accent,
                             ),
@@ -114,7 +114,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             ),
                             const SizedBox(height: AppSpacing.m),
                             Text(
-                              'Silakan verifikasi email kamu terlebih dahulu sebelum masuk.',
+                              'Akun kamu berhasil dibuat. Silakan klik tombol di bawah untuk masuk.',
                               style: AppTextStyles.bodyMedium,
                               textAlign: TextAlign.center,
                             ),
@@ -132,7 +132,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 ),
                               ),
                               child: Text(
-                                'Kembali ke Login',
+                                'Masuk Sekarang',
                                 style: AppTextStyles.bodyLarge.copyWith(color: AppColors.paper),
                               ),
                             ),
