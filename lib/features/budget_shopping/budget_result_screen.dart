@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rakoon_frontend/services/budget_shopping_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
+import 'package:rakoon_frontend/widgets/status_badge.dart';
 
 class BudgetResultScreen extends StatelessWidget {
   final BudgetRecommendResponse result;
@@ -49,30 +50,9 @@ class BudgetResultScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: hasStore ? AppColors.accent : AppColors.warning,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                hasStore ? Icons.emoji_events : Icons.warning_amber_rounded,
-                                color: Colors.white,
-                                size: 14,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                hasStore ? '100% Full Match' : 'Tidak Ditemukan Toko',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          ),
+                        StatusBadge(
+                          status: hasStore ? '100% Full Match' : 'Tidak Ditemukan Toko',
+                          icon: hasStore ? Icons.emoji_events : Icons.warning_amber_rounded,
                         ),
                         Text(
                           'Budget: ${_formatRupiah(result.budget)}',
