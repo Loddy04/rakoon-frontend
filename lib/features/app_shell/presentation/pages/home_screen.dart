@@ -5,6 +5,7 @@ import 'package:rakoon_frontend/features/history/presentation/pages/product_hist
 import 'package:rakoon_frontend/features/nearby/nearby_stores_screen.dart';
 import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
+import 'package:rakoon_frontend/services/auth_service.dart';
 
 class HomeScreen extends StatelessWidget {
   // TODO: [Temporary] baseUrl is loaded from development dashboard parameters.
@@ -38,35 +39,48 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Text('Rakoon', style: AppTextStyles.titleLarge),
 
-                  // Location Pill
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.m,
-                      vertical: AppSpacing.s,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.paper,
-                      borderRadius: BorderRadius.circular(AppRadius.full),
-                      border: Border.all(color: AppColors.line),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.location_on,
-                          color: AppColors.accent,
-                          size: 14,
+                  // Location Pill & Logout Button
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.m,
+                          vertical: AppSpacing.s,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Indomaret · Jl. Sudirman',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.ink,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        decoration: BoxDecoration(
+                          color: AppColors.paper,
+                          borderRadius: BorderRadius.circular(AppRadius.full),
+                          border: Border.all(color: AppColors.line),
                         ),
-                      ],
-                    ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.location_on,
+                              color: AppColors.accent,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Indomaret · Jl. Sudirman',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.ink,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.s),
+                      IconButton(
+                        key: const Key('logout_button'),
+                        icon: const Icon(Icons.logout, color: AppColors.muted),
+                        onPressed: () async {
+                          await AuthService.signOut();
+                        },
+                        tooltip: 'Logout',
+                      ),
+                    ],
                   ),
                 ],
               ),
