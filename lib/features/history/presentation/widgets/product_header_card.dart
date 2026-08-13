@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../data/models/price_history_item.dart';
+import 'package:rakoon_frontend/widgets/status_badge.dart';
 
 class ProductHeaderCard extends StatelessWidget {
   final String productName;
@@ -68,32 +69,7 @@ class ProductHeaderCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF059669).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.trending_down,
-                      size: 12,
-                      color: Color(0xFF059669),
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      'Stabil',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF059669),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const StatusBadge(status: 'Stabil', icon: Icons.trending_down),
             ],
           ),
           const SizedBox(height: 12),
