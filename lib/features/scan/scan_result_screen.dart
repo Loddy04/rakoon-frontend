@@ -4,6 +4,8 @@ import 'package:rakoon_frontend/services/recommendation_service.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
+import 'package:rakoon_frontend/services/auth_service.dart';
+import 'package:rakoon_frontend/features/auth/presentation/widgets/login_bottom_sheet.dart';
 
 class ScanResultScreen extends StatefulWidget {
   final String baseUrl;
@@ -15,8 +17,10 @@ class ScanResultScreen extends StatefulWidget {
     super.key,
     required this.baseUrl,
     required this.detectedItems,
-    this.defaultStoreId = '21ba0855-bf71-4e6a-9718-b7ac79d8cfd2', // Valid UUID from database
-    this.defaultUserId = 'c61b0cfa-3512-4fb3-96b6-3974c05ef1c8',   // Valid UUID from database
+    this.defaultStoreId =
+        '21ba0855-bf71-4e6a-9718-b7ac79d8cfd2', // Valid UUID from database
+    this.defaultUserId =
+        'c61b0cfa-3512-4fb3-96b6-3974c05ef1c8', // Valid UUID from database
   });
 
   @override
@@ -36,7 +40,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
   final List<TextEditingController> _priceControllers = [];
   final List<TextEditingController> _sizeControllers = [];
   final List<TextEditingController> _unitControllers = [];
-  
+
   // Selected categories for each detected item
   final List<String> _selectedCategories = [];
 
@@ -49,10 +53,14 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     // Initialize text controllers and category values for each detected item
     for (var item in widget.detectedItems) {
       _nameControllers.add(TextEditingController(text: item.namaProduk ?? ''));
-      _priceControllers.add(TextEditingController(text: item.harga?.toInt().toString() ?? ''));
-      _sizeControllers.add(TextEditingController(text: item.ukuran?.toString() ?? ''));
+      _priceControllers.add(
+        TextEditingController(text: item.harga?.toInt().toString() ?? ''),
+      );
+      _sizeControllers.add(
+        TextEditingController(text: item.ukuran?.toString() ?? ''),
+      );
       _unitControllers.add(TextEditingController(text: item.satuan ?? ''));
-      
+
       String itemCategory = item.kategori ?? 'Lainnya';
       if (!productCategories.contains(itemCategory)) {
         itemCategory = 'Lainnya';
@@ -82,6 +90,33 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
   /// Collects inputs and calls the confirm endpoint
   Future<void> _saveResults() async {
+    // Progressive Auth check: show bottom sheet if session does not exist
+    if (AuthService.currentSession == null) {
+      final bool? loginSuccess = await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: const LoginBottomSheet(),
+        ),
+      );
+
+      if (loginSuccess != true) {
+        // User cancelled, return to screen as is
+        return;
+      }
+
+      // Update the user ID text field controller with the newly logged-in user id
+      if (AuthService.currentUser != null) {
+        setState(() {
+          _userIdController.text = AuthService.currentUser!.id;
+        });
+      }
+    }
+
     setState(() {
       _isSaving = true;
       _errorMessage = null;
@@ -122,15 +157,17 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
         return;
       }
 
-      confirmedItems.add(ScanResultItem(
-        namaProduk: name,
-        harga: price,
-        ukuran: size,
-        satuan: unit.isEmpty ? null : unit,
-        kategori: _selectedCategories[i],
-        confidence: widget.detectedItems[i].confidence,
-        needsVerification: widget.detectedItems[i].needsVerification,
-      ));
+      confirmedItems.add(
+        ScanResultItem(
+          namaProduk: name,
+          harga: price,
+          ukuran: size,
+          satuan: unit.isEmpty ? null : unit,
+          kategori: _selectedCategories[i],
+          confidence: widget.detectedItems[i].confidence,
+          needsVerification: widget.detectedItems[i].needsVerification,
+        ),
+      );
     }
 
     try {
@@ -155,16 +192,19 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
             content: Text(
               '$msg\n\n'
               '• Entri Harga Baru: $saved\n'
-              '• Produk Baru Dibuat: $created'
+              '• Produk Baru Dibuat: $created',
             ),
             actions: [
               TextButton(
                 onPressed: () {
                   Navigator.pop(context); // Close dialog
-                  Navigator.pop(context, true); // Pop back to camera screen with success result
+                  Navigator.pop(
+                    context,
+                    true,
+                  ); // Pop back to camera screen with success result
                 },
                 child: const Text('Selesai'),
-              )
+              ),
             ],
           ),
         );
@@ -215,9 +255,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Koreksi Hasil Scan'),
-      ),
+      appBar: AppBar(title: const Text('Koreksi Hasil Scan')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -244,7 +282,10 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                       Expanded(
                         child: Text(
                           _errorMessage!,
-                          style: TextStyle(color: Colors.red.shade900, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: Colors.red.shade900,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -259,13 +300,15 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
               itemCount: widget.detectedItems.length,
               itemBuilder: (context, index) {
                 final item = widget.detectedItems[index];
-                
+
                 return Card(
                   margin: const EdgeInsets.symmetric(vertical: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
-                      color: item.needsVerification ? AppColors.warning : AppColors.line,
+                      color: item.needsVerification
+                          ? AppColors.warning
+                          : AppColors.line,
                       width: item.needsVerification ? 1.8 : 1.0,
                     ),
                   ),
@@ -280,7 +323,10 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                           children: [
                             Text(
                               'Produk #${index + 1}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
                             ),
                             Row(
                               children: [
@@ -289,11 +335,17 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                                     padding: EdgeInsets.only(right: 6.0),
                                     child: Text(
                                       '⚠️ Perlu Verifikasi',
-                                      style: TextStyle(color: AppColors.warning, fontSize: 11, fontWeight: FontWeight.bold),
+                                      style: TextStyle(
+                                        color: AppColors.warning,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 StatusBadge(
-                                  status: item.confidence == 'tinggi' ? 'Tinggi' : 'Rendah',
+                                  status: item.confidence == 'tinggi'
+                                      ? 'Tinggi'
+                                      : 'Rendah',
                                 ),
                               ],
                             ),
@@ -308,7 +360,10 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Nama Produk',
                             border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -319,7 +374,10 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Kategori',
                             border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
                           ),
                           items: productCategories.map((String category) {
                             return DropdownMenuItem<String>(
@@ -344,7 +402,10 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Harga (Rupiah)',
                             border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -359,7 +420,10 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                                 decoration: const InputDecoration(
                                   labelText: 'Ukuran',
                                   border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 8,
+                                  ),
                                 ),
                               ),
                             ),
@@ -370,7 +434,10 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                                 decoration: const InputDecoration(
                                   labelText: 'Satuan (ml/gr/kg/pcs)',
                                   border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 8,
+                                  ),
                                 ),
                               ),
                             ),
@@ -398,7 +465,10 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.l),
                 ),
-                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
 
@@ -438,13 +508,19 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.check_circle_outline),
               label: const Text('Simpan Konfirmasi ke Database'),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             const SizedBox(height: 32),
