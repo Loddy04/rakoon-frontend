@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../data/models/price_history_item.dart';
+import 'package:rakoon_frontend/widgets/status_badge.dart';
 
 class StoreHistoryListView extends StatelessWidget {
   final List<PriceHistoryItem> items;
@@ -106,26 +107,7 @@ class StoreHistoryListView extends StatelessWidget {
                           ),
                           if (isLowest) ...[
                             const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(
-                                  0xFF059669,
-                                ).withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Text(
-                                'Termurah',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF059669),
-                                ),
-                              ),
-                            ),
+                            const StatusBadge(status: 'Termurah'),
                           ],
                         ],
                       ),
