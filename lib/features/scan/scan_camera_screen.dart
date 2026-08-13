@@ -290,9 +290,13 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
                 // 1. Camera Preview or Fallback View
                 if (_isCameraInitialized && _cameraController != null && _imageFile == null)
                   Center(
-                    child: AspectRatio(
-                      aspectRatio: _cameraController!.value.aspectRatio,
-                      child: CameraPreview(_cameraController!),
+                    child: ClipRect(
+                      child: AspectRatio(
+                        aspectRatio: _cameraController!.value.aspectRatio > 1.0
+                            ? 1.0 / _cameraController!.value.aspectRatio
+                            : _cameraController!.value.aspectRatio,
+                        child: CameraPreview(_cameraController!),
+                      ),
                     ),
                   )
                 else
