@@ -158,11 +158,50 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
     }
   }
 
+  bool _hasUnsavedChanges() {
+    return _selectedItems.isNotEmpty || _budgetController.text.trim() != '100000';
+  }
+
+  Future<bool?> _showExitConfirmationDialog(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+        ),
+        title: const Text('Keluar Halaman'),
+        content: const Text('Keluar dari halaman ini? Perubahan Anda akan hilang.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.error,
+            ),
+            child: const Text('Keluar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Smart Budget Shopping'),
+    return PopScope(
+      canPop: !_hasUnsavedChanges(),
+      onPopInvokedWithResult: (bool didPop, Object? result) async {
+        if (didPop) return;
+        final shouldPop = await _showExitConfirmationDialog(context);
+        if (shouldPop == true && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Smart Budget Shopping'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -444,6 +483,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

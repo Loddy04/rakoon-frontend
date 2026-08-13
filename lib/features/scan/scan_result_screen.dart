@@ -620,10 +620,80 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     }
   }
 
+  bool _hasUnsavedChanges() {
+    if (_nameControllers.length != widget.detectedItems.length) return true;
+
+    for (int i = 0; i < widget.detectedItems.length; i++) {
+      final original = widget.detectedItems[i];
+      final currentName = _nameControllers[i].text;
+      final currentPriceText = _priceControllers[i].text;
+      final currentSizeText = _sizeControllers[i].text;
+      final currentUnit = _unitControllers[i].text;
+      final currentCategory = _selectedCategories[i];
+
+      final originalName = original.namaProduk ?? '';
+      final originalPrice = original.harga?.toInt().toString() ?? '';
+      final originalSize = original.ukuran?.toString() ?? '';
+      final originalUnit = original.satuan ?? '';
+      final originalCategory = original.kategori ?? 'Lainnya';
+
+      if (currentName != originalName ||
+          currentPriceText != originalPrice ||
+          currentSizeText != originalSize ||
+          currentUnit != originalUnit ||
+          currentCategory != originalCategory) {
+        return true;
+      }
+    }
+
+    final defaultStoreId = _nearbyStores.isNotEmpty ? _nearbyStores.first.storeId : '';
+    final currentStoreId = _selectedStore?.storeId ?? '';
+    if (currentStoreId != defaultStoreId && currentStoreId.isNotEmpty && defaultStoreId.isNotEmpty) {
+      return true;
+    }
+
+    return false;
+  }
+
+  Future<bool?> _showExitConfirmationDialog(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+        ),
+        title: const Text('Keluar Halaman'),
+        content: const Text('Keluar dari halaman ini? Perubahan Anda akan hilang.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.error,
+            ),
+            child: const Text('Keluar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Koreksi Hasil Scan')),
+    return PopScope(
+      canPop: !_hasUnsavedChanges(),
+      onPopInvokedWithResult: (bool didPop, Object? result) async {
+        if (didPop) return;
+        final shouldPop = await _showExitConfirmationDialog(context);
+        if (shouldPop == true && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Koreksi Hasil Scan')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -936,6 +1006,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
