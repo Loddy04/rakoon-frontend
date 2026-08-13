@@ -270,11 +270,6 @@ class _PriceComparisonScreenState extends State<PriceComparisonScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      'ID Produk: ${response.productId}',
-                      style: AppTextStyles.bodySmall,
-                    ),
                   ],
                 ),
               ),
