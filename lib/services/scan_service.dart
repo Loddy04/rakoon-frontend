@@ -128,6 +128,7 @@ class ScanService {
     required String userId,
     required List<ScanResultItem> items,
     String? baseUrl,
+    http.Client? client,
   }) async {
     final String activeBaseUrl = baseUrl ?? defaultBaseUrl;
     final uri = Uri.parse('$activeBaseUrl/scan/confirm');
@@ -140,7 +141,8 @@ class ScanService {
     final token = session.accessToken;
 
     try {
-      final response = await http.post(
+      final httpClient = client ?? http.Client();
+      final response = await httpClient.post(
         uri,
         headers: {
           'Content-Type': 'application/json',
@@ -168,5 +170,96 @@ class ScanService {
       }
       throw Exception('Gagal menyimpan konfirmasi: $e');
     }
+  }
+
+  /// Fetches recent scans for the authenticated user from GET /scan/recent
+  static Future<List<RecentScan>> getRecentScans({
+    String? baseUrl,
+    http.Client? client,
+    int limit = 10,
+  }) async {
+    final String activeBaseUrl = baseUrl ?? defaultBaseUrl;
+    final uri = Uri.parse('$activeBaseUrl/scan/recent').replace(
+      queryParameters: {'limit': limit.toString()},
+    );
+
+    final session = AuthService.currentSession;
+    if (session == null) {
+      return [];
+    }
+    final token = session.accessToken;
+
+    try {
+      final httpClient = client ?? http.Client();
+      final response = await httpClient.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body) as List<dynamic>;
+        return data
+            .map((item) => RecentScan.fromJson(item as Map<String, dynamic>))
+            .toList();
+      } else {
+        throw Exception('HTTP ${response.statusCode}: Gagal memuat riwayat scan.');
+      }
+    } on SocketException {
+      throw const SocketException('Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
+    } catch (e) {
+      if (e is Exception) {
+        rethrow;
+      }
+      throw Exception('Gagal memuat riwayat scan: $e');
+    }
+  }
+}
+
+class RecentScan {
+  final String id;
+  final String productId;
+  final String namaProduk;
+  final String kategori;
+  final double? ukuran;
+  final String? satuan;
+  final int harga;
+  final String storeId;
+  final String? storeName;
+  final DateTime timestamp;
+  final String statusVerifikasi;
+
+  RecentScan({
+    required this.id,
+    required this.productId,
+    required this.namaProduk,
+    required this.kategori,
+    this.ukuran,
+    this.satuan,
+    required this.harga,
+    required this.storeId,
+    this.storeName,
+    required this.timestamp,
+    required this.statusVerifikasi,
+  });
+
+  factory RecentScan.fromJson(Map<String, dynamic> json) {
+    return RecentScan(
+      id: (json['id'] ?? '').toString(),
+      productId: (json['product_id'] ?? '').toString(),
+      namaProduk: json['nama_produk'] as String? ?? 'Produk',
+      kategori: json['kategori'] as String? ?? 'Lainnya',
+      ukuran: (json['ukuran'] as num?)?.toDouble(),
+      satuan: json['satuan'] as String?,
+      harga: (json['harga'] as num?)?.toInt() ?? 0,
+      storeId: (json['store_id'] ?? '').toString(),
+      storeName: json['store_name'] as String?,
+      timestamp: json['timestamp'] != null
+          ? DateTime.tryParse(json['timestamp'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      statusVerifikasi: json['status_verifikasi'] as String? ?? 'verified',
+    );
   }
 }

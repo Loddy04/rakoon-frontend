@@ -1,7 +1,13 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthService {
-  static final SupabaseClient _client = Supabase.instance.client;
+  static SupabaseClient? get _client {
+    try {
+      return Supabase.instance.client;
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// Sign Up with Email and Password
   static Future<AuthResponse> signUp({
@@ -11,7 +17,10 @@ class AuthService {
     if (_mockSession != null) {
       return AuthResponse(session: _mockSession, user: _mockSession?.user);
     }
-    return await _client.auth.signUp(
+    if (_client == null) {
+      throw Exception('Supabase belum diinisialisasi.');
+    }
+    return await _client!.auth.signUp(
       email: email,
       password: password,
     );
@@ -25,7 +34,10 @@ class AuthService {
     if (_mockSession != null) {
       return AuthResponse(session: _mockSession, user: _mockSession?.user);
     }
-    return await _client.auth.signInWithPassword(
+    if (_client == null) {
+      throw Exception('Supabase belum diinisialisasi.');
+    }
+    return await _client!.auth.signInWithPassword(
       email: email,
       password: password,
     );
@@ -34,7 +46,7 @@ class AuthService {
   /// Sign Out
   static Future<void> signOut() async {
     _mockSession = null;
-    await _client.auth.signOut();
+    await _client?.auth.signOut();
   }
 
   static Session? _mockSession;
@@ -43,11 +55,18 @@ class AuthService {
   static set mockSession(Session? session) => _mockSession = session;
 
   /// Current Session
-  static Session? get currentSession => _mockSession ?? _client.auth.currentSession;
+  static Session? get currentSession {
+    if (_mockSession != null) return _mockSession;
+    return _client?.auth.currentSession;
+  }
 
   /// Current User
-  static User? get currentUser => _mockSession?.user ?? _client.auth.currentUser;
+  static User? get currentUser {
+    if (_mockSession != null) return _mockSession?.user;
+    return _client?.auth.currentUser;
+  }
 
   /// Auth State Stream
-  static Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
+  static Stream<AuthState> get authStateChanges =>
+      _client?.auth.onAuthStateChange ?? const Stream.empty();
 }
