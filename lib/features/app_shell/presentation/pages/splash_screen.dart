@@ -112,27 +112,13 @@ class _SplashScreenState extends State<SplashScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo container matching brand aesthetic
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: AppColors.accent,
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.accent.withValues(alpha: 0.25),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Image.asset(
-                        'assets/logo/rakoon_logo.png',
-                        fit: BoxFit.contain,
-                      ),
+                  // Raw logo directly on the gradient background
+                  SizedBox(
+                    width: 120,
+                    height: 120,
+                    child: Image.asset(
+                      'assets/logo/rakoon_logo.png',
+                      fit: BoxFit.contain,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
