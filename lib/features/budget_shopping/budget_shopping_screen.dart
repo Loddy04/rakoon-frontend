@@ -29,6 +29,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   List<Product> _searchResults = [];
+  List<Product> _defaultProducts = [];
   bool _isSearching = false;
   int _searchRequestToken = 0;
   Timer? _searchDebounce;
@@ -38,11 +39,47 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
   String? _errorMessage;
 
   @override
+  void initState() {
+    super.initState();
+    _fetchDefaultProducts();
+  }
+
+  @override
   void dispose() {
     _searchDebounce?.cancel();
     _budgetController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchDefaultProducts() async {
+    setState(() {
+      _isSearching = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final results = await ProductsService.getProducts(
+        baseUrl: widget.baseUrl,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _defaultProducts = results;
+        if (_searchController.text.trim().isEmpty) {
+          _searchResults = results;
+        }
+        _isSearching = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSearching = false;
+        _errorMessage = 'Gagal memuat produk default: $e';
+      });
+    }
   }
 
   Future<void> _searchProducts(String query) async {
@@ -52,7 +89,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
     final cleanQuery = query.trim();
     if (cleanQuery.isEmpty) {
       setState(() {
-        _searchResults = [];
+        _searchResults = _defaultProducts;
         _isSearching = false;
       });
       return;
@@ -103,7 +140,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
 
     _searchController.clear();
     setState(() {
-      _searchResults = [];
+      _searchResults = _defaultProducts;
     });
   }
 

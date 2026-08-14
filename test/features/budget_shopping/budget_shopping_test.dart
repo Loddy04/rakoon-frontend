@@ -41,9 +41,9 @@ void main() {
     ) async {
       int searchCallCount = 0;
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/products/')) {
+        if (request.url.path.contains('/products/') &&
+            request.url.queryParameters.containsKey('search')) {
           searchCallCount++;
-          return http.Response('[]', 200);
         }
         return http.Response('[]', 200);
       });
@@ -76,9 +76,9 @@ void main() {
     ) async {
       int searchCallCount = 0;
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/products/')) {
+        if (request.url.path.contains('/products/') &&
+            request.url.queryParameters.containsKey('search')) {
           searchCallCount++;
-          return http.Response('[]', 200);
         }
         return http.Response('[]', 200);
       });
