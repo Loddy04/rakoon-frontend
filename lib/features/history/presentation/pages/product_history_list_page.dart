@@ -85,9 +85,9 @@ class _ProductHistoryListPageState extends State<ProductHistoryListPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Daftar Produk Pindai'),
+        title: const Text('Riwayat Produk Pindai'),
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.paper,
         foregroundColor: AppColors.ink,
       ),
       body: SafeArea(
@@ -95,7 +95,7 @@ class _ProductHistoryListPageState extends State<ProductHistoryListPage> {
           children: [
             // Search Input Container
             Container(
-              color: Colors.white,
+              color: AppColors.paper,
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.l,
                 vertical: AppSpacing.m,
@@ -104,7 +104,7 @@ class _ProductHistoryListPageState extends State<ProductHistoryListPage> {
                 controller: _searchController,
                 onChanged: _onSearchChanged,
                 decoration: InputDecoration(
-                  hintText: 'Cari produk yang pernah discan...',
+                  hintText: 'Cari produk yang pernah dipindai...',
                   prefixIcon: const Icon(Icons.search, color: AppColors.muted),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
@@ -168,7 +168,7 @@ class _ProductHistoryListPageState extends State<ProductHistoryListPage> {
                               ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.accent,
-                                foregroundColor: Colors.white,
+                                foregroundColor: AppColors.paper,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(
                                     AppRadius.full,
@@ -195,7 +195,7 @@ class _ProductHistoryListPageState extends State<ProductHistoryListPage> {
                             Container(
                               padding: const EdgeInsets.all(AppSpacing.xl),
                               decoration: const BoxDecoration(
-                                color: Color(0xFFF1F5F9),
+                                color: AppColors.card,
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
@@ -213,7 +213,7 @@ class _ProductHistoryListPageState extends State<ProductHistoryListPage> {
                             Text(
                               _searchController.text.isNotEmpty
                                   ? 'Tidak ditemukan produk dengan kata pencarian tersebut.'
-                                  : 'Produk yang Anda scan dan konfirmasi akan terdaftar di sini.',
+                                  : 'Produk yang Anda pindai dan konfirmasi akan terdaftar di sini.',
                               textAlign: TextAlign.center,
                               style: AppTextStyles.bodySmall,
                             ),

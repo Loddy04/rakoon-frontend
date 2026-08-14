@@ -56,26 +56,35 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Row(
                 children: [
-                  InkWell(
-                    onTap:
-                        widget.onBack ?? () => Navigator.of(context).maybePop(),
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1E293B) : AppColors.paper,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isDark
-                              ? const Color(0xFF334155)
-                              : AppColors.line,
+                  Semantics(
+                    button: true,
+                    label: 'Kembali ke halaman sebelumnya',
+                    child: InkWell(
+                      onTap:
+                          widget.onBack ?? () => Navigator.of(context).maybePop(),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        alignment: Alignment.center,
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1E293B) : AppColors.paper,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isDark
+                                  ? const Color(0xFF334155)
+                                  : AppColors.line,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.chevron_left,
+                            size: 20,
+                            color: isDark ? AppColors.paper : AppColors.ink,
+                          ),
                         ),
-                      ),
-                      child: Icon(
-                        Icons.chevron_left,
-                        size: 20,
-                        color: isDark ? AppColors.paper : AppColors.ink,
                       ),
                     ),
                   ),
