@@ -193,7 +193,10 @@ class RecommendationResponse {
 }
 
 class RecommendationService {
-  static String defaultBaseUrl = 'http://10.0.2.2:8000';
+  static String defaultBaseUrl = const String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://rakoon-backend.onrender.com',
+  );
 
   /// Sends product candidates to POST /recommendation/evaluate
   static Future<RecommendationResponse> evaluateRecommendation({

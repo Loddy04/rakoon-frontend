@@ -24,6 +24,10 @@ void main() async {
   // Configuration sourced via secure build environment definitions (e.g. --dart-define)
   const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  const String apiBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://rakoon-backend.onrender.com',
+  );
 
   if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
     throw StateError(
@@ -39,21 +43,28 @@ void main() async {
     anonKey: supabaseAnonKey, // ignore: deprecated_member_use
   );
 
-  runApp(const RakoonApp());
+  runApp(const RakoonApp(baseUrl: apiBaseUrl));
 }
 
 class RakoonApp extends StatelessWidget {
-  const RakoonApp({super.key});
+  final String? baseUrl;
+  const RakoonApp({super.key, this.baseUrl});
 
   @override
   Widget build(BuildContext context) {
+    const String envBaseUrl = String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: 'https://rakoon-backend.onrender.com',
+    );
+    final String effectiveBaseUrl = baseUrl ?? envBaseUrl;
+
     return MaterialApp(
-      title: 'Rakoon Integration Test',
+      title: 'Rakoon',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       themeMode:
           ThemeMode.light, // Menyesuaikan dengan visual referensi light theme
-      home: const IntegrationDashboardPage(),
+      home: SplashScreen(baseUrl: effectiveBaseUrl),
     );
   }
 }
@@ -90,7 +101,10 @@ class IntegrationDashboardPage extends StatefulWidget {
 class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
   // Input Controller untuk Base URL Backend FastAPI
   final TextEditingController _urlController = TextEditingController(
-    text: kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000',
+    text: const String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: 'https://rakoon-backend.onrender.com',
+    ),
   );
 
   // Input Controllers untuk POST /price

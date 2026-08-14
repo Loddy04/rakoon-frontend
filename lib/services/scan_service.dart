@@ -72,8 +72,11 @@ class ScanResultItem {
 }
 
 class ScanService {
-  // Default Base URL for Android Emulator
-  static String defaultBaseUrl = 'http://10.0.2.2:8000';
+  // Default Base URL for Android / Cloud Backend
+  static String defaultBaseUrl = const String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://rakoon-backend.onrender.com',
+  );
 
   /// Sends the photo file to the POST /scan/ endpoint
   static Future<List<ScanResultItem>> scanPhoto(File imageFile, {String? baseUrl}) async {

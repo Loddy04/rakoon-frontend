@@ -129,7 +129,11 @@ class HomeScreenState extends State<HomeScreen> {
     if (widget.baseUrl != null && widget.baseUrl!.isNotEmpty) {
       return widget.baseUrl!;
     }
-    return kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
+    const envBaseUrl = String.fromEnvironment('API_BASE_URL');
+    if (envBaseUrl.isNotEmpty) {
+      return envBaseUrl;
+    }
+    return kIsWeb ? 'http://localhost:8000' : 'https://rakoon-backend.onrender.com';
   }
 
   void _showProductSelector(BuildContext context) {

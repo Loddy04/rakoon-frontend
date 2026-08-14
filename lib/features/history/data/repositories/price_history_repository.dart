@@ -41,7 +41,10 @@ class PriceHistoryRepository {
 
   PriceHistoryRepository({
     http.Client? client,
-    this.baseUrl = 'http://localhost:8000',
+    this.baseUrl = const String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: 'https://rakoon-backend.onrender.com',
+    ),
   }) : client = client ?? http.Client();
 
   Future<PriceHistoryResponse> getPriceHistory({
