@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/home_screen.dart';
 import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
 import 'package:rakoon_frontend/features/profile/presentation/pages/profile_page.dart';
@@ -6,7 +7,9 @@ import 'package:rakoon_frontend/theme/app_theme.dart';
 
 class AppShell extends StatefulWidget {
   final String? baseUrl;
-  const AppShell({super.key, this.baseUrl});
+  final http.Client? httpClient;
+
+  const AppShell({super.key, this.baseUrl, this.httpClient});
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -14,11 +17,15 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0;
+  final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
+    if (index == 0) {
+      _homeKey.currentState?.fetchRecentScans();
+    }
   }
 
   @override
@@ -30,7 +37,11 @@ class _AppShellState extends State<AppShell> {
       body: IndexedStack(
         index: _selectedIndex,
         children: [
-          HomeScreen(baseUrl: widget.baseUrl),
+          HomeScreen(
+            key: _homeKey,
+            baseUrl: widget.baseUrl,
+            httpClient: widget.httpClient,
+          ),
           ScanCameraScreen(
             baseUrl: widget.baseUrl ?? 'http://10.0.2.2:8000',
             onClose: () => _onItemTapped(0),

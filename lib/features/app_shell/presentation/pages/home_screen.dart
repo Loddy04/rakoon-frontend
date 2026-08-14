@@ -1,12 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/features/budget_shopping/budget_shopping_screen.dart';
 import 'package:rakoon_frontend/features/history/presentation/pages/product_history_list_page.dart';
 import 'package:rakoon_frontend/features/nearby/nearby_stores_screen.dart';
 import 'package:rakoon_frontend/features/nearby/price_comparison_screen.dart';
 import 'package:rakoon_frontend/features/nearby/presentation/widgets/product_selector_bottom_sheet.dart';
 import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
+import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/services/location_service.dart';
+import 'package:rakoon_frontend/services/scan_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 
@@ -14,20 +17,79 @@ class HomeScreen extends StatefulWidget {
   // TODO: [Temporary] baseUrl is loaded from development dashboard parameters.
   // Replace with dynamic configuration / client settings container during Production migration (Task A6).
   final String? baseUrl;
+  final http.Client? httpClient;
 
-  const HomeScreen({super.key, this.baseUrl});
+  const HomeScreen({super.key, this.baseUrl, this.httpClient});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> {
   String _locationLabel = 'Mencari lokasi...';
+  List<RecentScan>? _recentScans;
+  bool _isLoadingScans = false;
+  String? _scansError;
 
   @override
   void initState() {
     super.initState();
     _detectLocationAndStore();
+    fetchRecentScans();
+  }
+
+  Future<void> fetchRecentScans() async {
+    if (AuthService.currentSession == null) {
+      if (mounted) {
+        setState(() {
+          _recentScans = [];
+          _isLoadingScans = false;
+          _scansError = null;
+        });
+      }
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoadingScans = true;
+        _scansError = null;
+      });
+    }
+
+    try {
+      final scans = await ScanService.getRecentScans(
+        baseUrl: _getBaseUrl(),
+        client: widget.httpClient,
+      );
+      if (mounted) {
+        setState(() {
+          _recentScans = scans;
+          _isLoadingScans = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _scansError = 'Gagal memuat riwayat scan.';
+          _isLoadingScans = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _openScanCamera() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ScanCameraScreen(
+          baseUrl: _getBaseUrl(),
+        ),
+      ),
+    );
+    if (result == true || mounted) {
+      fetchRecentScans();
+    }
   }
 
   Future<void> _detectLocationAndStore() async {
@@ -37,6 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
         lat: position.latitude,
         lng: position.longitude,
         baseUrl: _getBaseUrl(),
+        client: widget.httpClient,
       );
 
       if (!mounted) return;
@@ -171,18 +234,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: AppSpacing.s),
-
-                    // 1. Scan Hero Card
+                    // 1. Scan Hero Card
                     InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                ScanCameraScreen(baseUrl: _getBaseUrl()),
-                          ),
-                        );
-                      },
+                      onTap: _openScanCamera,
                       borderRadius: BorderRadius.circular(AppRadius.xl),
                       child: Container(
                         padding: const EdgeInsets.all(AppSpacing.xxl),
@@ -537,85 +591,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.s),
-                    // Empty state for recent scans
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xl,
-                        vertical: AppSpacing.xxl,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.paper,
-                        borderRadius: BorderRadius.circular(AppRadius.xl),
-                        border: Border.all(color: AppColors.line),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.ink.withValues(alpha: 0.02),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: AppColors.card,
-                              borderRadius: BorderRadius.circular(AppRadius.xl),
-                            ),
-                            child: const Icon(
-                              Icons.history_toggle_off_outlined,
-                              color: AppColors.muted,
-                              size: 28,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.m),
-                          Text(
-                            'Belum Ada Riwayat Pindai',
-                            style: AppTextStyles.titleSmall.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            'Pindai label harga rak produk di toko untuk mulai mencatat dan membandingkan harga.',
-                            textAlign: TextAlign.center,
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.muted,
-                              height: 1.4,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.l),
-                          OutlinedButton.icon(
-                            key: const Key('home_start_scan_cta'),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      ScanCameraScreen(baseUrl: _getBaseUrl()),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                            label: const Text('Mulai Pindai Rak'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.accent,
-                              side: const BorderSide(color: AppColors.accent),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.l),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.l,
-                                vertical: AppSpacing.s,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    _buildRecentScansSection(),
                     const SizedBox(height: AppSpacing.xxl),
                   ],
                 ),
@@ -626,4 +602,270 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  Widget _buildRecentScansSection() {
+    if (_isLoadingScans) {
+      return Container(
+        key: const Key('recent_scans_loading'),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+        alignment: Alignment.center,
+        child: Column(
+          children: [
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: AppColors.accent,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.m),
+            Text(
+              'Memuat riwayat scan...',
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_scansError != null) {
+      return Container(
+        key: const Key('recent_scans_error'),
+        padding: const EdgeInsets.all(AppSpacing.l),
+        decoration: BoxDecoration(
+          color: AppColors.paper,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(color: AppColors.line),
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 32),
+            const SizedBox(height: AppSpacing.s),
+            Text(
+              'Gagal memuat riwayat scan.',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.ink,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.m),
+            TextButton.icon(
+              key: const Key('retry_recent_scans_button'),
+              onPressed: fetchRecentScans,
+              icon: const Icon(Icons.refresh, size: 16),
+              label: const Text('Coba Lagi'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.accent,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_recentScans == null || _recentScans!.isEmpty) {
+      return Container(
+        key: const Key('recent_scans_empty'),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xl,
+          vertical: AppSpacing.xxl,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.paper,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(color: AppColors.line),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.ink.withValues(alpha: 0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(AppRadius.xl),
+              ),
+              child: const Icon(
+                Icons.history_toggle_off_outlined,
+                color: AppColors.muted,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.m),
+            Text(
+              'Belum Ada Riwayat Pindai',
+              style: AppTextStyles.titleSmall.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Pindai label harga rak produk di toko untuk mulai mencatat dan membandingkan harga.',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.muted,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.l),
+            OutlinedButton.icon(
+              key: const Key('home_start_scan_cta'),
+              onPressed: _openScanCamera,
+              icon: const Icon(Icons.camera_alt_outlined, size: 18),
+              label: const Text('Mulai Pindai Rak'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.accent,
+                side: const BorderSide(color: AppColors.accent),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.l),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.l,
+                  vertical: AppSpacing.s,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      key: const Key('recent_scans_list'),
+      children: _recentScans!.take(5).map((scan) => _buildRecentScanCard(scan)).toList(),
+    );
+  }
+
+  Widget _buildRecentScanCard(RecentScan scan) {
+    final String sizeText = scan.ukuran != null && scan.ukuran! > 0
+        ? '${scan.ukuran!.toStringAsFixed(scan.ukuran! % 1 == 0 ? 0 : 1)} ${scan.satuan ?? ""}'.trim()
+        : (scan.satuan ?? '');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.m),
+      padding: const EdgeInsets.all(AppSpacing.l),
+      decoration: BoxDecoration(
+        color: AppColors.paper,
+        borderRadius: BorderRadius.circular(AppRadius.l),
+        border: Border.all(color: AppColors.line),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.ink.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  scan.namaProduk,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s),
+              Text(
+                _formatRupiah(scan.harga),
+                style: AppTextStyles.bodyLarge.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.accent,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 6,
+                children: [
+                  if (sizeText.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.card,
+                        borderRadius: BorderRadius.circular(AppRadius.s),
+                      ),
+                      child: Text(
+                        sizeText,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  Text(
+                    scan.storeName ?? 'Toko Terdekat',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.muted,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                _formatDateTime(scan.timestamp),
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.muted,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDateTime(DateTime dt) {
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'
+    ];
+    final day = dt.day.toString().padLeft(2, '0');
+    final month = months[dt.month - 1];
+    final year = dt.year;
+    final hour = dt.hour.toString().padLeft(2, '0');
+    final minute = dt.minute.toString().padLeft(2, '0');
+    return '$day $month $year, $hour:$minute';
+  }
+
+  String _formatRupiah(num amount) {
+    final int val = amount.toInt();
+    final String s = val.toString();
+    final StringBuffer sb = StringBuffer();
+    int count = 0;
+    for (int i = s.length - 1; i >= 0; i--) {
+      sb.write(s[i]);
+      count++;
+      if (count % 3 == 0 && i > 0) {
+        sb.write('.');
+      }
+    }
+    return 'Rp ${sb.toString().split('').reversed.join('')}';
+  }
 }
+
