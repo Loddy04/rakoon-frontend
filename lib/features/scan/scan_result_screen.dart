@@ -12,6 +12,7 @@ import 'package:rakoon_frontend/services/location_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/features/recommendation/recommendation_screen.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
+import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 import 'package:http/http.dart' as http;
 
 class ScanResultScreen extends StatefulWidget {
@@ -108,7 +109,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
   }
 
   String _formatRupiah(double amount) {
-    return 'Rp${amount.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
+    return formatRp(amount);
   }
 
   void _openEditBottomSheet(ScanResultItem item) {
@@ -121,9 +122,9 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.paper,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (context) {
         return StatefulBuilder(
@@ -278,7 +279,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.accent,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppColors.paper,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.l),
@@ -305,9 +306,9 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.paper,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (context) {
         return StatefulBuilder(
@@ -468,7 +469,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.accent,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppColors.paper,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.l),
@@ -1284,14 +1285,14 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: AppColors.paper,
                         ),
                       )
                     : const Icon(Icons.check_circle_outline),
                 label: const Text('Simpan Hasil Scan'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.accent,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.paper,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   textStyle: const TextStyle(
                     fontSize: 16,

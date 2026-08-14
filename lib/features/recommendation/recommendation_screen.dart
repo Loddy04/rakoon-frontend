@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
+import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 import 'package:http/http.dart' as http;
 
 class RecommendationScreen extends StatefulWidget {
@@ -64,7 +65,7 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
   }
 
   String _formatRupiah(double amount) {
-    return 'Rp ${amount.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
+    return formatRp(amount);
   }
 
   @override
@@ -234,9 +235,9 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.m),
                 ),
-                child: const Icon(Icons.category_outlined, color: Colors.white, size: 18),
+                child: const Icon(Icons.category_outlined, color: AppColors.paper, size: 18),
               ),
               const SizedBox(width: 10),
               Text(
@@ -394,7 +395,7 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.grey.shade900 : Colors.white,
+                      color: isDark ? const Color(0xFF0F172A) : AppColors.paper,
                       borderRadius: BorderRadius.circular(AppRadius.s),
                       border: Border.all(color: AppColors.line),
                     ),
