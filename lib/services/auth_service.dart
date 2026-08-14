@@ -8,6 +8,9 @@ class AuthService {
     required String email,
     required String password,
   }) async {
+    if (_mockSession != null) {
+      return AuthResponse(session: _mockSession, user: _mockSession?.user);
+    }
     return await _client.auth.signUp(
       email: email,
       password: password,
@@ -19,6 +22,9 @@ class AuthService {
     required String email,
     required String password,
   }) async {
+    if (_mockSession != null) {
+      return AuthResponse(session: _mockSession, user: _mockSession?.user);
+    }
     return await _client.auth.signInWithPassword(
       email: email,
       password: password,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rakoon_frontend/features/app_shell/presentation/pages/app_shell.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/features/auth/presentation/pages/register_page.dart';
 import 'package:rakoon_frontend/features/auth/presentation/widgets/login_form.dart';
@@ -50,6 +51,13 @@ class LoginPage extends StatelessWidget {
                     onSuccess: () {
                       if (Navigator.canPop(context)) {
                         Navigator.pop(context);
+                      } else {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AppShell(),
+                          ),
+                        );
                       }
                     },
                   ),
