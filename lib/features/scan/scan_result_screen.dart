@@ -37,6 +37,7 @@ class ScanResultScreen extends StatefulWidget {
 
 class _ScanResultScreenState extends State<ScanResultScreen> {
   bool _isSaving = false;
+  bool _isDialogShowing = false;
   String? _errorMessage;
 
   // Store selection state
@@ -51,6 +52,140 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
   // The local mutable list - single source of truth
   List<ScanResultItem> _items = [];
+
+  Future<void> _showValidationErrorDialog(List<String> errorMessages) async {
+    if (_isDialogShowing) return;
+    _isDialogShowing = true;
+
+    try {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+            ),
+            elevation: 8,
+            backgroundColor: AppColors.paper,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xxl),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSpacing.m),
+                      decoration: const BoxDecoration(
+                        color: AppColors.errorSoft,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.error_outline_rounded,
+                        color: AppColors.error,
+                        size: 40,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.l),
+                  Text(
+                    'Data Produk Belum Lengkap',
+                    style: AppTextStyles.titleMedium.copyWith(
+                      color: AppColors.ink,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.s),
+                  Text(
+                    'Lengkapi data berikut sebelum menyimpan hasil scan:',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.muted,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.m),
+                  Flexible(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 200),
+                      child: SingleChildScrollView(
+                        child: Container(
+                          padding: const EdgeInsets.all(AppSpacing.m),
+                          decoration: BoxDecoration(
+                            color: AppColors.card,
+                            borderRadius: BorderRadius.circular(AppRadius.l),
+                            border: Border.all(color: AppColors.line),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: errorMessages.map((msg) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 3),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('• ', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+                                    Expanded(
+                                      child: Text(
+                                        msg,
+                                        style: AppTextStyles.bodySmall.copyWith(
+                                          color: AppColors.ink,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  ElevatedButton(
+                    key: const Key('validation_dialog_inspect_btn'),
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: AppColors.paper,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.l),
+                      ),
+                    ),
+                    child: const Text(
+                      'Periksa Produk',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s),
+                  TextButton(
+                    key: const Key('validation_dialog_close_btn'),
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.muted,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                    child: const Text(
+                      'Tutup',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    } finally {
+      _isDialogShowing = false;
+    }
+  }
 
   @override
   void initState() {
@@ -85,6 +220,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
         lat: position.latitude,
         lng: position.longitude,
         baseUrl: widget.baseUrl,
+        client: widget.httpClient,
       );
 
       setState(() {
@@ -273,6 +409,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                         item.ukuran = parsedSize;
                         item.satuan = unit;
                         item.kategori = selectedCategory;
+                        _errorMessage = null;
                       });
 
                       Navigator.pop(context);
@@ -463,6 +600,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
                       setState(() {
                         _items.add(newItem);
+                        _errorMessage = null;
                       });
 
                       Navigator.pop(context);
@@ -506,6 +644,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
               Navigator.pop(context);
               setState(() {
                 _items.remove(item);
+                _errorMessage = null;
               });
             },
             style: TextButton.styleFrom(
@@ -572,19 +711,17 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Flexible(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                Expanded(
+                  child: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 4,
+                    runSpacing: 2,
                     children: [
-                      Flexible(
-                        child: Text(
-                          'Produk #${itemIndex + 1}',
-                          style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                      Text(
+                        'Produk #${itemIndex + 1}',
+                        style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
                       ),
-                      if (item.needsVerification) ...[
-                        const SizedBox(width: 4),
+                      if (item.needsVerification)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                           decoration: BoxDecoration(
@@ -600,7 +737,6 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                             ),
                           ),
                         ),
-                      ],
                     ],
                   ),
                 ),
@@ -801,6 +937,8 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
   }
 
   Future<void> _saveResults() async {
+    if (_isSaving || _isDialogShowing) return;
+
     if (AuthService.currentSession == null) {
       final bool? loginSuccess = await showModalBottomSheet<bool>(
         context: context,
@@ -854,41 +992,63 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
       return;
     }
 
+    if (_items.isEmpty) {
+      setState(() {
+        _errorMessage = 'Tidak ada produk untuk disimpan.';
+        _isSaving = false;
+      });
+      return;
+    }
+
+    final List<String> errorMessages = [];
     final List<ScanResultItem> confirmedItems = [];
-    for (var item in _items) {
+
+    for (int i = 0; i < _items.length; i++) {
+      final item = _items[i];
       final String name = (item.namaProduk ?? '').trim();
       final double? price = item.harga;
+      final double? size = item.ukuran;
+      final String unit = (item.satuan ?? '').trim();
+      final String category = (item.kategori ?? '').trim();
 
-      if (name.isEmpty) {
-        setState(() {
-          _errorMessage = 'Nama produk tidak boleh kosong!';
-          _isSaving = false;
-        });
-        return;
+      final List<String> missing = [];
+      if (name.isEmpty) missing.add('nama produk');
+      if (price == null || price <= 0 || price.isNaN || price.isInfinite) missing.add('harga');
+      if (size == null || size <= 0 || size.isNaN || size.isInfinite) missing.add('ukuran');
+      if (unit.isEmpty) missing.add('satuan');
+      if (category.isEmpty) missing.add('kategori');
+
+      if (missing.isNotEmpty) {
+        final String itemLabel = name.isNotEmpty ? name : 'Produk #${i + 1}';
+        final String fieldsText = missing.length == 1
+            ? '${missing.first} belum diisi'
+            : (missing.length == 2
+                ? '${missing[0]} dan ${missing[1]} belum diisi'
+                : '${missing.sublist(0, missing.length - 1).join(', ')} dan ${missing.last} belum diisi');
+        errorMessages.add('$itemLabel - $fieldsText.');
+      } else {
+        confirmedItems.add(item);
       }
+    }
 
-      if (price == null || price <= 0) {
-        setState(() {
-          _errorMessage = 'Harga produk harus lebih besar dari 0!';
-          _isSaving = false;
-        });
-        return;
+    if (errorMessages.isNotEmpty) {
+      setState(() {
+        _isSaving = false;
+      });
+      if (mounted) {
+        await _showValidationErrorDialog(errorMessages);
       }
-
-      confirmedItems.add(item);
+      return;
     }
 
     try {
-      final response = await ScanService.confirmScan(
+      await ScanService.confirmScan(
         storeId: storeId,
         userId: userId,
         items: confirmedItems,
         baseUrl: widget.baseUrl,
+        client: widget.httpClient,
       );
-
-      final int saved = response['items_saved'] ?? 0;
-      final int created = response['products_created'] ?? 0;
-      final String msg = response['message'] ?? 'Berhasil disimpan!';
 
       if (mounted) {
         showDialog(
@@ -928,71 +1088,17 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                   ),
                   const SizedBox(height: AppSpacing.s),
                   Text(
-                    msg,
+                    'Hasil scan berhasil disimpan.',
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.muted,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: AppSpacing.xl),
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.l),
-                    decoration: BoxDecoration(
-                      color: AppColors.card,
-                      borderRadius: BorderRadius.circular(AppRadius.l),
-                      border: Border.all(color: AppColors.line),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.receipt_long_rounded, size: 18, color: AppColors.accent),
-                                const SizedBox(width: AppSpacing.s),
-                                Text('Entri Harga Baru', style: AppTextStyles.bodyMedium),
-                              ],
-                            ),
-                            Text(
-                              '$saved',
-                              style: AppTextStyles.bodyLarge.copyWith(
-                                color: AppColors.ink,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: AppSpacing.s),
-                          child: Divider(),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.add_box_rounded, size: 18, color: AppColors.onboardingAccent1),
-                                const SizedBox(width: AppSpacing.s),
-                                Text('Produk Baru Dibuat', style: AppTextStyles.bodyMedium),
-                              ],
-                            ),
-                            Text(
-                              '$created',
-                              style: AppTextStyles.bodyLarge.copyWith(
-                                color: AppColors.ink,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
                   const SizedBox(height: AppSpacing.xxl),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
+                      key: const Key('save_success_done_button'),
                       onPressed: () {
                         Navigator.pop(context);
                         Navigator.pop(context, true);
@@ -1201,13 +1307,18 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                     border: Border.all(color: AppColors.error),
                   ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Icon(Icons.error_outline, color: AppColors.error),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _errorMessage!,
-                          style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            color: AppColors.error,
+                            fontWeight: FontWeight.bold,
+                            height: 1.3,
+                          ),
                         ),
                       ),
                     ],
