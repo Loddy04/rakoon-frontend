@@ -537,99 +537,83 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.s),
-
-                    // List of recent items
+                    // Empty state for recent scans
                     Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xl,
+                        vertical: AppSpacing.xxl,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.paper,
                         borderRadius: BorderRadius.circular(AppRadius.xl),
                         border: Border.all(color: AppColors.line),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.ink.withValues(alpha: 0.02),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _mockScans.length,
-                        separatorBuilder: (context, index) =>
-                            const Divider(color: AppColors.line, height: 1),
-                        itemBuilder: (context, index) {
-                          final item = _mockScans[index];
-                          return ListTile(
-                            leading: Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: AppColors.background,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.l,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: AppColors.card,
+                              borderRadius: BorderRadius.circular(AppRadius.xl),
+                            ),
+                            child: const Icon(
+                              Icons.history_toggle_off_outlined,
+                              color: AppColors.muted,
+                              size: 28,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.m),
+                          Text(
+                            'Belum Ada Riwayat Pindai',
+                            style: AppTextStyles.titleSmall.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            'Pindai label harga rak produk di toko untuk mulai mencatat dan membandingkan harga.',
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.muted,
+                              height: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.l),
+                          OutlinedButton.icon(
+                            key: const Key('home_start_scan_cta'),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ScanCameraScreen(baseUrl: _getBaseUrl()),
                                 ),
+                              );
+                            },
+                            icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                            label: const Text('Mulai Pindai Rak'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.accent,
+                              side: const BorderSide(color: AppColors.accent),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(AppRadius.l),
                               ),
-                              child: const Icon(
-                                Icons.shopping_bag_outlined,
-                                color: AppColors.muted,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.l,
+                                vertical: AppSpacing.s,
                               ),
                             ),
-                            title: Text(
-                              item.name,
-                              style: AppTextStyles.bodyLarge.copyWith(
-                                fontSize: 14,
-                              ),
-                            ),
-                            subtitle: Text(
-                              '${item.store} · ${item.volume}',
-                              style: AppTextStyles.bodySmall,
-                            ),
-                            trailing: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  item.price,
-                                  style: AppTextStyles.bodyLarge.copyWith(
-                                    color: AppColors.ink,
-                                  ),
-                                ),
-                                if (item.isBestValue) ...[
-                                  const SizedBox(height: 4),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpacing.s,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.accentSoft,
-                                      borderRadius: BorderRadius.circular(
-                                        AppRadius.full,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(
-                                          Icons.star_rounded,
-                                          color: AppColors.accent,
-                                          size: 10,
-                                        ),
-                                        const SizedBox(width: 2),
-                                        Text(
-                                          'Best Value',
-                                          style: AppTextStyles.labelSmall
-                                              .copyWith(fontSize: 9),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ] else ...[
-                                  const SizedBox(height: 4),
-                                  const Icon(
-                                    Icons.chevron_right,
-                                    color: AppColors.muted,
-                                    size: 16,
-                                  ),
-                                ],
-                              ],
-                            ),
-                          );
-                        },
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xxl),
@@ -643,50 +627,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
-class MockProduct {
-  final String name;
-  final String price;
-  final String store;
-  final String volume;
-  final bool isBestValue;
-
-  const MockProduct({
-    required this.name,
-    required this.price,
-    required this.store,
-    required this.volume,
-    required this.isBestValue,
-  });
-}
-
-const List<MockProduct> _mockScans = [
-  MockProduct(
-    name: 'Minyak Goreng Filma 2L',
-    price: 'Rp 34.500',
-    store: 'Indomaret',
-    volume: '2 Liter',
-    isBestValue: true,
-  ),
-  MockProduct(
-    name: 'Susu UHT Ultra Milk 1L',
-    price: 'Rp 17.200',
-    store: 'Alfamart',
-    volume: '1 Liter',
-    isBestValue: false,
-  ),
-  MockProduct(
-    name: 'Indomie Goreng Spesial',
-    price: 'Rp 3.100',
-    store: 'Superindo',
-    volume: '85 gram',
-    isBestValue: true,
-  ),
-  MockProduct(
-    name: 'Kecap Manis Bango',
-    price: 'Rp 21.500',
-    store: 'Indomaret',
-    volume: '550 mL',
-    isBestValue: false,
-  ),
-];

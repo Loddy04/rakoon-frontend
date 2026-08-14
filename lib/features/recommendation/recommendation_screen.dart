@@ -30,55 +30,12 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
   @override
   void initState() {
     super.initState();
-    // Use passed candidates if provided, otherwise default to mock candidates for dev testing
-    if (widget.initialCandidates != null) {
-      _candidates = widget.initialCandidates!;
+    _candidates = widget.initialCandidates ?? [];
+    if (_candidates.isNotEmpty) {
+      _fetchRecommendation();
     } else {
-      _candidates = [
-        RecommendationCandidate(
-          productId: 'product-a',
-          namaProduk: 'Ultra Milk 1L',
-          harga: 20000,
-          ukuran: 1000,
-          satuan: 'ml',
-          kategori: 'Susu & Olahan',
-        ),
-        RecommendationCandidate(
-          productId: 'product-b',
-          namaProduk: 'Indomilk 1L',
-          harga: 18000,
-          ukuran: 1000,
-          satuan: 'ml',
-          kategori: 'Susu & Olahan',
-        ),
-        RecommendationCandidate(
-          productId: 'product-c',
-          namaProduk: 'Aqua 600ml',
-          harga: 5000,
-          ukuran: 600,
-          satuan: 'ml',
-          kategori: 'Minuman',
-        ),
-        RecommendationCandidate(
-          productId: 'product-d',
-          namaProduk: 'Teh Botol 350ml',
-          harga: 5000,
-          ukuran: 350,
-          satuan: 'ml',
-          kategori: 'Minuman',
-        ),
-        RecommendationCandidate(
-          productId: 'product-e',
-          namaProduk: 'Rinso 800ml',
-          harga: 15000,
-          ukuran: 800,
-          satuan: 'ml',
-          kategori: 'Produk Rumah Tangga',
-        ),
-      ];
+      _isLoading = false;
     }
-
-    _fetchRecommendation();
   }
 
   Future<void> _fetchRecommendation() async {

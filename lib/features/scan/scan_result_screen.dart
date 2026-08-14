@@ -17,16 +17,16 @@ import 'package:http/http.dart' as http;
 class ScanResultScreen extends StatefulWidget {
   final String baseUrl;
   final List<ScanResultItem> detectedItems;
-  final String defaultStoreId;
-  final String defaultUserId;
+  final String? initialStoreId;
+  final String? initialUserId;
   final http.Client? httpClient;
 
   const ScanResultScreen({
     super.key,
     required this.baseUrl,
     required this.detectedItems,
-    this.defaultStoreId = '21ba0855-bf71-4e6a-9718-b7ac79d8cfd2',
-    this.defaultUserId = 'c61b0cfa-3512-4fb3-96b6-3974c05ef1c8',
+    this.initialStoreId,
+    this.initialUserId,
     this.httpClient,
   });
 
@@ -54,9 +54,9 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
   @override
   void initState() {
     super.initState();
-    _storeIdController = TextEditingController(text: widget.defaultStoreId);
+    _storeIdController = TextEditingController(text: widget.initialStoreId ?? '');
     _userIdController = TextEditingController(
-      text: AuthService.currentUser?.id ?? widget.defaultUserId,
+      text: AuthService.currentUser?.id ?? widget.initialUserId ?? '',
     );
 
     // Initialize state items list
@@ -845,9 +845,9 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
     final String storeId = _storeIdController.text.trim();
 
-    if (storeId.isEmpty || userId.isEmpty) {
+    if (storeId.isEmpty) {
       setState(() {
-        _errorMessage = 'Store ID dan User ID tidak boleh kosong!';
+        _errorMessage = 'Pilih toko tempat Anda memindai terlebih dahulu!';
         _isSaving = false;
       });
       return;
@@ -1125,9 +1125,9 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
       }
     }
 
-    final defaultStoreId = _nearbyStores.isNotEmpty ? _nearbyStores.first.storeId : '';
+    final initialDetectedStoreId = _nearbyStores.isNotEmpty ? _nearbyStores.first.storeId : '';
     final currentStoreId = _selectedStore?.storeId ?? '';
-    if (currentStoreId != defaultStoreId && currentStoreId.isNotEmpty && defaultStoreId.isNotEmpty) {
+    if (currentStoreId != initialDetectedStoreId && currentStoreId.isNotEmpty && initialDetectedStoreId.isNotEmpty) {
       return true;
     }
 
