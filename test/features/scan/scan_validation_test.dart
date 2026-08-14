@@ -524,5 +524,84 @@ void main() {
 
       tester.view.resetPhysicalSize();
     });
+
+    testWidgets('13. Store selector card opens bottom sheet modal and selects store', (
+      WidgetTester tester,
+    ) async {
+      final multiStoreClient = MockClient((request) async {
+        if (request.url.path.endsWith('/stores/nearby')) {
+          return http.Response(
+            jsonEncode({
+              'source': 'osm',
+              'stores': [
+                {
+                  'store_id': 'store-test-id-1',
+                  'nama': 'Superindo Dago',
+                  'lat': -6.2088,
+                  'lng': 106.8456,
+                  'jarak_km': 0.8,
+                },
+                {
+                  'store_id': 'store-test-id-2',
+                  'nama': 'Alfamart Gatsu',
+                  'lat': -6.2090,
+                  'lng': 106.8460,
+                  'jarak_km': 1.2,
+                },
+              ],
+              'message': null,
+            }),
+            200,
+          );
+        }
+        return http.Response('Not found', 404);
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ScanResultScreen(
+            detectedItems: [
+              ScanResultItem(
+                namaProduk: 'Minyak Goreng',
+                harga: 35000,
+                ukuran: 2.0,
+                satuan: 'l',
+                kategori: 'Makanan Pokok',
+                confidence: 'tinggi',
+                needsVerification: false,
+              ),
+            ],
+            baseUrl: 'http://localhost:8000',
+            httpClient: multiStoreClient,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Store selector card is present
+      final storeCardFinder = find.byKey(const Key('store_selector_card'));
+      expect(storeCardFinder, findsOneWidget);
+      expect(find.text('Superindo Dago'), findsOneWidget);
+      expect(find.text('Otomatis'), findsOneWidget);
+
+      // Tap to open bottom sheet
+      await tester.ensureVisible(storeCardFinder);
+      await tester.tap(storeCardFinder);
+      await tester.pumpAndSettle();
+
+      // Bottom sheet is visible
+      expect(find.text('Pilih Lokasi Toko'), findsOneWidget);
+      expect(find.text('Alfamart Gatsu'), findsOneWidget);
+
+      // Select second store
+      await tester.tap(find.text('Alfamart Gatsu'));
+      await tester.pumpAndSettle();
+
+      // Bottom sheet closed and store updated
+      expect(find.text('Pilih Lokasi Toko'), findsNothing);
+      expect(find.text('Alfamart Gatsu'), findsOneWidget);
+    });
   });
 }
+
+

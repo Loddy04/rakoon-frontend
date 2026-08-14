@@ -817,28 +817,181 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     );
   }
 
+  void _showStoreSelectorBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.paper,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.l,
+              vertical: AppSpacing.m,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.line,
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.m),
+                Text(
+                  'Pilih Lokasi Toko',
+                  style: AppTextStyles.titleMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Pilih toko terdekat tempat Anda memindai harga produk.',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.muted,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.l),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: _nearbyStores.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: AppSpacing.s),
+                    itemBuilder: (context, index) {
+                      final store = _nearbyStores[index];
+                      final isSelected =
+                          _selectedStore?.storeId == store.storeId;
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedStore = store;
+                            _storeIdController.text = store.storeId;
+                          });
+                          Navigator.pop(context);
+                        },
+                        borderRadius: BorderRadius.circular(AppRadius.l),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.m,
+                            vertical: AppSpacing.m,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.accentSoft
+                                : AppColors.card,
+                            borderRadius: BorderRadius.circular(AppRadius.l),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.accent
+                                  : AppColors.line,
+                              width: isSelected ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? AppColors.paper
+                                      : AppColors.background,
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.m),
+                                ),
+                                child: Icon(
+                                  Icons.storefront_outlined,
+                                  color: isSelected
+                                      ? AppColors.accent
+                                      : AppColors.muted,
+                                  size: 20,
+                                ),
+
+                              ),
+                              const SizedBox(width: AppSpacing.m),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      store.nama,
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        fontWeight: isSelected
+                                            ? FontWeight.bold
+                                            : FontWeight.w600,
+                                        color: isSelected
+                                            ? AppColors.accent
+                                            : AppColors.ink,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${store.jarakKm.toStringAsFixed(1)} km dari lokasi Anda',
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: AppColors.muted,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isSelected)
+                                const Icon(
+                                  Icons.check_circle_rounded,
+                                  color: AppColors.accent,
+                                  size: 22,
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.m),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildStoreSelectionArea() {
     if (_isLoadingStores) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.m),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: AppColors.paper,
           borderRadius: BorderRadius.circular(AppRadius.l),
           border: Border.all(color: AppColors.line),
         ),
         child: const Row(
           children: [
             SizedBox(
-              width: 20,
-              height: 20,
+              width: 18,
+              height: 18,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 color: AppColors.accent,
               ),
             ),
-            SizedBox(width: 12),
+            SizedBox(width: AppSpacing.m),
             Expanded(
-              child: Text('Mencari toko terdekat...', style: TextStyle(fontSize: 14)),
+              child: Text(
+                'Mencari toko terdekat...',
+                style: TextStyle(fontSize: 13, color: AppColors.muted),
+              ),
             ),
           ],
         ),
@@ -847,7 +1000,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
     if (_storesError != null) {
       return Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppSpacing.m),
         decoration: BoxDecoration(
           color: AppColors.errorSoft,
           borderRadius: BorderRadius.circular(AppRadius.l),
@@ -888,20 +1041,20 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
     if (_nearbyStores.isEmpty) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.m),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: AppColors.paper,
           borderRadius: BorderRadius.circular(AppRadius.l),
           border: Border.all(color: AppColors.line),
         ),
         child: const Row(
           children: [
-            Icon(Icons.location_off_outlined, color: AppColors.muted),
-            SizedBox(width: 12),
+            Icon(Icons.location_off_outlined, color: AppColors.muted, size: 20),
+            SizedBox(width: AppSpacing.m),
             Expanded(
               child: Text(
                 'Tidak ada toko terdekat ditemukan',
-                style: TextStyle(color: AppColors.muted, fontSize: 14),
+                style: TextStyle(color: AppColors.muted, fontSize: 13),
               ),
             ),
           ],
@@ -909,32 +1062,118 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
       );
     }
 
-    return DropdownButtonFormField<StoreNearby>(
-      initialValue: _selectedStore,
-      isExpanded: true,
-      decoration: const InputDecoration(
-        labelText: 'Konfirmasi Lokasi Toko',
-        border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.storefront, color: AppColors.accent),
-        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    return InkWell(
+      key: const Key('store_selector_card'),
+      onTap: _showStoreSelectorBottomSheet,
+      borderRadius: BorderRadius.circular(AppRadius.l),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.m),
+        decoration: BoxDecoration(
+          color: AppColors.paper,
+          borderRadius: BorderRadius.circular(AppRadius.l),
+          border: Border.all(color: AppColors.line),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.ink.withValues(alpha: 0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppColors.accentSoft,
+                borderRadius: BorderRadius.circular(AppRadius.m),
+              ),
+              child: const Icon(
+                Icons.storefront_outlined,
+                color: AppColors.accent,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.m),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 6,
+                    runSpacing: 2,
+                    children: [
+                      Text(
+                        'Lokasi Toko',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.muted,
+                          fontSize: 11,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentSoft,
+                          borderRadius: BorderRadius.circular(AppRadius.full),
+                        ),
+                        child: Text(
+                          'Otomatis',
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: AppColors.accent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 2),
+                  Text(
+                    _selectedStore?.nama ?? 'Pilih Toko',
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (_selectedStore != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      '${_selectedStore!.jarakKm.toStringAsFixed(1)} km dari lokasi Anda',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.s),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(AppRadius.s),
+              ),
+              child: const Icon(
+                Icons.unfold_more_rounded,
+                color: AppColors.muted,
+                size: 18,
+              ),
+            ),
+          ],
+        ),
       ),
-      items: _nearbyStores.map((StoreNearby store) {
-        return DropdownMenuItem<StoreNearby>(
-          value: store,
-          child: Text(
-            '${store.nama} (${store.jarakKm.toStringAsFixed(2)} km)',
-            overflow: TextOverflow.ellipsis,
-          ),
-        );
-      }).toList(),
-      onChanged: (StoreNearby? newValue) {
-        setState(() {
-          _selectedStore = newValue;
-          _storeIdController.text = newValue?.storeId ?? '';
-        });
-      },
     );
   }
+
 
   Future<void> _saveResults() async {
     if (_isSaving || _isDialogShowing) return;
@@ -1365,10 +1604,10 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
               ElevatedButton.icon(
                 key: const Key('best_value_cta_button'),
                 onPressed: _evaluateBestValue,
-                icon: const Icon(Icons.emoji_events, size: 24),
+                icon: const Icon(Icons.emoji_events, size: 22),
                 label: const Text('🏆 Hitung Best Value Recommendation'),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
                   backgroundColor: AppColors.accentSoft,
                   foregroundColor: AppColors.accent,
                   side: const BorderSide(color: AppColors.accent, width: 1.5),
@@ -1377,6 +1616,8 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                   ),
                 ),
               ),
+
+
 
               const SizedBox(height: 16),
               const Divider(),
