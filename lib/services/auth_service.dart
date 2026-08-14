@@ -33,6 +33,7 @@ class AuthService {
 
   /// Sign Out
   static Future<void> signOut() async {
+    _mockSession = null;
     await _client.auth.signOut();
   }
 
