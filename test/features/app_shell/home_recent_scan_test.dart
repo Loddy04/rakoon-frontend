@@ -43,30 +43,18 @@ void main() {
 
     userScansDatabase = [
       {
-        'id': 'entry-1',
-        'product_id': 'prod-1',
-        'nama_produk': 'Minyak Goreng Sania 2L',
-        'kategori': 'Makanan Pokok',
-        'ukuran': 2.0,
-        'satuan': 'l',
-        'harga': 36500,
+        'id': 'session-1',
         'store_id': 'store-1',
-        'store_name': 'Superindo Dago',
+        'store_name': 'Supermarket Toko Amanah',
         'timestamp': DateTime.now().subtract(const Duration(minutes: 15)).toIso8601String(),
-        'status_verifikasi': 'verified',
+        'product_count': 17,
       },
       {
-        'id': 'entry-2',
-        'product_id': 'prod-2',
-        'nama_produk': 'Beras Rojolele 5kg',
-        'kategori': 'Makanan Pokok',
-        'ukuran': 5.0,
-        'satuan': 'kg',
-        'harga': 74000,
-        'store_id': 'store-1',
-        'store_name': 'Superindo Dago',
+        'id': 'session-2',
+        'store_id': 'store-2',
+        'store_name': 'Alfamart Dago',
         'timestamp': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
-        'status_verifikasi': 'verified',
+        'product_count': 3,
       },
     ];
 
@@ -78,7 +66,7 @@ void main() {
             'stores': [
               {
                 'store_id': 'store-1',
-                'nama': 'Superindo Dago',
+                'nama': 'Supermarket Toko Amanah',
                 'lat': -6.2088,
                 'lng': 106.8456,
                 'jarak_km': 0.8,
@@ -108,7 +96,7 @@ void main() {
 
   group('Home Recent Scan Feature Tests', () {
     // 5. Home displays recent scan when authenticated user has history.
-    testWidgets('5. Home displays recent scan when authenticated user has history', (
+    testWidgets('5. Home displays recent scan session when authenticated user has history', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -122,13 +110,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Scan Terakhir'), findsOneWidget);
-      expect(find.text('Minyak Goreng Sania 2L'), findsOneWidget);
-      expect(find.text('Rp 36.500'), findsOneWidget);
-      expect(find.text('2 l'), findsOneWidget);
-      expect(find.text('Beras Rojolele 5kg'), findsOneWidget);
-      expect(find.text('Rp 74.000'), findsOneWidget);
-      expect(find.text('5 kg'), findsOneWidget);
-      expect(find.text('Superindo Dago'), findsAtLeast(1));
+      expect(find.text('Supermarket Toko Amanah'), findsOneWidget);
+      expect(find.text('17 produk dipindai'), findsOneWidget);
+      expect(find.text('Alfamart Dago'), findsOneWidget);
+      expect(find.text('3 produk dipindai'), findsOneWidget);
 
       // Empty state should NOT be shown
       expect(find.text('Belum Ada Riwayat Pindai'), findsNothing);
@@ -158,7 +143,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(capturedAuthHeader, 'Bearer test-user-bearer-token');
-      expect(find.text('Minyak Goreng Sania 2L'), findsOneWidget);
+      expect(find.text('Supermarket Toko Amanah'), findsOneWidget);
+      expect(find.text('17 produk dipindai'), findsOneWidget);
     });
 
     // 7. Home displays empty state if history is truly empty.
@@ -215,7 +201,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('recent_scans_loading')), findsNothing);
-      expect(find.text('Minyak Goreng Sania 2L'), findsOneWidget);
+      expect(find.text('Supermarket Toko Amanah'), findsOneWidget);
     });
 
     // 9. Home displays error state if request fails, with retry button.
@@ -255,7 +241,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('recent_scans_error')), findsNothing);
-      expect(find.text('Minyak Goreng Sania 2L'), findsOneWidget);
+      expect(find.text('Supermarket Toko Amanah'), findsOneWidget);
     });
 
     // 10. After Scan -> return to Home, recent scan updates without app restart.
@@ -277,19 +263,13 @@ void main() {
       // Initially empty
       expect(find.text('Belum Ada Riwayat Pindai'), findsOneWidget);
 
-      // Simulate new scan saved in backend
+      // Simulate new scan session saved in backend
       userScansDatabase.add({
-        'id': 'entry-new-1',
-        'product_id': 'prod-new-1',
-        'nama_produk': 'Indomie Goreng Rasa Baru',
-        'kategori': 'Makanan Instan',
-        'ukuran': 85.0,
-        'satuan': 'g',
-        'harga': 3500,
+        'id': 'session-new-1',
         'store_id': 'store-1',
-        'store_name': 'Superindo Dago',
+        'store_name': 'Supermarket Baru Dago',
         'timestamp': DateTime.now().toIso8601String(),
-        'status_verifikasi': 'verified',
+        'product_count': 5,
       });
 
       // Switch to Scan tab (index 1)
@@ -301,8 +281,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // New item appears immediately without restarting
-      expect(find.text('Indomie Goreng Rasa Baru'), findsOneWidget);
-      expect(find.text('Rp 3.500'), findsOneWidget);
+      expect(find.text('Supermarket Baru Dago'), findsOneWidget);
+      expect(find.text('5 produk dipindai'), findsOneWidget);
       expect(find.text('Belum Ada Riwayat Pindai'), findsNothing);
     });
 
@@ -313,16 +293,10 @@ void main() {
       final dynamicScans = [
         {
           'id': 'dynamic-id-99',
-          'product_id': 'prod-dynamic-99',
-          'nama_produk': 'Produk Khusus Pengguna Nyata',
-          'kategori': 'Camilan',
-          'ukuran': 150.0,
-          'satuan': 'gr',
-          'harga': 12500,
           'store_id': 'store-special-1',
           'store_name': 'Grand Lucky SCBD',
           'timestamp': DateTime.now().toIso8601String(),
-          'status_verifikasi': 'verified',
+          'product_count': 12,
         }
       ];
 
@@ -343,10 +317,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Produk Khusus Pengguna Nyata'), findsOneWidget);
       expect(find.text('Grand Lucky SCBD'), findsOneWidget);
-      expect(find.text('Rp 12.500'), findsOneWidget);
-      expect(find.text('150 gr'), findsOneWidget);
+      expect(find.text('12 produk dipindai'), findsOneWidget);
     });
 
     // 12. Responsive test 320dp, 360dp, 390dp, 430dp without overflow.
@@ -372,7 +344,8 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(find.text('Rakoon'), findsOneWidget);
         expect(find.text('Scan Terakhir'), findsOneWidget);
-        expect(find.text('Minyak Goreng Sania 2L'), findsOneWidget);
+        expect(find.text('Supermarket Toko Amanah'), findsOneWidget);
+        expect(find.text('17 produk dipindai'), findsOneWidget);
       }
 
       tester.view.resetPhysicalSize();

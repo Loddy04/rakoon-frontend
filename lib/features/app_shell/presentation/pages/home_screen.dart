@@ -6,12 +6,15 @@ import 'package:rakoon_frontend/features/history/presentation/pages/product_hist
 import 'package:rakoon_frontend/features/nearby/nearby_stores_screen.dart';
 import 'package:rakoon_frontend/features/nearby/price_comparison_screen.dart';
 import 'package:rakoon_frontend/features/nearby/presentation/widgets/product_selector_bottom_sheet.dart';
+import 'package:rakoon_frontend/features/scan/presentation/pages/scan_history_screen.dart';
+import 'package:rakoon_frontend/features/scan/presentation/pages/scan_session_detail_screen.dart';
 import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/services/location_service.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
+
 
 class HomeScreen extends StatefulWidget {
   // TODO: [Temporary] baseUrl is loaded from development dashboard parameters.
@@ -562,17 +565,20 @@ class HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         InkWell(
+                          key: const Key('scan_terakhir_see_all'),
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => ProductHistoryListPage(
+                                builder: (context) => ScanHistoryScreen(
                                   baseUrl: _getBaseUrl(),
+                                  httpClient: widget.httpClient,
                                 ),
                               ),
                             );
                           },
                           borderRadius: BorderRadius.circular(AppRadius.s),
+
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               vertical: 4,
@@ -745,80 +751,87 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRecentScanCard(RecentScan scan) {
-    final String sizeText = scan.ukuran != null && scan.ukuran! > 0
-        ? '${scan.ukuran!.toStringAsFixed(scan.ukuran! % 1 == 0 ? 0 : 1)} ${scan.satuan ?? ""}'.trim()
-        : (scan.satuan ?? '');
+    final String storeName = scan.storeName ?? 'Toko Terdekat';
+    final String productCountText = '${scan.productCount} produk dipindai';
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.m),
-      padding: const EdgeInsets.all(AppSpacing.l),
-      decoration: BoxDecoration(
-        color: AppColors.paper,
-        borderRadius: BorderRadius.circular(AppRadius.l),
-        border: Border.all(color: AppColors.line),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.ink.withValues(alpha: 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  scan.namaProduk,
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+      child: InkWell(
+        key: Key('recent_scan_item_${scan.id}'),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ScanSessionDetailScreen(
+                scanSessionId: scan.id,
+                baseUrl: _getBaseUrl(),
+                httpClient: widget.httpClient,
               ),
-              const SizedBox(width: AppSpacing.s),
-              Text(
-                _formatRupiah(scan.harga),
-                style: AppTextStyles.bodyLarge.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.accent,
-                ),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(AppRadius.l),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.l),
+          decoration: BoxDecoration(
+            color: AppColors.paper,
+            borderRadius: BorderRadius.circular(AppRadius.l),
+            border: Border.all(color: AppColors.line),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.ink.withValues(alpha: 0.02),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            runSpacing: 4,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Wrap(
+                alignment: WrapAlignment.spaceBetween,
                 crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 6,
+                spacing: AppSpacing.s,
+                runSpacing: AppSpacing.xs,
                 children: [
-                  if (sizeText.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.card,
-                        borderRadius: BorderRadius.circular(AppRadius.s),
-                      ),
-                      child: Text(
-                        sizeText,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                        ),
+                  Text(
+                    storeName,
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s,
+                      vertical: AppSpacing.xs,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentSoft,
+                      borderRadius: BorderRadius.circular(AppRadius.s),
+                    ),
+                    child: Text(
+                      productCountText,
+                      style: AppTextStyles.labelSmall.copyWith(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.s),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.access_time,
+                    size: 13,
+                    color: AppColors.muted,
+                  ),
+                  const SizedBox(width: 4),
                   Text(
-                    scan.storeName ?? 'Toko Terdekat',
+                    _formatDateTime(scan.timestamp),
                     style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.muted,
                       fontSize: 12,
@@ -826,46 +839,30 @@ class HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              Text(
-                _formatDateTime(scan.timestamp),
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.muted,
-                  fontSize: 11,
-                ),
-              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 
+
   String _formatDateTime(DateTime dt) {
+    final localDt = dt.toLocal();
     final months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
     ];
-    final day = dt.day.toString().padLeft(2, '0');
-    final month = months[dt.month - 1];
-    final year = dt.year;
-    final hour = dt.hour.toString().padLeft(2, '0');
-    final minute = dt.minute.toString().padLeft(2, '0');
+    final day = localDt.day.toString().padLeft(2, '0');
+    final month = months[localDt.month - 1];
+    final year = localDt.year;
+    final hour = localDt.hour.toString().padLeft(2, '0');
+    final minute = localDt.minute.toString().padLeft(2, '0');
     return '$day $month $year, $hour:$minute';
   }
 
-  String _formatRupiah(num amount) {
-    final int val = amount.toInt();
-    final String s = val.toString();
-    final StringBuffer sb = StringBuffer();
-    int count = 0;
-    for (int i = s.length - 1; i >= 0; i--) {
-      sb.write(s[i]);
-      count++;
-      if (count % 3 == 0 && i > 0) {
-        sb.write('.');
-      }
-    }
-    return 'Rp ${sb.toString().split('').reversed.join('')}';
-  }
+
+
 }
+
 
