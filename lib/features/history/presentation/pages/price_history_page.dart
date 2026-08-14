@@ -64,18 +64,18 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                        color: isDark ? const Color(0xFF1E293B) : AppColors.paper,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isDark
                               ? const Color(0xFF334155)
-                              : const Color(0xFFE2E8F0),
+                              : AppColors.line,
                         ),
                       ),
                       child: Icon(
                         Icons.chevron_left,
                         size: 20,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        color: isDark ? AppColors.paper : AppColors.ink,
                       ),
                     ),
                   ),
@@ -85,7 +85,7 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      color: isDark ? AppColors.paper : AppColors.ink,
                     ),
                   ),
                 ],
@@ -171,7 +171,7 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
                           decoration: BoxDecoration(
                             color: isDark
                                 ? const Color(0xFF1E293B)
-                                : Colors.white,
+                                : AppColors.paper,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: isDark
@@ -194,8 +194,8 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                   color: isDark
-                                      ? Colors.white
-                                      : const Color(0xFF0F172A),
+                                      ? AppColors.paper
+                                      : AppColors.ink,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -207,7 +207,7 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
                                   fontSize: 12,
                                   color: isDark
                                       ? const Color(0xFF94A3B8)
-                                      : const Color(0xFF64748B),
+                                      : AppColors.muted,
                                 ),
                               ),
                               const SizedBox(height: 20),
@@ -219,8 +219,8 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
                                 icon: const Icon(Icons.refresh, size: 16),
                                 label: const Text('Coba Lagi'),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF059669),
-                                  foregroundColor: Colors.white,
+                                  backgroundColor: AppColors.accent,
+                                  foregroundColor: AppColors.paper,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(20),
                                   ),
@@ -245,7 +245,7 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
                               decoration: BoxDecoration(
                                 color: isDark
                                     ? const Color(0xFF1E293B)
-                                    : const Color(0xFFF1F5F9),
+                                    : AppColors.card,
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
@@ -263,8 +263,8 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: isDark
-                                    ? Colors.white
-                                    : const Color(0xFF0F172A),
+                                    ? AppColors.paper
+                                    : AppColors.ink,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -275,7 +275,7 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
                                 fontSize: 13,
                                 color: isDark
                                     ? const Color(0xFF94A3B8)
-                                    : const Color(0xFF64748B),
+                                    : AppColors.muted,
                               ),
                             ),
                             const SizedBox(height: 24),
@@ -284,9 +284,9 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
                               icon: const Icon(Icons.arrow_back, size: 16),
                               label: const Text('Kembali'),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF059669),
+                                foregroundColor: AppColors.accent,
                                 side: const BorderSide(
-                                  color: Color(0xFF059669),
+                                  color: AppColors.accent,
                                 ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
@@ -384,7 +384,7 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
                               fontWeight: FontWeight.w600,
                               color: isDark
                                   ? const Color(0xFF94A3B8)
-                                  : const Color(0xFF64748B),
+                                  : AppColors.muted,
                             ),
                           ),
                         ),
@@ -455,7 +455,7 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder>
             width: widget.width,
             height: widget.height,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              color: isDark ? const Color(0xFF334155) : AppColors.line,
               borderRadius: BorderRadius.circular(widget.borderRadius),
             ),
           ),
@@ -525,15 +525,15 @@ class StoreFilterSelector extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: isSelected
-                ? (isDark ? Colors.white : const Color(0xFF0F172A))
-                : (isDark ? const Color(0xFF1E293B) : Colors.white),
+                ? (isDark ? AppColors.paper : AppColors.ink)
+                : (isDark ? const Color(0xFF1E293B) : AppColors.paper),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isSelected
                   ? Colors.transparent
                   : (isDark
                         ? const Color(0xFF334155)
-                        : const Color(0xFFE2E8F0)),
+                        : AppColors.line),
             ),
           ),
           child: Text(
@@ -542,10 +542,10 @@ class StoreFilterSelector extends StatelessWidget {
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: isSelected
-                  ? (isDark ? const Color(0xFF0F172A) : Colors.white)
+                  ? (isDark ? AppColors.ink : AppColors.paper)
                   : (isDark
                         ? const Color(0xFF94A3B8)
-                        : const Color(0xFF64748B)),
+                        : AppColors.muted),
             ),
           ),
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rakoon_frontend/theme/app_theme.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../data/models/price_history_item.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
@@ -41,10 +42,10 @@ class StoreHistoryListView extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : AppColors.paper,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          color: isDark ? const Color(0xFF334155) : AppColors.line,
         ),
       ),
       clipBehavior: Clip.antiAlias,
@@ -53,7 +54,7 @@ class StoreHistoryListView extends StatelessWidget {
           // Table header
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+            color: isDark ? AppColors.ink : AppColors.card,
             child: const Row(
               children: [
                 Expanded(
@@ -63,7 +64,7 @@ class StoreHistoryListView extends StatelessWidget {
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
-                      color: Color(0xFF64748B),
+                      color: AppColors.muted,
                     ),
                   ),
                 ),
@@ -73,13 +74,13 @@ class StoreHistoryListView extends StatelessWidget {
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.5,
-                    color: Color(0xFF64748B),
+                    color: AppColors.muted,
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+          const Divider(height: 1, thickness: 1, color: AppColors.line),
           // Table items
           ListView.separated(
             shrinkWrap: true,
@@ -88,7 +89,7 @@ class StoreHistoryListView extends StatelessWidget {
             separatorBuilder: (context, index) => Divider(
               height: 1,
               thickness: 1,
-              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              color: isDark ? const Color(0xFF334155) : AppColors.line,
             ),
             itemBuilder: (context, index) {
               final item = uniqueItems[index];
@@ -106,7 +107,7 @@ class StoreHistoryListView extends StatelessWidget {
                     const Icon(
                       Icons.storefront_outlined,
                       size: 18,
-                      color: Color(0xFF64748B),
+                      color: AppColors.muted,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -121,8 +122,8 @@ class StoreHistoryListView extends StatelessWidget {
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                               color: isDark
-                                  ? Colors.white
-                                  : const Color(0xFF0F172A),
+                                  ? AppColors.paper
+                                  : AppColors.ink,
                             ),
                           ),
                           if (showTermurah)
@@ -139,8 +140,8 @@ class StoreHistoryListView extends StatelessWidget {
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: isLowest
-                            ? const Color(0xFF059669)
-                            : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                            ? AppColors.accent
+                            : (isDark ? AppColors.paper : AppColors.ink),
                       ),
                     ),
                   ],
@@ -153,3 +154,4 @@ class StoreHistoryListView extends StatelessWidget {
     );
   }
 }
+

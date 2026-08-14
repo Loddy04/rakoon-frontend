@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rakoon_frontend/theme/app_theme.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../data/models/price_history_item.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
@@ -54,10 +55,10 @@ class ProductHeaderCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : AppColors.paper,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          color: isDark ? const Color(0xFF334155) : AppColors.line,
         ),
       ),
       child: Column(
@@ -67,7 +68,7 @@ class ProductHeaderCard extends StatelessWidget {
             'Produk',
             style: TextStyle(
               fontSize: 12,
-              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              color: isDark ? const Color(0xFF94A3B8) : AppColors.muted,
             ),
           ),
           const SizedBox(height: 2),
@@ -76,7 +77,7 @@ class ProductHeaderCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : const Color(0xFF0F172A),
+              color: isDark ? AppColors.paper : AppColors.ink,
             ),
           ),
           const SizedBox(height: 12),
@@ -91,7 +92,7 @@ class ProductHeaderCard extends StatelessWidget {
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
                   height: 1.0,
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  color: isDark ? AppColors.paper : AppColors.ink,
                 ),
               ),
               StatusBadge(status: trendStatus, icon: trendIcon),
@@ -111,7 +112,7 @@ class ProductHeaderCard extends StatelessWidget {
                         fontSize: 11,
                         color: isDark
                             ? const Color(0xFF94A3B8)
-                            : const Color(0xFF64748B),
+                            : AppColors.muted,
                       ),
                     ),
                     TextSpan(
@@ -119,7 +120,7 @@ class ProductHeaderCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        color: isDark ? AppColors.paper : AppColors.ink,
                       ),
                     ),
                   ],
@@ -134,7 +135,7 @@ class ProductHeaderCard extends StatelessWidget {
                         fontSize: 11,
                         color: isDark
                             ? const Color(0xFF94A3B8)
-                            : const Color(0xFF64748B),
+                            : AppColors.muted,
                       ),
                     ),
                     TextSpan(
@@ -142,7 +143,7 @@ class ProductHeaderCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        color: isDark ? AppColors.paper : AppColors.ink,
                       ),
                     ),
                   ],
@@ -155,3 +156,4 @@ class ProductHeaderCard extends StatelessWidget {
     );
   }
 }
+
