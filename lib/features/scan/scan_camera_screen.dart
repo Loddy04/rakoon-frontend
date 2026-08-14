@@ -324,7 +324,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
                             color: AppColors.accent,
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.accent.withOpacity(0.8),
+                                color: AppColors.accent.withValues(alpha: 0.8),
                                 blurRadius: 8,
                                 spreadRadius: 2,
                               ),
@@ -507,7 +507,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
           ),
         Positioned.fill(
           child: Container(
-            color: Colors.black.withOpacity(0.6),
+            color: Colors.black.withValues(alpha: 0.6),
           ),
         ),
         Center(
@@ -560,7 +560,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
           ),
         Positioned.fill(
           child: Container(
-            color: Colors.black.withOpacity(0.7),
+            color: Colors.black.withValues(alpha: 0.7),
           ),
         ),
         Center(
@@ -659,7 +659,7 @@ class ViewfinderPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // 1. Darken overlay outside scanRect
-    final paint = Paint()..color = Colors.black.withOpacity(0.5);
+    final paint = Paint()..color = Colors.black.withValues(alpha: 0.5);
     final outerPath = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
     final innerPath = Path()..addRRect(RRect.fromRectAndRadius(scanRect, const Radius.circular(16)));
     final path = Path.combine(PathOperation.difference, outerPath, innerPath);

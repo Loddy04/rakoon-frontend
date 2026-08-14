@@ -167,7 +167,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
                   DropdownButtonFormField<String>(
                     key: const Key('edit_category_dropdown'),
-                    value: selectedCategory,
+                    initialValue: selectedCategory,
                     decoration: const InputDecoration(
                       labelText: 'Kategori',
                       border: OutlineInputBorder(),
@@ -351,7 +351,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
                   DropdownButtonFormField<String>(
                     key: const Key('add_category_dropdown'),
-                    value: selectedCategory,
+                    initialValue: selectedCategory,
                     decoration: const InputDecoration(
                       labelText: 'Kategori',
                       border: OutlineInputBorder(),
@@ -571,52 +571,67 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      'Produk #${itemIndex + 1}',
-                      style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    if (item.needsVerification) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.warningSoft,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'Verifikasi',
-                          style: TextStyle(
-                            color: AppColors.warning,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
+                Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'Produk #${itemIndex + 1}',
+                          style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      if (item.needsVerification) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.warningSoft,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'Verifikasi',
+                            style: TextStyle(
+                              color: AppColors.warning,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
+                const SizedBox(width: 4),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     StatusBadge(
                       status: item.confidence == 'tinggi' ? 'Tinggi' : 'Rendah',
                     ),
-                    const SizedBox(width: 4),
                     Semantics(
-                      label: 'Edit produk',
+                      label: 'Edit produk ${name.isNotEmpty ? name : ""}',
+                      button: true,
+                      container: true,
                       child: IconButton(
                         key: Key('edit_item_${itemIndex}_btn'),
-                        icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.muted),
+                        icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.muted),
+                        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                        padding: EdgeInsets.zero,
                         onPressed: () => _openEditBottomSheet(item),
                         tooltip: 'Edit informasi produk',
                       ),
                     ),
                     Semantics(
-                      label: 'Hapus produk',
+                      label: 'Hapus produk ${name.isNotEmpty ? name : ""}',
+                      button: true,
+                      container: true,
                       child: IconButton(
                         key: Key('delete_item_${itemIndex}_btn'),
-                        icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.error),
+                        icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                        padding: EdgeInsets.zero,
                         onPressed: () => _deleteItem(item),
                         tooltip: 'Hapus produk',
                       ),
@@ -685,7 +700,9 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
               ),
             ),
             SizedBox(width: 12),
-            Text('Mencari toko terdekat...', style: TextStyle(fontSize: 14)),
+            Expanded(
+              child: Text('Mencari toko terdekat...', style: TextStyle(fontSize: 14)),
+            ),
           ],
         ),
       );
@@ -697,7 +714,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
         decoration: BoxDecoration(
           color: AppColors.errorSoft,
           borderRadius: BorderRadius.circular(AppRadius.l),
-          border: Border.all(color: AppColors.error.withOpacity(0.3)),
+          border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
