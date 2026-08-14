@@ -757,7 +757,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: AppColors.paper,
                             ),
                           )
                         : const Icon(Icons.calculate_outlined, size: 22),
@@ -769,11 +769,11 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       backgroundColor: AppColors.accent,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppColors.paper,
                       disabledBackgroundColor: AppColors.accent.withValues(
                         alpha: 0.6,
                       ),
-                      disabledForegroundColor: Colors.white,
+                      disabledForegroundColor: AppColors.paper,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.l),
                       ),
