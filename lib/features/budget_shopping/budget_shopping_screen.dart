@@ -10,29 +10,26 @@ class SelectedBudgetItem {
   final Product product;
   int qty;
 
-  SelectedBudgetItem({
-    required this.product,
-    this.qty = 1,
-  });
+  SelectedBudgetItem({required this.product, this.qty = 1});
 }
 
 class BudgetShoppingScreen extends StatefulWidget {
   final String baseUrl;
 
-  const BudgetShoppingScreen({
-    super.key,
-    required this.baseUrl,
-  });
+  const BudgetShoppingScreen({super.key, required this.baseUrl});
 
   @override
   State<BudgetShoppingScreen> createState() => _BudgetShoppingScreenState();
 }
 
 class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
-  final TextEditingController _budgetController = TextEditingController(text: '100000');
+  final TextEditingController _budgetController = TextEditingController(
+    text: '100000',
+  );
   final TextEditingController _searchController = TextEditingController();
 
   List<Product> _searchResults = [];
+  List<Product> _defaultProducts = [];
   bool _isSearching = false;
   int _searchRequestToken = 0;
   Timer? _searchDebounce;
@@ -42,11 +39,47 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
   String? _errorMessage;
 
   @override
+  void initState() {
+    super.initState();
+    _fetchDefaultProducts();
+  }
+
+  @override
   void dispose() {
     _searchDebounce?.cancel();
     _budgetController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchDefaultProducts() async {
+    setState(() {
+      _isSearching = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final results = await ProductsService.getProducts(
+        baseUrl: widget.baseUrl,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _defaultProducts = results;
+        if (_searchController.text.trim().isEmpty) {
+          _searchResults = results;
+        }
+        _isSearching = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSearching = false;
+        _errorMessage = 'Gagal memuat produk default: $e';
+      });
+    }
   }
 
   Future<void> _searchProducts(String query) async {
@@ -56,7 +89,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
     final cleanQuery = query.trim();
     if (cleanQuery.isEmpty) {
       setState(() {
-        _searchResults = [];
+        _searchResults = _defaultProducts;
         _isSearching = false;
       });
       return;
@@ -92,7 +125,9 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
   }
 
   void _addSelectedProduct(Product product) {
-    final existingIndex = _selectedItems.indexWhere((item) => item.product.id == product.id);
+    final existingIndex = _selectedItems.indexWhere(
+      (item) => item.product.id == product.id,
+    );
     if (existingIndex >= 0) {
       setState(() {
         _selectedItems[existingIndex].qty += 1;
@@ -105,7 +140,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
 
     _searchController.clear();
     setState(() {
-      _searchResults = [];
+      _searchResults = _defaultProducts;
     });
   }
 
@@ -162,10 +197,10 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
       final request = BudgetRecommendRequest(
         budget: budget,
         items: _selectedItems
-            .map((item) => BudgetItemInput(
-                  productId: item.product.id,
-                  qty: item.qty,
-                ))
+            .map(
+              (item) =>
+                  BudgetItemInput(productId: item.product.id, qty: item.qty),
+            )
             .toList(),
       );
 
@@ -196,7 +231,8 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
   }
 
   bool _hasUnsavedChanges() {
-    return _selectedItems.isNotEmpty || _budgetController.text.trim() != '100000';
+    return _selectedItems.isNotEmpty ||
+        _budgetController.text.trim() != '100000';
   }
 
   Future<bool?> _showExitConfirmationDialog(BuildContext context) {
@@ -207,7 +243,9 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
           borderRadius: BorderRadius.circular(AppRadius.xl),
         ),
         title: const Text('Keluar Halaman'),
-        content: const Text('Keluar dari halaman ini? Perubahan Anda akan hilang.'),
+        content: const Text(
+          'Keluar dari halaman ini? Perubahan Anda akan hilang.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -215,9 +253,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.error,
-            ),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Keluar'),
           ),
         ],
@@ -249,46 +285,65 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // 1. INPUT BUDGET
-                Card(
-                  elevation: 1,
-                  color: AppColors.paper,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.l),
-                    side: const BorderSide(color: AppColors.line, width: 1.0),
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.paper,
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
+                    border: Border.all(color: AppColors.line),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.ink.withValues(alpha: 0.03),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          '💰 Total Budget Belanja (Rupiah)',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.ink),
+                        Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: AppColors.background,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.l,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.payments_outlined,
+                                color: AppColors.ink,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Total Budget Belanja (Rupiah)',
+                                style: AppTextStyles.titleSmall,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 16),
                         Semantics(
                           label: 'Kolom input budget belanja',
                           container: true,
                           child: TextField(
                             controller: _budgetController,
                             keyboardType: TextInputType.number,
+                            style: AppTextStyles.bodyMedium,
                             decoration: InputDecoration(
-                              hintText: 'Misal: 100000',
+                              labelText: 'Masukkan nominal budget',
                               prefixText: 'Rp ',
-                              prefixStyle: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.ink),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.m),
-                                borderSide: const BorderSide(color: AppColors.line),
+                              prefixStyle: AppTextStyles.bodyMedium.copyWith(
+                                fontWeight: FontWeight.bold,
                               ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.m),
-                                borderSide: const BorderSide(color: AppColors.line),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.m),
-                                borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              border: const OutlineInputBorder(),
                             ),
                           ),
                         ),
@@ -300,56 +355,78 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                 const SizedBox(height: 16),
 
                 // 2. SEARCH PRODUCTS BAR
-                const Text(
-                  '🔍 Cari & Tambah Barang Kebutuhan',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.ink),
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(AppRadius.l),
+                      ),
+                      child: const Icon(
+                        Icons.search_outlined,
+                        color: AppColors.ink,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Cari & Tambah Barang Kebutuhan',
+                        style: AppTextStyles.titleSmall,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Semantics(
                   label: 'Kolom pencarian barang kebutuhan',
                   container: true,
                   child: TextField(
                     controller: _searchController,
+                    style: AppTextStyles.bodyMedium,
                     onChanged: (val) {
                       _searchDebounce?.cancel();
-                      _searchDebounce = Timer(const Duration(milliseconds: 300), () {
-                        _searchProducts(val);
-                      });
+                      _searchDebounce = Timer(
+                        const Duration(milliseconds: 300),
+                        () {
+                          _searchProducts(val);
+                        },
+                      );
                     },
                     decoration: InputDecoration(
-                      hintText: 'Ketik nama produk (contoh: "susu", "roti")',
-                      prefixIcon: const Icon(Icons.search, color: AppColors.muted),
+                      labelText: 'Cari Nama Produk',
+                      hintText: 'Contoh: susu, roti',
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: AppColors.muted,
+                      ),
                       suffixIcon: _isSearching
                           ? const Padding(
                               padding: EdgeInsets.all(12.0),
                               child: SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.accent,
+                                ),
                               ),
                             )
                           : _searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear, color: AppColors.muted),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    _searchProducts('');
-                                  },
-                                )
-                              : null,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.m),
-                        borderSide: const BorderSide(color: AppColors.line),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.m),
-                        borderSide: const BorderSide(color: AppColors.line),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.m),
-                        borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          ? IconButton(
+                              icon: const Icon(
+                                Icons.clear,
+                                color: AppColors.muted,
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                _searchProducts('');
+                              },
+                            )
+                          : null,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 ),
@@ -364,7 +441,11 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                       borderRadius: BorderRadius.circular(AppRadius.m),
                       border: Border.all(color: AppColors.line),
                       boxShadow: const [
-                        BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
                       ],
                     ),
                     child: Material(
@@ -376,9 +457,21 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                           final item = _searchResults[index];
                           return ListTile(
                             dense: true,
-                            title: Text(item.nama, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.ink)),
-                            subtitle: Text('${item.ukuran} ${item.satuan} • Kategori: ${item.kategori}', style: const TextStyle(color: AppColors.muted)),
-                            trailing: const Icon(Icons.add_circle_outline, color: AppColors.accent),
+                            title: Text(
+                              item.nama,
+                              style: AppTextStyles.bodyLarge.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.ink,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${item.ukuran} ${item.satuan} • Kategori: ${item.kategori}',
+                              style: AppTextStyles.bodySmall,
+                            ),
+                            trailing: const Icon(
+                              Icons.add_circle_outline,
+                              color: AppColors.accent,
+                            ),
                             onTap: () => _addSelectedProduct(item),
                           );
                         },
@@ -386,12 +479,16 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                     ),
                   ),
 
-                if (_searchController.text.isNotEmpty && _searchResults.isEmpty && !_isSearching)
+                if (_searchController.text.isNotEmpty &&
+                    _searchResults.isEmpty &&
+                    !_isSearching)
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0, left: 4.0),
                     child: Text(
                       'Tidak ada produk yang ditemukan untuk "${_searchController.text}"',
-                      style: const TextStyle(color: AppColors.muted, fontSize: 13, fontStyle: FontStyle.italic),
+                      style: AppTextStyles.bodySmall.copyWith(
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ),
 
@@ -403,19 +500,27 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                     color: AppColors.errorSoft,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppRadius.m),
-                      side: const BorderSide(color: AppColors.error, width: 1.0),
+                      side: const BorderSide(
+                        color: AppColors.error,
+                        width: 1.0,
+                      ),
                     ),
                     margin: const EdgeInsets.only(bottom: 16),
                     child: Padding(
                       padding: const EdgeInsets.all(12.0),
                       child: Row(
                         children: [
-                          const Icon(Icons.error_outline, color: AppColors.error),
+                          const Icon(
+                            Icons.error_outline,
+                            color: AppColors.error,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               _errorMessage!,
-                              style: const TextStyle(color: AppColors.error, fontSize: 13),
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.error,
+                              ),
                             ),
                           ),
                         ],
@@ -424,41 +529,68 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                   ),
 
                 // 3. DAFTAR BARANG TERPILIH
-                Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
+                Row(
                   children: [
-                    const Text(
-                      '📋 Daftar Belanja Anda',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.ink),
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(AppRadius.l),
+                      ),
+                      child: const Icon(
+                        Icons.receipt_long_outlined,
+                        color: AppColors.ink,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Daftar Belanja Anda',
+                        style: AppTextStyles.titleSmall,
+                      ),
                     ),
                     Chip(
                       label: Text('${_selectedItems.length} Produk'),
                       backgroundColor: AppColors.accentSoft,
                       side: BorderSide.none,
-                      labelStyle: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold, fontSize: 11),
+                      labelStyle: AppTextStyles.labelSmall.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
 
                 if (_selectedItems.isEmpty)
-                  Card(
-                    color: AppColors.paper,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.m),
-                      side: const BorderSide(color: AppColors.line),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.paper,
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                      border: Border.all(color: AppColors.line),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.ink.withValues(alpha: 0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    child: const Padding(
-                      padding: EdgeInsets.all(24.0),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
                       child: Column(
                         children: [
-                          Icon(Icons.shopping_basket_outlined, size: 40, color: AppColors.muted),
-                          SizedBox(height: 8),
+                          const Icon(
+                            Icons.shopping_basket_outlined,
+                            size: 40,
+                            color: AppColors.muted,
+                          ),
+                          const SizedBox(height: 8),
                           Text(
                             'Belum ada produk terpilih.\nGunakan kolom di atas untuk mencari produk.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: AppColors.muted, fontSize: 13),
+                            style: AppTextStyles.bodySmall,
                           ),
                         ],
                       ),
@@ -471,12 +603,19 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                     itemCount: _selectedItems.length,
                     itemBuilder: (context, index) {
                       final item = _selectedItems[index];
-                      return Card(
-                        color: AppColors.paper,
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.m),
-                          side: const BorderSide(color: AppColors.line),
+                      return Container(
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.paper,
+                          borderRadius: BorderRadius.circular(AppRadius.xl),
+                          border: Border.all(color: AppColors.line),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.ink.withValues(alpha: 0.03),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(12.0),
@@ -488,26 +627,36 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                                 children: [
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           item.product.nama,
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.ink),
+                                          style: AppTextStyles.bodyLarge
+                                              .copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
                                           'Ukuran: ${item.product.ukuran} ${item.product.satuan}',
-                                          style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                                          style: AppTextStyles.bodySmall
+                                              .copyWith(fontSize: 12),
                                         ),
                                       ],
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   Semantics(
-                                    label: 'Hapus barang ${item.product.nama} dari daftar belanja',
+                                    label:
+                                        'Hapus barang ${item.product.nama} dari daftar belanja',
                                     container: true,
                                     child: IconButton(
-                                      icon: const Icon(Icons.delete_outline, size: 20),
+                                      icon: const Icon(
+                                        Icons.delete_outline,
+                                        size: 20,
+                                      ),
                                       color: AppColors.error,
                                       constraints: const BoxConstraints(
                                         minWidth: 48,
@@ -527,20 +676,30 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  const Text('Jumlah:', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                                  Text(
+                                    'Jumlah:',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                   const Spacer(),
                                   Semantics(
-                                    label: 'Kurangi kuantitas ${item.product.nama}',
+                                    label:
+                                        'Kurangi kuantitas ${item.product.nama}',
                                     container: true,
                                     child: IconButton(
-                                      icon: const Icon(Icons.remove_circle_outline, size: 20),
+                                      icon: const Icon(
+                                        Icons.remove_circle_outline,
+                                        size: 20,
+                                      ),
                                       color: AppColors.muted,
                                       constraints: const BoxConstraints(
                                         minWidth: 48,
                                         minHeight: 48,
                                       ),
                                       padding: EdgeInsets.zero,
-                                      onPressed: () => _updateQuantity(index, -1),
+                                      onPressed: () =>
+                                          _updateQuantity(index, -1),
                                     ),
                                   ),
                                   const SizedBox(width: 4),
@@ -549,26 +708,30 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                                     child: Text(
                                       '${item.qty}',
                                       textAlign: TextAlign.center,
-                                      style: const TextStyle(
+                                      style: AppTextStyles.bodyLarge.copyWith(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 15,
-                                        color: AppColors.ink,
                                       ),
                                     ),
                                   ),
                                   const SizedBox(width: 4),
                                   Semantics(
-                                    label: 'Tambah kuantitas ${item.product.nama}',
+                                    label:
+                                        'Tambah kuantitas ${item.product.nama}',
                                     container: true,
                                     child: IconButton(
-                                      icon: const Icon(Icons.add_circle_outline, size: 20),
+                                      icon: const Icon(
+                                        Icons.add_circle_outline,
+                                        size: 20,
+                                      ),
                                       color: AppColors.accent,
                                       constraints: const BoxConstraints(
                                         minWidth: 48,
                                         minHeight: 48,
                                       ),
                                       padding: EdgeInsets.zero,
-                                      onPressed: () => _updateQuantity(index, 1),
+                                      onPressed: () =>
+                                          _updateQuantity(index, 1),
                                     ),
                                   ),
                                 ],
@@ -592,20 +755,32 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.paper,
+                            ),
                           )
                         : const Icon(Icons.calculate_outlined, size: 22),
-                    label: Text(_isEvaluating ? 'Menghitung Rekomendasi...' : '🏆 Hitung Rekomendasi Belanja'),
+                    label: Text(
+                      _isEvaluating
+                          ? 'Menghitung Rekomendasi...'
+                          : 'Hitung Rekomendasi Belanja',
+                    ),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       backgroundColor: AppColors.accent,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: AppColors.accent.withValues(alpha: 0.6),
-                      disabledForegroundColor: Colors.white,
+                      foregroundColor: AppColors.paper,
+                      disabledBackgroundColor: AppColors.accent.withValues(
+                        alpha: 0.6,
+                      ),
+                      disabledForegroundColor: AppColors.paper,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.l),
                       ),
-                      textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      textStyle: AppTextStyles.bodyLarge.copyWith(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),

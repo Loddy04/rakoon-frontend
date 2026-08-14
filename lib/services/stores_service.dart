@@ -70,6 +70,7 @@ class StoresService {
     required double lng,
     double radiusKm = 5.0,
     required String baseUrl,
+    http.Client? client,
   }) async {
     // Clean base URL to remove trailing slashes if present
     final cleanBaseUrl = baseUrl.endsWith('/')
@@ -85,7 +86,8 @@ class StoresService {
     );
 
     try {
-      final response = await http.get(uri).timeout(
+      final httpClient = client ?? http.Client();
+      final response = await httpClient.get(uri).timeout(
         const Duration(seconds: 12),
       );
 

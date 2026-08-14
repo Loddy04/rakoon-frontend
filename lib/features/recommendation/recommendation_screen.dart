@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
+import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 import 'package:http/http.dart' as http;
 
 class RecommendationScreen extends StatefulWidget {
@@ -30,55 +31,12 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
   @override
   void initState() {
     super.initState();
-    // Use passed candidates if provided, otherwise default to mock candidates for dev testing
-    if (widget.initialCandidates != null) {
-      _candidates = widget.initialCandidates!;
+    _candidates = widget.initialCandidates ?? [];
+    if (_candidates.isNotEmpty) {
+      _fetchRecommendation();
     } else {
-      _candidates = [
-        RecommendationCandidate(
-          productId: 'product-a',
-          namaProduk: 'Ultra Milk 1L',
-          harga: 20000,
-          ukuran: 1000,
-          satuan: 'ml',
-          kategori: 'Susu & Olahan',
-        ),
-        RecommendationCandidate(
-          productId: 'product-b',
-          namaProduk: 'Indomilk 1L',
-          harga: 18000,
-          ukuran: 1000,
-          satuan: 'ml',
-          kategori: 'Susu & Olahan',
-        ),
-        RecommendationCandidate(
-          productId: 'product-c',
-          namaProduk: 'Aqua 600ml',
-          harga: 5000,
-          ukuran: 600,
-          satuan: 'ml',
-          kategori: 'Minuman',
-        ),
-        RecommendationCandidate(
-          productId: 'product-d',
-          namaProduk: 'Teh Botol 350ml',
-          harga: 5000,
-          ukuran: 350,
-          satuan: 'ml',
-          kategori: 'Minuman',
-        ),
-        RecommendationCandidate(
-          productId: 'product-e',
-          namaProduk: 'Rinso 800ml',
-          harga: 15000,
-          ukuran: 800,
-          satuan: 'ml',
-          kategori: 'Produk Rumah Tangga',
-        ),
-      ];
+      _isLoading = false;
     }
-
-    _fetchRecommendation();
   }
 
   Future<void> _fetchRecommendation() async {
@@ -107,7 +65,7 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
   }
 
   String _formatRupiah(double amount) {
-    return 'Rp ${amount.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
+    return formatRp(amount);
   }
 
   @override
@@ -277,9 +235,9 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.m),
                 ),
-                child: const Icon(Icons.category_outlined, color: Colors.white, size: 18),
+                child: const Icon(Icons.category_outlined, color: AppColors.paper, size: 18),
               ),
               const SizedBox(width: 10),
               Text(
@@ -437,7 +395,7 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.grey.shade900 : Colors.white,
+                      color: isDark ? const Color(0xFF0F172A) : AppColors.paper,
                       borderRadius: BorderRadius.circular(AppRadius.s),
                       border: Border.all(color: AppColors.line),
                     ),

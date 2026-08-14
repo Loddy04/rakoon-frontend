@@ -12,21 +12,22 @@ import 'package:rakoon_frontend/services/location_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/features/recommendation/recommendation_screen.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
+import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 import 'package:http/http.dart' as http;
 
 class ScanResultScreen extends StatefulWidget {
   final String baseUrl;
   final List<ScanResultItem> detectedItems;
-  final String defaultStoreId;
-  final String defaultUserId;
+  final String? initialStoreId;
+  final String? initialUserId;
   final http.Client? httpClient;
 
   const ScanResultScreen({
     super.key,
     required this.baseUrl,
     required this.detectedItems,
-    this.defaultStoreId = '21ba0855-bf71-4e6a-9718-b7ac79d8cfd2',
-    this.defaultUserId = 'c61b0cfa-3512-4fb3-96b6-3974c05ef1c8',
+    this.initialStoreId,
+    this.initialUserId,
     this.httpClient,
   });
 
@@ -36,6 +37,7 @@ class ScanResultScreen extends StatefulWidget {
 
 class _ScanResultScreenState extends State<ScanResultScreen> {
   bool _isSaving = false;
+  bool _isDialogShowing = false;
   String? _errorMessage;
 
   // Store selection state
@@ -51,12 +53,146 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
   // The local mutable list - single source of truth
   List<ScanResultItem> _items = [];
 
+  Future<void> _showValidationErrorDialog(List<String> errorMessages) async {
+    if (_isDialogShowing) return;
+    _isDialogShowing = true;
+
+    try {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+            ),
+            elevation: 8,
+            backgroundColor: AppColors.paper,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xxl),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSpacing.m),
+                      decoration: const BoxDecoration(
+                        color: AppColors.errorSoft,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.error_outline_rounded,
+                        color: AppColors.error,
+                        size: 40,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.l),
+                  Text(
+                    'Data Produk Belum Lengkap',
+                    style: AppTextStyles.titleMedium.copyWith(
+                      color: AppColors.ink,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.s),
+                  Text(
+                    'Lengkapi data berikut sebelum menyimpan hasil scan:',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.muted,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.m),
+                  Flexible(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 200),
+                      child: SingleChildScrollView(
+                        child: Container(
+                          padding: const EdgeInsets.all(AppSpacing.m),
+                          decoration: BoxDecoration(
+                            color: AppColors.card,
+                            borderRadius: BorderRadius.circular(AppRadius.l),
+                            border: Border.all(color: AppColors.line),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: errorMessages.map((msg) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 3),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('• ', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+                                    Expanded(
+                                      child: Text(
+                                        msg,
+                                        style: AppTextStyles.bodySmall.copyWith(
+                                          color: AppColors.ink,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  ElevatedButton(
+                    key: const Key('validation_dialog_inspect_btn'),
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: AppColors.paper,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.l),
+                      ),
+                    ),
+                    child: const Text(
+                      'Periksa Produk',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s),
+                  TextButton(
+                    key: const Key('validation_dialog_close_btn'),
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.muted,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                    child: const Text(
+                      'Tutup',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    } finally {
+      _isDialogShowing = false;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _storeIdController = TextEditingController(text: widget.defaultStoreId);
+    _storeIdController = TextEditingController(text: widget.initialStoreId ?? '');
     _userIdController = TextEditingController(
-      text: AuthService.currentUser?.id ?? widget.defaultUserId,
+      text: AuthService.currentUser?.id ?? widget.initialUserId ?? '',
     );
 
     // Initialize state items list
@@ -84,6 +220,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
         lat: position.latitude,
         lng: position.longitude,
         baseUrl: widget.baseUrl,
+        client: widget.httpClient,
       );
 
       setState(() {
@@ -108,7 +245,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
   }
 
   String _formatRupiah(double amount) {
-    return 'Rp${amount.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
+    return formatRp(amount);
   }
 
   void _openEditBottomSheet(ScanResultItem item) {
@@ -121,9 +258,9 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.paper,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (context) {
         return StatefulBuilder(
@@ -167,7 +304,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
                   DropdownButtonFormField<String>(
                     key: const Key('edit_category_dropdown'),
-                    value: selectedCategory,
+                    initialValue: selectedCategory,
                     decoration: const InputDecoration(
                       labelText: 'Kategori',
                       border: OutlineInputBorder(),
@@ -272,13 +409,14 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                         item.ukuran = parsedSize;
                         item.satuan = unit;
                         item.kategori = selectedCategory;
+                        _errorMessage = null;
                       });
 
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.accent,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppColors.paper,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.l),
@@ -305,9 +443,9 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.paper,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (context) {
         return StatefulBuilder(
@@ -351,7 +489,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
                   DropdownButtonFormField<String>(
                     key: const Key('add_category_dropdown'),
-                    value: selectedCategory,
+                    initialValue: selectedCategory,
                     decoration: const InputDecoration(
                       labelText: 'Kategori',
                       border: OutlineInputBorder(),
@@ -462,13 +600,14 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
                       setState(() {
                         _items.add(newItem);
+                        _errorMessage = null;
                       });
 
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.accent,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppColors.paper,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.l),
@@ -505,6 +644,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
               Navigator.pop(context);
               setState(() {
                 _items.remove(item);
+                _errorMessage = null;
               });
             },
             style: TextButton.styleFrom(
@@ -571,52 +711,64 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      'Produk #${itemIndex + 1}',
-                      style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    if (item.needsVerification) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.warningSoft,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'Verifikasi',
-                          style: TextStyle(
-                            color: AppColors.warning,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 4,
+                    runSpacing: 2,
+                    children: [
+                      Text(
+                        'Produk #${itemIndex + 1}',
+                        style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      if (item.needsVerification)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.warningSoft,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'Verifikasi',
+                            style: TextStyle(
+                              color: AppColors.warning,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ),
                     ],
-                  ],
+                  ),
                 ),
+                const SizedBox(width: 4),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     StatusBadge(
                       status: item.confidence == 'tinggi' ? 'Tinggi' : 'Rendah',
                     ),
-                    const SizedBox(width: 4),
                     Semantics(
-                      label: 'Edit produk',
+                      label: 'Edit produk ${name.isNotEmpty ? name : ""}',
+                      button: true,
+                      container: true,
                       child: IconButton(
                         key: Key('edit_item_${itemIndex}_btn'),
-                        icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.muted),
+                        icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.muted),
+                        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                        padding: EdgeInsets.zero,
                         onPressed: () => _openEditBottomSheet(item),
                         tooltip: 'Edit informasi produk',
                       ),
                     ),
                     Semantics(
-                      label: 'Hapus produk',
+                      label: 'Hapus produk ${name.isNotEmpty ? name : ""}',
+                      button: true,
+                      container: true,
                       child: IconButton(
                         key: Key('delete_item_${itemIndex}_btn'),
-                        icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.error),
+                        icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                        padding: EdgeInsets.zero,
                         onPressed: () => _deleteItem(item),
                         tooltip: 'Hapus produk',
                       ),
@@ -665,27 +817,182 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     );
   }
 
+  void _showStoreSelectorBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.paper,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.l,
+              vertical: AppSpacing.m,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.line,
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.m),
+                Text(
+                  'Pilih Lokasi Toko',
+                  style: AppTextStyles.titleMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Pilih toko terdekat tempat Anda memindai harga produk.',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.muted,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.l),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: _nearbyStores.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: AppSpacing.s),
+                    itemBuilder: (context, index) {
+                      final store = _nearbyStores[index];
+                      final isSelected =
+                          _selectedStore?.storeId == store.storeId;
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedStore = store;
+                            _storeIdController.text = store.storeId;
+                          });
+                          Navigator.pop(context);
+                        },
+                        borderRadius: BorderRadius.circular(AppRadius.l),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.m,
+                            vertical: AppSpacing.m,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.accentSoft
+                                : AppColors.card,
+                            borderRadius: BorderRadius.circular(AppRadius.l),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.accent
+                                  : AppColors.line,
+                              width: isSelected ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? AppColors.paper
+                                      : AppColors.background,
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.m),
+                                ),
+                                child: Icon(
+                                  Icons.storefront_outlined,
+                                  color: isSelected
+                                      ? AppColors.accent
+                                      : AppColors.muted,
+                                  size: 20,
+                                ),
+
+                              ),
+                              const SizedBox(width: AppSpacing.m),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      store.nama,
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        fontWeight: isSelected
+                                            ? FontWeight.bold
+                                            : FontWeight.w600,
+                                        color: isSelected
+                                            ? AppColors.accent
+                                            : AppColors.ink,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${store.jarakKm.toStringAsFixed(1)} km dari lokasi Anda',
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: AppColors.muted,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isSelected)
+                                const Icon(
+                                  Icons.check_circle_rounded,
+                                  color: AppColors.accent,
+                                  size: 22,
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.m),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildStoreSelectionArea() {
     if (_isLoadingStores) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.m),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: AppColors.paper,
           borderRadius: BorderRadius.circular(AppRadius.l),
           border: Border.all(color: AppColors.line),
         ),
         child: const Row(
           children: [
             SizedBox(
-              width: 20,
-              height: 20,
+              width: 18,
+              height: 18,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 color: AppColors.accent,
               ),
             ),
-            SizedBox(width: 12),
-            Text('Mencari toko terdekat...', style: TextStyle(fontSize: 14)),
+            SizedBox(width: AppSpacing.m),
+            Expanded(
+              child: Text(
+                'Mencari toko terdekat...',
+                style: TextStyle(fontSize: 13, color: AppColors.muted),
+              ),
+            ),
           ],
         ),
       );
@@ -693,11 +1000,11 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
     if (_storesError != null) {
       return Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppSpacing.m),
         decoration: BoxDecoration(
           color: AppColors.errorSoft,
           borderRadius: BorderRadius.circular(AppRadius.l),
-          border: Border.all(color: AppColors.error.withOpacity(0.3)),
+          border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -734,20 +1041,20 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
     if (_nearbyStores.isEmpty) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.m),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: AppColors.paper,
           borderRadius: BorderRadius.circular(AppRadius.l),
           border: Border.all(color: AppColors.line),
         ),
         child: const Row(
           children: [
-            Icon(Icons.location_off_outlined, color: AppColors.muted),
-            SizedBox(width: 12),
+            Icon(Icons.location_off_outlined, color: AppColors.muted, size: 20),
+            SizedBox(width: AppSpacing.m),
             Expanded(
               child: Text(
                 'Tidak ada toko terdekat ditemukan',
-                style: TextStyle(color: AppColors.muted, fontSize: 14),
+                style: TextStyle(color: AppColors.muted, fontSize: 13),
               ),
             ),
           ],
@@ -755,34 +1062,122 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
       );
     }
 
-    return DropdownButtonFormField<StoreNearby>(
-      initialValue: _selectedStore,
-      isExpanded: true,
-      decoration: const InputDecoration(
-        labelText: 'Konfirmasi Lokasi Toko',
-        border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.storefront, color: AppColors.accent),
-        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    return InkWell(
+      key: const Key('store_selector_card'),
+      onTap: _showStoreSelectorBottomSheet,
+      borderRadius: BorderRadius.circular(AppRadius.l),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.m),
+        decoration: BoxDecoration(
+          color: AppColors.paper,
+          borderRadius: BorderRadius.circular(AppRadius.l),
+          border: Border.all(color: AppColors.line),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.ink.withValues(alpha: 0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppColors.accentSoft,
+                borderRadius: BorderRadius.circular(AppRadius.m),
+              ),
+              child: const Icon(
+                Icons.storefront_outlined,
+                color: AppColors.accent,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.m),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 6,
+                    runSpacing: 2,
+                    children: [
+                      Text(
+                        'Lokasi Toko',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.muted,
+                          fontSize: 11,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentSoft,
+                          borderRadius: BorderRadius.circular(AppRadius.full),
+                        ),
+                        child: Text(
+                          'Otomatis',
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: AppColors.accent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 2),
+                  Text(
+                    _selectedStore?.nama ?? 'Pilih Toko',
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (_selectedStore != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      '${_selectedStore!.jarakKm.toStringAsFixed(1)} km dari lokasi Anda',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.s),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(AppRadius.s),
+              ),
+              child: const Icon(
+                Icons.unfold_more_rounded,
+                color: AppColors.muted,
+                size: 18,
+              ),
+            ),
+          ],
+        ),
       ),
-      items: _nearbyStores.map((StoreNearby store) {
-        return DropdownMenuItem<StoreNearby>(
-          value: store,
-          child: Text(
-            '${store.nama} (${store.jarakKm.toStringAsFixed(2)} km)',
-            overflow: TextOverflow.ellipsis,
-          ),
-        );
-      }).toList(),
-      onChanged: (StoreNearby? newValue) {
-        setState(() {
-          _selectedStore = newValue;
-          _storeIdController.text = newValue?.storeId ?? '';
-        });
-      },
     );
   }
 
+
   Future<void> _saveResults() async {
+    if (_isSaving || _isDialogShowing) return;
+
     if (AuthService.currentSession == null) {
       final bool? loginSuccess = await showModalBottomSheet<bool>(
         context: context,
@@ -828,49 +1223,71 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
     final String storeId = _storeIdController.text.trim();
 
-    if (storeId.isEmpty || userId.isEmpty) {
+    if (storeId.isEmpty) {
       setState(() {
-        _errorMessage = 'Store ID dan User ID tidak boleh kosong!';
+        _errorMessage = 'Pilih toko tempat Anda memindai terlebih dahulu!';
         _isSaving = false;
       });
       return;
     }
 
+    if (_items.isEmpty) {
+      setState(() {
+        _errorMessage = 'Tidak ada produk untuk disimpan.';
+        _isSaving = false;
+      });
+      return;
+    }
+
+    final List<String> errorMessages = [];
     final List<ScanResultItem> confirmedItems = [];
-    for (var item in _items) {
+
+    for (int i = 0; i < _items.length; i++) {
+      final item = _items[i];
       final String name = (item.namaProduk ?? '').trim();
       final double? price = item.harga;
+      final double? size = item.ukuran;
+      final String unit = (item.satuan ?? '').trim();
+      final String category = (item.kategori ?? '').trim();
 
-      if (name.isEmpty) {
-        setState(() {
-          _errorMessage = 'Nama produk tidak boleh kosong!';
-          _isSaving = false;
-        });
-        return;
+      final List<String> missing = [];
+      if (name.isEmpty) missing.add('nama produk');
+      if (price == null || price <= 0 || price.isNaN || price.isInfinite) missing.add('harga');
+      if (size == null || size <= 0 || size.isNaN || size.isInfinite) missing.add('ukuran');
+      if (unit.isEmpty) missing.add('satuan');
+      if (category.isEmpty) missing.add('kategori');
+
+      if (missing.isNotEmpty) {
+        final String itemLabel = name.isNotEmpty ? name : 'Produk #${i + 1}';
+        final String fieldsText = missing.length == 1
+            ? '${missing.first} belum diisi'
+            : (missing.length == 2
+                ? '${missing[0]} dan ${missing[1]} belum diisi'
+                : '${missing.sublist(0, missing.length - 1).join(', ')} dan ${missing.last} belum diisi');
+        errorMessages.add('$itemLabel - $fieldsText.');
+      } else {
+        confirmedItems.add(item);
       }
+    }
 
-      if (price == null || price <= 0) {
-        setState(() {
-          _errorMessage = 'Harga produk harus lebih besar dari 0!';
-          _isSaving = false;
-        });
-        return;
+    if (errorMessages.isNotEmpty) {
+      setState(() {
+        _isSaving = false;
+      });
+      if (mounted) {
+        await _showValidationErrorDialog(errorMessages);
       }
-
-      confirmedItems.add(item);
+      return;
     }
 
     try {
-      final response = await ScanService.confirmScan(
+      await ScanService.confirmScan(
         storeId: storeId,
         userId: userId,
         items: confirmedItems,
         baseUrl: widget.baseUrl,
+        client: widget.httpClient,
       );
-
-      final int saved = response['items_saved'] ?? 0;
-      final int created = response['products_created'] ?? 0;
-      final String msg = response['message'] ?? 'Berhasil disimpan!';
 
       if (mounted) {
         showDialog(
@@ -910,71 +1327,17 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                   ),
                   const SizedBox(height: AppSpacing.s),
                   Text(
-                    msg,
+                    'Hasil scan berhasil disimpan.',
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.muted,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: AppSpacing.xl),
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.l),
-                    decoration: BoxDecoration(
-                      color: AppColors.card,
-                      borderRadius: BorderRadius.circular(AppRadius.l),
-                      border: Border.all(color: AppColors.line),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.receipt_long_rounded, size: 18, color: AppColors.accent),
-                                const SizedBox(width: AppSpacing.s),
-                                Text('Entri Harga Baru', style: AppTextStyles.bodyMedium),
-                              ],
-                            ),
-                            Text(
-                              '$saved',
-                              style: AppTextStyles.bodyLarge.copyWith(
-                                color: AppColors.ink,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: AppSpacing.s),
-                          child: Divider(),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.add_box_rounded, size: 18, color: AppColors.onboardingAccent1),
-                                const SizedBox(width: AppSpacing.s),
-                                Text('Produk Baru Dibuat', style: AppTextStyles.bodyMedium),
-                              ],
-                            ),
-                            Text(
-                              '$created',
-                              style: AppTextStyles.bodyLarge.copyWith(
-                                color: AppColors.ink,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
                   const SizedBox(height: AppSpacing.xxl),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
+                      key: const Key('save_success_done_button'),
                       onPressed: () {
                         Navigator.pop(context);
                         Navigator.pop(context, true);
@@ -1108,9 +1471,9 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
       }
     }
 
-    final defaultStoreId = _nearbyStores.isNotEmpty ? _nearbyStores.first.storeId : '';
+    final initialDetectedStoreId = _nearbyStores.isNotEmpty ? _nearbyStores.first.storeId : '';
     final currentStoreId = _selectedStore?.storeId ?? '';
-    if (currentStoreId != defaultStoreId && currentStoreId.isNotEmpty && defaultStoreId.isNotEmpty) {
+    if (currentStoreId != initialDetectedStoreId && currentStoreId.isNotEmpty && initialDetectedStoreId.isNotEmpty) {
       return true;
     }
 
@@ -1183,13 +1546,18 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                     border: Border.all(color: AppColors.error),
                   ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Icon(Icons.error_outline, color: AppColors.error),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _errorMessage!,
-                          style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            color: AppColors.error,
+                            fontWeight: FontWeight.bold,
+                            height: 1.3,
+                          ),
                         ),
                       ),
                     ],
@@ -1236,10 +1604,10 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
               ElevatedButton.icon(
                 key: const Key('best_value_cta_button'),
                 onPressed: _evaluateBestValue,
-                icon: const Icon(Icons.emoji_events, size: 24),
+                icon: const Icon(Icons.emoji_events, size: 22),
                 label: const Text('🏆 Hitung Best Value Recommendation'),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
                   backgroundColor: AppColors.accentSoft,
                   foregroundColor: AppColors.accent,
                   side: const BorderSide(color: AppColors.accent, width: 1.5),
@@ -1248,6 +1616,8 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                   ),
                 ),
               ),
+
+
 
               const SizedBox(height: 16),
               const Divider(),
@@ -1267,14 +1637,14 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: AppColors.paper,
                         ),
                       )
                     : const Icon(Icons.check_circle_outline),
                 label: const Text('Simpan Hasil Scan'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.accent,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.paper,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   textStyle: const TextStyle(
                     fontSize: 16,

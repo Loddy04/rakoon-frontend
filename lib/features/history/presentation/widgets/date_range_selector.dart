@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rakoon_frontend/theme/app_theme.dart';
 
 class DateRangeSelector extends StatelessWidget {
   final String selectedRange;
@@ -34,15 +35,15 @@ class DateRangeSelector extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? (isDark ? Colors.white : const Color(0xFF0F172A))
-                    : (isDark ? const Color(0xFF1E293B) : Colors.white),
+                    ? (isDark ? AppColors.paper : AppColors.ink)
+                    : (isDark ? const Color(0xFF1E293B) : AppColors.paper),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isSelected
                       ? Colors.transparent
                       : (isDark
                             ? const Color(0xFF334155)
-                            : const Color(0xFFE2E8F0)),
+                            : AppColors.line),
                 ),
               ),
               child: Text(
@@ -51,10 +52,10 @@ class DateRangeSelector extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: isSelected
-                      ? (isDark ? const Color(0xFF0F172A) : Colors.white)
+                      ? (isDark ? AppColors.ink : AppColors.paper)
                       : (isDark
                             ? const Color(0xFF94A3B8)
-                            : const Color(0xFF64748B)),
+                            : AppColors.muted),
                 ),
               ),
             ),
@@ -64,3 +65,4 @@ class DateRangeSelector extends StatelessWidget {
     );
   }
 }
+

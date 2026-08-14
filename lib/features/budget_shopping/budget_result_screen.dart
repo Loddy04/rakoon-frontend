@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rakoon_frontend/services/budget_shopping_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
+import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 
 class BudgetResultScreen extends StatelessWidget {
   final BudgetRecommendResponse result;
@@ -12,12 +13,10 @@ class BudgetResultScreen extends StatelessWidget {
   });
 
   String _formatRupiah(double amount) {
-    final int val = amount.round();
-    final isNegative = val < 0;
-    final absVal = val.abs();
-    final formatted = absVal.toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.');
-    return '${isNegative ? "-" : ""}Rp $formatted';
+    if (amount < 0) {
+      return '-${formatRp(amount.abs())}';
+    }
+    return formatRp(amount);
   }
 
   @override
@@ -26,7 +25,7 @@ class BudgetResultScreen extends StatelessWidget {
     final bool isOverBudget = hasStore && result.remainingBudget < 0;
     final store = result.recommendedStore;
 
-    Color heroBgColor = Colors.amber.shade50;
+    Color heroBgColor = AppColors.warningSoft;
     Color heroBorderColor = AppColors.warning;
     String statusText = 'Tidak Ditemukan Toko';
     IconData statusIcon = Icons.warning_amber_rounded;
@@ -151,7 +150,7 @@ class BudgetResultScreen extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: isOverBudget ? AppColors.error : Colors.green.shade700,
+                                      color: isOverBudget ? AppColors.error : AppColors.accent,
                                     ),
                                   ),
                                 ],
@@ -242,12 +241,16 @@ class BudgetResultScreen extends StatelessWidget {
                             children: [
                               const Icon(Icons.my_location, size: 16, color: AppColors.accent),
                               const SizedBox(width: 4),
-                              Text(
-                                'Koordinat: ${store.lat}, ${store.lng}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontFamily: 'monospace',
-                                  color: AppColors.ink,
+                              Expanded(
+                                child: Text(
+                                  'Koordinat: ${store.lat}, ${store.lng}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'monospace',
+                                    color: AppColors.ink,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -458,7 +461,7 @@ class BudgetResultScreen extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
-                                    color: diff >= 0 ? AppColors.error : Colors.green.shade700,
+                                    color: diff >= 0 ? AppColors.error : AppColors.accent,
                                   ),
                                 ),
                               ],

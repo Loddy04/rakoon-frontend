@@ -9,11 +9,15 @@ import 'package:rakoon_frontend/theme/app_theme.dart';
 class ScanCameraScreen extends StatefulWidget {
   final String baseUrl;
   final VoidCallback? onClose;
+  final bool isActive;
+  final CameraController? customCameraController;
 
   const ScanCameraScreen({
     super.key,
     required this.baseUrl,
     this.onClose,
+    this.isActive = true,
+    this.customCameraController,
   });
 
   @override
@@ -32,7 +36,8 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
   bool _isCameraPermissionDenied = false;
-  bool _isCameraInitializing = false; // Initialized to false to work with the initialization gate
+  bool _isCameraInitializing = false;
+  int _initToken = 0;
 
   // Scanline animation settings
   late AnimationController _scanlineController;
@@ -42,43 +47,62 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _initializeCamera();
+    if (widget.isActive) {
+      _initializeCamera();
+    }
     _initScanlineAnimation();
   }
 
   @override
+  void didUpdateWidget(covariant ScanCameraScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isActive != widget.isActive) {
+      if (widget.isActive) {
+        _initializeCamera();
+        if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+          _scanlineController.repeat(reverse: true);
+        }
+      } else {
+        _deinitializeCamera();
+        _scanlineController.stop();
+      }
+    }
+  }
+
+  bool _isDisposed = false;
+
+  @override
   void dispose() {
+    _isDisposed = true;
     WidgetsBinding.instance.removeObserver(this);
+    _initToken++;
     _cameraController?.dispose();
+    _cameraController = null;
     _scanlineController.dispose();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    final CameraController? cameraController = _cameraController;
-
-    // If camera controller doesn't exist or is not initialized, do nothing
-    if (cameraController == null || !cameraController.value.isInitialized) {
-      return;
-    }
-
     if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
       _deinitializeCamera();
     } else if (state == AppLifecycleState.resumed) {
-      if (mounted) {
+      if (mounted && !_isDisposed && widget.isActive) {
         _initializeCamera();
       }
     }
   }
 
   Future<void> _deinitializeCamera() async {
+    _initToken++;
     final controller = _cameraController;
     _cameraController = null;
     if (controller != null) {
-      await controller.dispose();
+      try {
+        await controller.dispose();
+      } catch (_) {}
     }
-    if (mounted) {
+    if (mounted && !_isDisposed) {
       setState(() {
         _isCameraInitialized = false;
         _isCameraInitializing = false;
@@ -87,7 +111,9 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
   }
 
   Future<void> _initializeCamera() async {
-    if (_isCameraInitializing) return;
+    if (!widget.isActive || _isCameraInitializing) return;
+
+    final token = ++_initToken;
 
     setState(() {
       _isCameraInitializing = true;
@@ -95,6 +121,33 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     });
 
     if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      if (widget.customCameraController != null) {
+        final controller = widget.customCameraController!;
+        try {
+          if (!controller.value.isInitialized) {
+            await controller.initialize();
+          }
+          if (!mounted || !widget.isActive || token != _initToken) {
+            await controller.dispose();
+            return;
+          }
+          _cameraController = controller;
+          setState(() {
+            _isCameraInitialized = true;
+            _isCameraInitializing = false;
+          });
+          return;
+        } catch (e) {
+          if (mounted && token == _initToken) {
+            setState(() {
+              _isCameraInitializing = false;
+              _isCameraInitialized = false;
+            });
+          }
+          return;
+        }
+      }
+
       setState(() {
         _isCameraInitializing = false;
         _isCameraInitialized = false;
@@ -104,7 +157,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
 
     try {
       _cameras = await availableCameras();
-      if (!mounted) return;
+      if (!mounted || !widget.isActive || token != _initToken) return;
 
       if (_cameras.isEmpty) {
         setState(() {
@@ -120,21 +173,21 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
         enableAudio: false,
       );
 
-      _cameraController = controller;
       await controller.initialize();
 
-      if (!mounted) {
-        // If screen was disposed during initialization, clean up controller immediately
+      if (!mounted || !widget.isActive || token != _initToken) {
         await controller.dispose();
         return;
       }
+
+      _cameraController = controller;
 
       setState(() {
         _isCameraInitialized = true;
         _isCameraInitializing = false;
       });
     } catch (e) {
-      if (mounted) {
+      if (mounted && token == _initToken) {
         setState(() {
           _isCameraInitializing = false;
           _isCameraInitialized = false;
@@ -154,7 +207,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     _scanlineAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _scanlineController, curve: Curves.easeInOut),
     );
-    if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (widget.isActive && !Platform.environment.containsKey('FLUTTER_TEST')) {
       _scanlineController.repeat(reverse: true);
     }
   }
@@ -324,7 +377,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
                             color: AppColors.accent,
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.accent.withOpacity(0.8),
+                                color: AppColors.accent.withValues(alpha: 0.8),
                                 blurRadius: 8,
                                 spreadRadius: 2,
                               ),
@@ -507,7 +560,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
           ),
         Positioned.fill(
           child: Container(
-            color: Colors.black.withOpacity(0.6),
+            color: Colors.black.withValues(alpha: 0.6),
           ),
         ),
         Center(
@@ -560,7 +613,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
           ),
         Positioned.fill(
           child: Container(
-            color: Colors.black.withOpacity(0.7),
+            color: Colors.black.withValues(alpha: 0.7),
           ),
         ),
         Center(
@@ -659,7 +712,7 @@ class ViewfinderPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // 1. Darken overlay outside scanRect
-    final paint = Paint()..color = Colors.black.withOpacity(0.5);
+    final paint = Paint()..color = Colors.black.withValues(alpha: 0.5);
     final outerPath = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
     final innerPath = Path()..addRRect(RRect.fromRectAndRadius(scanRect, const Radius.circular(16)));
     final path = Path.combine(PathOperation.difference, outerPath, innerPath);

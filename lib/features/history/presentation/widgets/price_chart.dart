@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:rakoon_frontend/theme/app_theme.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../data/models/price_history_item.dart';
 
@@ -39,10 +40,10 @@ class PriceChart extends StatelessWidget {
         alignment: Alignment.center,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          color: isDark ? const Color(0xFF1E293B) : AppColors.paper,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            color: isDark ? const Color(0xFF334155) : AppColors.line,
           ),
         ),
         child: Text(
@@ -50,7 +51,7 @@ class PriceChart extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+            color: isDark ? const Color(0xFF94A3B8) : AppColors.muted,
           ),
         ),
       );
@@ -105,10 +106,10 @@ class PriceChart extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          color: isDark ? const Color(0xFF1E293B) : AppColors.paper,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            color: isDark ? const Color(0xFF334155) : AppColors.line,
           ),
         ),
         child: Column(
@@ -124,7 +125,7 @@ class PriceChart extends StatelessWidget {
                       return FlLine(
                         color: isDark
                             ? const Color(0xFF334155)
-                            : const Color(0xFFE2E8F0),
+                            : AppColors.line,
                         strokeWidth: 1,
                         dashArray: [3, 4],
                       );
@@ -159,7 +160,7 @@ class PriceChart extends StatelessWidget {
                                 fontWeight: FontWeight.w500,
                                 color: isDark
                                     ? const Color(0xFF94A3B8)
-                                    : const Color(0xFF64748B),
+                                    : AppColors.muted,
                               ),
                             ),
                           );
@@ -174,7 +175,7 @@ class PriceChart extends StatelessWidget {
                     LineChartBarData(
                       spots: spots,
                       isCurved: false,
-                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      color: isDark ? AppColors.paper : AppColors.ink,
                       barWidth: 2,
                       isStrokeCapRound: true,
                       dotData: FlDotData(
@@ -185,8 +186,8 @@ class PriceChart extends StatelessWidget {
                         },
                         getDotPainter: (spot, percent, barData, index) {
                           return FlDotCirclePainter(
-                            color: const Color(0xFF059669),
-                            strokeColor: Colors.white,
+                            color: AppColors.accent,
+                            strokeColor: AppColors.paper,
                             strokeWidth: 2.5,
                             radius: 5,
                           );
@@ -198,8 +199,8 @@ class PriceChart extends StatelessWidget {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            const Color(0xFF059669).withValues(alpha: 0.16),
-                            const Color(0xFF059669).withValues(alpha: 0.0),
+                            AppColors.accent.withValues(alpha: 0.16),
+                            AppColors.accent.withValues(alpha: 0.0),
                           ],
                         ),
                       ),
@@ -208,12 +209,12 @@ class PriceChart extends StatelessWidget {
                   lineTouchData: LineTouchData(
                     touchTooltipData: LineTouchTooltipData(
                       tooltipBgColor: isDark
-                          ? const Color(0xFF0F172A)
-                          : Colors.white,
+                          ? AppColors.ink
+                          : AppColors.paper,
                       tooltipBorder: BorderSide(
                         color: isDark
                             ? const Color(0xFF334155)
-                            : const Color(0xFFE2E8F0),
+                            : AppColors.line,
                       ),
                       getTooltipItems: (touchedSpots) {
                         return touchedSpots.map((spot) {
@@ -225,8 +226,8 @@ class PriceChart extends StatelessWidget {
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: isDark
-                                    ? Colors.white
-                                    : const Color(0xFF0F172A),
+                                    ? AppColors.paper
+                                    : AppColors.ink,
                               ),
                             );
                           }
@@ -241,8 +242,8 @@ class PriceChart extends StatelessWidget {
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                               color: isDark
-                                  ? Colors.white
-                                  : const Color(0xFF0F172A),
+                                  ? AppColors.paper
+                                  : AppColors.ink,
                             ),
                           );
                         }).whereType<LineTooltipItem>().toList();

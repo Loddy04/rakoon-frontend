@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/home_screen.dart';
 import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
-import 'package:rakoon_frontend/features/history/presentation/pages/product_history_list_page.dart';
+import 'package:rakoon_frontend/features/profile/presentation/pages/profile_page.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 
 class AppShell extends StatefulWidget {
   final String? baseUrl;
-  const AppShell({super.key, this.baseUrl});
+  final http.Client? httpClient;
+
+  const AppShell({super.key, this.baseUrl, this.httpClient});
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -14,11 +17,15 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0;
+  final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
+    if (index == 0) {
+      _homeKey.currentState?.fetchRecentScans();
+    }
   }
 
   @override
@@ -30,14 +37,17 @@ class _AppShellState extends State<AppShell> {
       body: IndexedStack(
         index: _selectedIndex,
         children: [
-          HomeScreen(baseUrl: widget.baseUrl),
+          HomeScreen(
+            key: _homeKey,
+            baseUrl: widget.baseUrl,
+            httpClient: widget.httpClient,
+          ),
           ScanCameraScreen(
             baseUrl: widget.baseUrl ?? 'http://10.0.2.2:8000',
             onClose: () => _onItemTapped(0),
+            isActive: _selectedIndex == 1,
           ),
-          ProductHistoryListPage(
-            baseUrl: widget.baseUrl ?? 'http://10.0.2.2:8000',
-          ),
+          const ProfilePage(),
         ],
       ),
       bottomNavigationBar: showBottomNav
@@ -55,8 +65,18 @@ class _AppShellState extends State<AppShell> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
-                      _buildNavItem(1, Icons.qr_code_scanner_outlined, Icons.qr_code_scanner, 'Scan'),
-                      _buildNavItem(2, Icons.history_outlined, Icons.history, 'History'),
+                      _buildNavItem(
+                        1,
+                        Icons.qr_code_scanner_outlined,
+                        Icons.qr_code_scanner,
+                        'Scan',
+                      ),
+                      _buildNavItem(
+                        2,
+                        Icons.person_outline,
+                        Icons.person,
+                        'Profil',
+                      ),
                     ],
                   ),
                 ),

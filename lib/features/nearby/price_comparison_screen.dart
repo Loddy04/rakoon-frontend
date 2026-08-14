@@ -6,6 +6,7 @@ import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
 import 'package:rakoon_frontend/widgets/rakoon_location_map.dart';
+import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 
 
 class PriceComparisonScreen extends StatefulWidget {
@@ -94,20 +95,7 @@ class _PriceComparisonScreenState extends State<PriceComparisonScreen> {
 
   /// Formats price integers as standard Indonesian Rupiah (e.g. Rp 18.500)
   String _formatRp(int price) {
-    final str = price.toString();
-    final buffer = StringBuffer();
-    int count = 0;
-    
-    for (int i = str.length - 1; i >= 0; i--) {
-      buffer.write(str[i]);
-      count++;
-      if (count == 3 && i > 0) {
-        buffer.write('.');
-        count = 0;
-      }
-    }
-    
-    return 'Rp ${buffer.toString().split('').reversed.join()}';
+    return formatRp(price);
   }
 
   /// Formats ISO datetime strings into readable format (e.g. 08 Agt 2026, 13:45)

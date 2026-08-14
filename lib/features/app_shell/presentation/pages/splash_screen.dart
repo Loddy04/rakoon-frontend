@@ -81,7 +81,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.ink,
+      backgroundColor: AppColors.background,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -91,7 +91,7 @@ class _SplashScreenState extends State<SplashScreen>
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                colors: [AppColors.paper, AppColors.background],
               ),
             ),
           ),
@@ -112,27 +112,13 @@ class _SplashScreenState extends State<SplashScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo container matching brand aesthetic
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: AppColors.accent,
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.accent.withValues(alpha: 0.4),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.analytics_outlined,
-                        size: 54,
-                        color: Colors.white,
-                      ),
+                  // Raw logo directly on the gradient background
+                  SizedBox(
+                    width: 120,
+                    height: 120,
+                    child: Image.asset(
+                      'assets/logo/rakoon_logo.png',
+                      fit: BoxFit.contain,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
@@ -141,7 +127,7 @@ class _SplashScreenState extends State<SplashScreen>
                   Text(
                     'Rakoon',
                     style: AppTextStyles.titleLarge.copyWith(
-                      color: Colors.white,
+                      color: AppColors.ink,
                       fontSize: 32,
                       letterSpacing: -0.5,
                     ),
@@ -152,7 +138,7 @@ class _SplashScreenState extends State<SplashScreen>
                   Text(
                     'Belanja Cerdas · Asisten AI Anda',
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: Colors.white60,
+                      color: AppColors.muted,
                       fontSize: 13,
                     ),
                   ),
@@ -184,7 +170,7 @@ class _SplashScreenState extends State<SplashScreen>
                   Text(
                     'Memuat sistem...',
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: Colors.white38,
+                      color: AppColors.muted,
                       fontSize: 11,
                     ),
                   ),

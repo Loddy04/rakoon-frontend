@@ -61,68 +61,68 @@ class AppSpacing {
 class AppRadius {
   static const double s = 4.0;
   static const double m = 8.0;
-  
+
   /// Equivalent to rounded-xl (12.0)
   static const double l = 12.0;
-  
+
   /// Equivalent to rounded-2xl (16.0)
   static const double xl = 16.0;
-  
+
   /// Large corner radius for fully rounded/capsule buttons/badges (999.0)
   static const double full = 999.0;
 }
 
-/// Premium typography styles using the Inter font.
+/// Premium typography styles combining Plus Jakarta Sans and Manrope fonts.
 class AppTextStyles {
   /// Header style used for main screens (e.g. "Rakoon", 26pt, bold)
-  static TextStyle get titleLarge => GoogleFonts.inter(
-        fontSize: 26.0,
-        fontWeight: FontWeight.bold,
-        color: AppColors.ink,
-        letterSpacing: -0.5,
-      );
+  static TextStyle get titleLarge => GoogleFonts.plusJakartaSans(
+    fontSize: 26.0,
+    fontWeight: FontWeight.bold,
+    color: AppColors.ink,
+    letterSpacing: -0.5,
+  );
 
   /// Title style for result header (19pt, bold)
-  static TextStyle get titleMedium => GoogleFonts.inter(
-        fontSize: 19.0,
-        fontWeight: FontWeight.bold,
-        color: AppColors.ink,
-      );
+  static TextStyle get titleMedium => GoogleFonts.plusJakartaSans(
+    fontSize: 19.0,
+    fontWeight: FontWeight.bold,
+    color: AppColors.ink,
+  );
 
   /// Sub-headers (15pt, semibold)
-  static TextStyle get titleSmall => GoogleFonts.inter(
-        fontSize: 15.0,
-        fontWeight: FontWeight.w600,
-        color: AppColors.ink,
-      );
+  static TextStyle get titleSmall => GoogleFonts.plusJakartaSans(
+    fontSize: 15.0,
+    fontWeight: FontWeight.w600,
+    color: AppColors.ink,
+  );
 
   /// Standard card action titles (14pt, semibold)
-  static TextStyle get bodyLarge => GoogleFonts.inter(
-        fontSize: 14.0,
-        fontWeight: FontWeight.w600,
-        color: AppColors.ink,
-      );
+  static TextStyle get bodyLarge => GoogleFonts.manrope(
+    fontSize: 14.0,
+    fontWeight: FontWeight.w600,
+    color: AppColors.ink,
+  );
 
   /// Body content text (13pt, medium/regular)
-  static TextStyle get bodyMedium => GoogleFonts.inter(
-        fontSize: 13.0,
-        fontWeight: FontWeight.normal,
-        color: AppColors.ink,
-      );
+  static TextStyle get bodyMedium => GoogleFonts.manrope(
+    fontSize: 13.0,
+    fontWeight: FontWeight.normal,
+    color: AppColors.ink,
+  );
 
   /// Small description and muted text (11pt/12pt)
-  static TextStyle get bodySmall => GoogleFonts.inter(
-        fontSize: 11.0,
-        fontWeight: FontWeight.normal,
-        color: AppColors.muted,
-      );
+  static TextStyle get bodySmall => GoogleFonts.manrope(
+    fontSize: 11.0,
+    fontWeight: FontWeight.normal,
+    color: AppColors.muted,
+  );
 
   /// Text style specifically for badges and small labels
-  static TextStyle get labelSmall => GoogleFonts.inter(
-        fontSize: 11.0,
-        fontWeight: FontWeight.w600,
-        color: AppColors.accent,
-      );
+  static TextStyle get labelSmall => GoogleFonts.manrope(
+    fontSize: 11.0,
+    fontWeight: FontWeight.w600,
+    color: AppColors.accent,
+  );
 }
 
 /// Core theme configurations for the Rakoon application.
@@ -146,15 +146,39 @@ class AppTheme {
         thickness: 1.0,
         space: 1.0,
       ),
-      textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme).apply(
-        bodyColor: AppColors.ink,
-        displayColor: AppColors.ink,
-      ),
+      textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme)
+          .copyWith(
+            headlineLarge: GoogleFonts.plusJakartaSans(
+              textStyle: baseTheme.textTheme.headlineLarge,
+              fontWeight: FontWeight.bold,
+            ),
+            headlineMedium: GoogleFonts.plusJakartaSans(
+              textStyle: baseTheme.textTheme.headlineMedium,
+              fontWeight: FontWeight.bold,
+            ),
+            headlineSmall: GoogleFonts.plusJakartaSans(
+              textStyle: baseTheme.textTheme.headlineSmall,
+              fontWeight: FontWeight.bold,
+            ),
+            titleLarge: GoogleFonts.plusJakartaSans(
+              textStyle: baseTheme.textTheme.titleLarge,
+              fontWeight: FontWeight.bold,
+            ),
+            titleMedium: GoogleFonts.plusJakartaSans(
+              textStyle: baseTheme.textTheme.titleMedium,
+              fontWeight: FontWeight.bold,
+            ),
+            titleSmall: GoogleFonts.plusJakartaSans(
+              textStyle: baseTheme.textTheme.titleSmall,
+              fontWeight: FontWeight.w600,
+            ),
+          )
+          .apply(bodyColor: AppColors.ink, displayColor: AppColors.ink),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.paper,
         foregroundColor: AppColors.ink,
         elevation: 0,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: GoogleFonts.plusJakartaSans(
           fontSize: 18.0,
           fontWeight: FontWeight.bold,
           color: AppColors.ink,
