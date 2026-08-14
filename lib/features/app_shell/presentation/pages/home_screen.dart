@@ -166,7 +166,7 @@ class HomeScreen extends StatelessWidget {
                       mainAxisSpacing: AppSpacing.m,
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      childAspectRatio: 1.15,
+                      childAspectRatio: 0.83,
                       children: [
                         // Card 1: Riwayat Harga
                         InkWell(
