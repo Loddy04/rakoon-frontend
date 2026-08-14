@@ -4,19 +4,64 @@ import 'package:rakoon_frontend/features/budget_shopping/budget_shopping_screen.
 import 'package:rakoon_frontend/features/history/presentation/pages/product_history_list_page.dart';
 import 'package:rakoon_frontend/features/nearby/nearby_stores_screen.dart';
 import 'package:rakoon_frontend/features/nearby/price_comparison_screen.dart';
+import 'package:rakoon_frontend/features/nearby/presentation/widgets/product_selector_bottom_sheet.dart';
 import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
+import 'package:rakoon_frontend/services/location_service.dart';
+import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   // TODO: [Temporary] baseUrl is loaded from development dashboard parameters.
   // Replace with dynamic configuration / client settings container during Production migration (Task A6).
   final String? baseUrl;
 
   const HomeScreen({super.key, this.baseUrl});
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String _locationLabel = 'Mencari lokasi...';
+
+  @override
+  void initState() {
+    super.initState();
+    _detectLocationAndStore();
+  }
+
+  Future<void> _detectLocationAndStore() async {
+    try {
+      final position = await LocationService.getCurrentLocation();
+      final response = await StoresService.getNearbyStores(
+        lat: position.latitude,
+        lng: position.longitude,
+        baseUrl: _getBaseUrl(),
+      );
+
+      if (!mounted) return;
+
+      if (response.stores.isNotEmpty) {
+        final nearest = response.stores.first;
+        setState(() {
+          _locationLabel = '${nearest.nama} · ${nearest.jarakKm.toStringAsFixed(1)} km';
+        });
+      } else {
+        setState(() {
+          _locationLabel = 'Lokasi Terdeteksi';
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _locationLabel = 'Lokasi Belum Terdeteksi';
+      });
+    }
+  }
+
   String _getBaseUrl() {
-    if (baseUrl != null && baseUrl!.isNotEmpty) {
-      return baseUrl!;
+    if (widget.baseUrl != null && widget.baseUrl!.isNotEmpty) {
+      return widget.baseUrl!;
     }
     return kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
   }
@@ -62,14 +107,58 @@ class HomeScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Header Section
+            // Header Section with Brand and Location Pill
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.xxl,
                 vertical: AppSpacing.l,
               ),
               child: Row(
-                children: [Text('Rakoon', style: AppTextStyles.titleLarge)],
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Rakoon', style: AppTextStyles.titleLarge),
+                  const SizedBox(width: AppSpacing.s),
+                  Flexible(
+                    child: Semantics(
+                      label: 'Lokasi terdeteksi: $_locationLabel',
+                      container: true,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.m,
+                          vertical: 6.0,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.paper,
+                          borderRadius: BorderRadius.circular(AppRadius.full),
+                          border: Border.all(color: AppColors.line),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.location_on,
+                              color: AppColors.accent,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                _locationLabel,
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.ink,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
