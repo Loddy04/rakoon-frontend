@@ -81,7 +81,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.ink,
+      backgroundColor: AppColors.background,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -91,7 +91,7 @@ class _SplashScreenState extends State<SplashScreen>
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                colors: [AppColors.paper, AppColors.background],
               ),
             ),
           ),
@@ -121,7 +121,7 @@ class _SplashScreenState extends State<SplashScreen>
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.accent.withValues(alpha: 0.4),
+                          color: AppColors.accent.withValues(alpha: 0.25),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -141,7 +141,7 @@ class _SplashScreenState extends State<SplashScreen>
                   Text(
                     'Rakoon',
                     style: AppTextStyles.titleLarge.copyWith(
-                      color: Colors.white,
+                      color: AppColors.ink,
                       fontSize: 32,
                       letterSpacing: -0.5,
                     ),
@@ -152,7 +152,7 @@ class _SplashScreenState extends State<SplashScreen>
                   Text(
                     'Belanja Cerdas · Asisten AI Anda',
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: Colors.white60,
+                      color: AppColors.muted,
                       fontSize: 13,
                     ),
                   ),
@@ -184,7 +184,7 @@ class _SplashScreenState extends State<SplashScreen>
                   Text(
                     'Memuat sistem...',
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: Colors.white38,
+                      color: AppColors.muted,
                       fontSize: 11,
                     ),
                   ),

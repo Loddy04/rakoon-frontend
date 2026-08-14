@@ -39,7 +39,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       'description':
           'Tentukan pagu belanja Anda. Aplikasi akan pintar membagi budget ke daftar barang belanjaan Anda berdasarkan toko dengan harga terendah.',
       'icon': Icons.account_balance_wallet_outlined,
-      'color': AppColors.onboardingAccent1, // Sky Blue Accent
+      'color': AppColors.accent,
     },
     {
       'title': 'Riwayat & Tren Harga',
@@ -47,7 +47,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       'description':
           'Pantau fluktuasi naik-turun harga barang dari waktu ke waktu secara akurat untuk menghindari membeli produk saat harga sedang melambung tinggi.',
       'icon': Icons.analytics_outlined,
-      'color': AppColors.onboardingAccent2, // Purple Accent
+      'color': AppColors.accent,
     },
     {
       'title': 'Izin Akses Perangkat',
@@ -55,7 +55,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       'description':
           'Untuk menggunakan fitur AI Rakoon secara maksimal, kami memerlukan beberapa perizinan akses dasar untuk kamera dan lokasi GPS Anda.',
       'icon': Icons.security_outlined,
-      'color': AppColors.warning,
+      'color': AppColors.accent,
     },
   ];
 
