@@ -34,6 +34,7 @@ class _AppShellState extends State<AppShell> {
           ScanCameraScreen(
             baseUrl: widget.baseUrl ?? 'http://10.0.2.2:8000',
             onClose: () => _onItemTapped(0),
+            isActive: _selectedIndex == 1,
           ),
           const ProfilePage(),
         ],
