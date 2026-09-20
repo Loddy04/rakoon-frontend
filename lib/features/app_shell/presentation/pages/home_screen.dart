@@ -14,11 +14,11 @@ import 'package:rakoon_frontend/services/location_service.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
-
+import 'package:rakoon_frontend/widgets/bouncy_button.dart';
+import 'package:rakoon_frontend/widgets/playful_card.dart';
+import 'package:rakoon_frontend/widgets/status_badge.dart';
 
 class HomeScreen extends StatefulWidget {
-  // TODO: [Temporary] baseUrl is loaded from development dashboard parameters.
-  // Replace with dynamic configuration / client settings container during Production migration (Task A6).
   final String? baseUrl;
   final http.Client? httpClient;
 
@@ -141,7 +141,7 @@ class HomeScreenState extends State<HomeScreen> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.cards)),
       ),
       backgroundColor: AppColors.paper,
       builder: (context) {
@@ -152,7 +152,7 @@ class HomeScreenState extends State<HomeScreen> {
           child: ProductSelectorBottomSheet(
             baseUrl: _getBaseUrl(),
             onProductSelected: (prod) {
-              Navigator.pop(context); // Close bottom sheet
+              Navigator.pop(context);
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -173,404 +173,222 @@ class HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.paper,
       body: SafeArea(
         child: Column(
           children: [
-            // Header Section with Brand and Location Pill
+            // Shupatto Minimalist Header Section (Clean White Canvas)
             Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xxl,
-                vertical: AppSpacing.l,
+                horizontal: AppSpacing.s16,
+                vertical: AppSpacing.s12,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Rakoon', style: AppTextStyles.titleLarge),
+                  Text(
+                    'RAKOON',
+                    style: AppTextStyles.headingLg.copyWith(
+                      fontSize: 20,
+                      letterSpacing: 2.0,
+                      color: AppColors.graphite,
+                    ),
+                  ),
                   const SizedBox(width: AppSpacing.s),
                   Flexible(
                     child: Semantics(
                       label: 'Lokasi terdeteksi: $_locationLabel',
                       container: true,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.m,
-                          vertical: 6.0,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.paper,
-                          borderRadius: BorderRadius.circular(AppRadius.full),
-                          border: Border.all(color: AppColors.line),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              color: AppColors.accent,
-                              size: 14,
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                _locationLabel,
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: AppColors.ink,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 11,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
+                      child: StatusBadge(
+                        status: _locationLabel,
+                        icon: Icons.location_on_outlined,
+                        customBackgroundColor: AppColors.paper,
+                        customTextColor: AppColors.graphite,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
+            const Divider(color: AppColors.graphite, height: 1.0, thickness: 1.0),
 
             // Scrollable Content
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s16,
+                  vertical: AppSpacing.s16,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: AppSpacing.s),
-                    // 1. Scan Hero Card
-                    InkWell(
+                    // 1. Ramping Compact Hero "Scan Rak Produk" Banner
+                    PlayfulCard(
                       onTap: _openScanCamera,
-                      borderRadius: BorderRadius.circular(AppRadius.xl),
-                      child: Container(
-                        padding: const EdgeInsets.all(AppSpacing.xxl),
-                        decoration: BoxDecoration(
-                          color: AppColors.paper,
-                          borderRadius: BorderRadius.circular(AppRadius.xl),
-                          border: Border.all(color: AppColors.line),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.ink.withValues(alpha: 0.03),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            // Icon Box
-                            Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                color: AppColors.ink,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.xl,
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt,
-                                color: Colors.white,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.l),
-
-                            // Info Text
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Scan Rak Produk',
-                                    style: AppTextStyles.bodyLarge.copyWith(
-                                      fontSize: 17,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Arahkan kamera ke rak untuk membandingkan harga',
-                                    style: AppTextStyles.bodySmall,
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            const Icon(
-                              Icons.chevron_right,
-                              color: AppColors.muted,
-                            ),
-                          ],
-                        ),
+                      backgroundColor: AppColors.paper,
+                      border: Border.all(color: AppColors.graphite, width: 1.0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14.0,
+                        vertical: 12.0,
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.l),
-
-                    // 2. Feature Actions Grid (fixed height & alignment)
-                    GridView.count(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: AppSpacing.m,
-                      mainAxisSpacing: AppSpacing.m,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      childAspectRatio: 0.83,
-                      children: [
-                        // Card 1: Riwayat Harga
-                        InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ProductHistoryListPage(
-                                  baseUrl: _getBaseUrl(),
-                                ),
-                              ),
-                            );
-                          },
-                          borderRadius: BorderRadius.circular(AppRadius.xl),
-                          child: Container(
-                            padding: const EdgeInsets.all(AppSpacing.l),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
                             decoration: BoxDecoration(
                               color: AppColors.paper,
-                              borderRadius: BorderRadius.circular(AppRadius.xl),
-                              border: Border.all(color: AppColors.line),
+                              borderRadius: BorderRadius.circular(12.0),
+                              border: Border.all(color: AppColors.graphite, width: 1.0),
                             ),
+                            child: const Icon(
+                              Icons.camera_alt_outlined,
+                              color: AppColors.graphite,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.s12),
+
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.background,
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.l,
-                                    ),
-                                  ),
-                                  child: const Icon(
-                                    Icons.history,
-                                    color: AppColors.ink,
-                                    size: 20,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.m),
                                 Text(
-                                  'Riwayat Harga',
-                                  style: AppTextStyles.bodyLarge,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  'SCAN RAK PRODUK',
+                                  style: AppTextStyles.subheading.copyWith(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.0,
+                                  ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'Pantau tren harga ritel',
-                                  style: AppTextStyles.bodySmall,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
+                                  'Arahkan kamera ke rak untuk bandingkan harga',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    fontSize: 11,
+                                    color: AppColors.fog,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
-                        ),
 
-                        // Card 2: Toko Terdekat
-                        Semantics(
-                          label: 'Toko Terdekat, cari toko di sekitar kamu',
-                          button: true,
-                          container: true,
-                          excludeSemantics: true,
-                          child: InkWell(
+                          const Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColors.graphite,
+                            size: 14,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.s16),
+
+                    // 2. Ergonomic 1x4 Quick Action Menu Bar (Gojek Style)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Quick Action 1: Riwayat Harga
+                        Expanded(
+                          child: _QuickActionButton(
+                            icon: Icons.show_chart_rounded,
+                            label: 'Riwayat Harga',
                             onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => NearbyStoresScreen(
+                                  builder: (context) => ProductHistoryListPage(
                                     baseUrl: _getBaseUrl(),
                                   ),
                                 ),
                               );
                             },
-                            borderRadius: BorderRadius.circular(AppRadius.xl),
-                            child: Container(
-                              padding: const EdgeInsets.all(AppSpacing.l),
-                              decoration: BoxDecoration(
-                                color: AppColors.paper,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.xl,
-                                ),
-                                border: Border.all(color: AppColors.line),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.background,
-                                      borderRadius: BorderRadius.circular(
-                                        AppRadius.l,
-                                      ),
-                                    ),
-                                    child: const Icon(
-                                      Icons.storefront_outlined,
-                                      color: AppColors.ink,
-                                      size: 20,
+                          ),
+                        ),
+
+                        // Quick Action 2: Toko Terdekat
+                        Expanded(
+                          child: Semantics(
+                            label: 'Toko Terdekat, cari toko di sekitar kamu',
+                            button: true,
+                            container: true,
+                            excludeSemantics: true,
+                            child: _QuickActionButton(
+                              icon: Icons.storefront_outlined,
+                              label: 'Toko Terdekat',
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => NearbyStoresScreen(
+                                      baseUrl: _getBaseUrl(),
                                     ),
                                   ),
-                                  const SizedBox(height: AppSpacing.m),
-                                  Text(
-                                    'Toko Terdekat',
-                                    style: AppTextStyles.bodyLarge,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Cari toko di sekitar kamu',
-                                    style: AppTextStyles.bodySmall,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
+                                );
+                              },
                             ),
                           ),
                         ),
 
-                        // Card 3: Bandingkan Harga
-                        Semantics(
-                          label:
-                              'Bandingkan Harga, cari dan bandingkan harga produk',
-                          button: true,
-                          container: true,
-                          excludeSemantics: true,
-                          child: InkWell(
-                            onTap: () => _showProductSelector(context),
-                            borderRadius: BorderRadius.circular(AppRadius.xl),
-                            child: Container(
-                              padding: const EdgeInsets.all(AppSpacing.l),
-                              decoration: BoxDecoration(
-                                color: AppColors.paper,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.xl,
-                                ),
-                                border: Border.all(color: AppColors.line),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.background,
-                                      borderRadius: BorderRadius.circular(
-                                        AppRadius.l,
-                                      ),
-                                    ),
-                                    child: const Icon(
-                                      Icons.compare_arrows,
-                                      color: AppColors.ink,
-                                      size: 20,
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.m),
-                                  Text(
-                                    'Bandingkan Harga',
-                                    style: AppTextStyles.bodyLarge,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Temukan harga terbaik di toko sekitar',
-                                    style: AppTextStyles.bodySmall,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
+                        // Quick Action 3: Bandingkan Harga
+                        Expanded(
+                          child: Semantics(
+                            label: 'Bandingkan Harga, cari dan bandingkan harga produk',
+                            button: true,
+                            container: true,
+                            excludeSemantics: true,
+                            child: _QuickActionButton(
+                              icon: Icons.compare_arrows,
+                              label: 'Bandingkan',
+                              onTap: () => _showProductSelector(context),
                             ),
                           ),
                         ),
 
-                        // Card 4: Smart Budget Shopping
-                        InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => BudgetShoppingScreen(
-                                  baseUrl: _getBaseUrl(),
-                                ),
-                              ),
-                            );
-                          },
-                          borderRadius: BorderRadius.circular(AppRadius.xl),
-                          child: Container(
-                            padding: const EdgeInsets.all(AppSpacing.l),
-                            decoration: BoxDecoration(
-                              color: AppColors.paper,
-                              borderRadius: BorderRadius.circular(AppRadius.xl),
-                              border: Border.all(color: AppColors.line),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.background,
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.l,
-                                    ),
-                                  ),
-                                  child: const Icon(
-                                    Icons.account_balance_wallet_outlined,
-                                    color: AppColors.ink,
-                                    size: 20,
+                        // Quick Action 4: Smart Budget
+                        Expanded(
+                          child: _QuickActionButton(
+                            icon: Icons.account_balance_wallet_outlined,
+                            label: 'Smart Budget',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => BudgetShoppingScreen(
+                                    baseUrl: _getBaseUrl(),
                                   ),
                                 ),
-                                const SizedBox(height: AppSpacing.m),
-                                Text(
-                                  'Smart Budget',
-                                  style: AppTextStyles.bodyLarge,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Alokasi budget belanja',
-                                  style: AppTextStyles.bodySmall,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
+                              );
+                            },
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: AppSpacing.l),
+                    const SizedBox(height: AppSpacing.s20),
 
-                    // 3. Scan Terakhir Feed
+                    // Hairline Divider
+                    const Divider(color: AppColors.graphite, height: 1.0, thickness: 1.0),
+                    const SizedBox(height: AppSpacing.s16),
+
+                    // 3. Exposed Section "Scan Terakhir" Feed Header
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
                           child: Text(
-                            'Scan Terakhir',
-                            style: AppTextStyles.titleSmall,
+                            'SCAN TERAKHIR',
+                            style: AppTextStyles.subheading.copyWith(
+                              fontSize: 13,
+                              letterSpacing: 1.2,
+                              color: AppColors.graphite,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        InkWell(
+                        BouncyButton(
                           key: const Key('scan_terakhir_see_all'),
-                          onTap: () {
+                          onPressed: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -581,28 +399,18 @@ class HomeScreenState extends State<HomeScreen> {
                               ),
                             );
                           },
-                          borderRadius: BorderRadius.circular(AppRadius.s),
-
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 4,
-                              horizontal: 8,
-                            ),
-                            child: Text(
-                              'Lihat semua',
-                              style: AppTextStyles.labelSmall.copyWith(
-                                color: AppColors.accent,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          variant: BouncyButtonVariant.outlined,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
                           ),
+                          text: 'Lihat Semua',
                         ),
                       ],
                     ),
-                    const SizedBox(height: AppSpacing.s),
+                    const SizedBox(height: AppSpacing.s12),
                     _buildRecentScansSection(),
-                    const SizedBox(height: AppSpacing.xxl),
+                    const SizedBox(height: AppSpacing.s20),
                   ],
                 ),
               ),
@@ -615,24 +423,25 @@ class HomeScreenState extends State<HomeScreen> {
 
   Widget _buildRecentScansSection() {
     if (_isLoadingScans) {
-      return Container(
+      return PlayfulCard(
         key: const Key('recent_scans_loading'),
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-        alignment: Alignment.center,
+        backgroundColor: AppColors.paper,
+        border: Border.all(color: AppColors.graphite, width: 1.0),
+        padding: const EdgeInsets.symmetric(vertical: 32.0),
         child: Column(
           children: [
             const SizedBox(
-              width: 24,
-              height: 24,
+              width: 22,
+              height: 22,
               child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                color: AppColors.accent,
+                strokeWidth: 2.0,
+                color: AppColors.graphite,
               ),
             ),
-            const SizedBox(height: AppSpacing.m),
+            const SizedBox(height: AppSpacing.s12),
             Text(
-              'Memuat riwayat scan...',
-              style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
+              'MEMUAT RIWAYAT SCAN...',
+              style: AppTextStyles.monoTag.copyWith(color: AppColors.fog, fontSize: 10),
             ),
           ],
         ),
@@ -640,34 +449,30 @@ class HomeScreenState extends State<HomeScreen> {
     }
 
     if (_scansError != null) {
-      return Container(
+      return PlayfulCard(
         key: const Key('recent_scans_error'),
-        padding: const EdgeInsets.all(AppSpacing.l),
-        decoration: BoxDecoration(
-          color: AppColors.paper,
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: Border.all(color: AppColors.line),
-        ),
+        backgroundColor: AppColors.paper,
+        border: Border.all(color: AppColors.graphite, width: 1.0),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         child: Column(
           children: [
-            const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 32),
+            const Icon(Icons.error_outline_rounded, color: AppColors.graphite, size: 28),
             const SizedBox(height: AppSpacing.s),
             Text(
-              'Gagal memuat riwayat scan.',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.ink,
-                fontWeight: FontWeight.w600,
+              'GAGAL MEMUAT RIWAYAT SCAN',
+              style: AppTextStyles.bodyLarge.copyWith(
+                color: AppColors.graphite,
+                fontSize: 13,
+                letterSpacing: 0.8,
               ),
             ),
-            const SizedBox(height: AppSpacing.m),
-            TextButton.icon(
+            const SizedBox(height: AppSpacing.s12),
+            BouncyButton(
               key: const Key('retry_recent_scans_button'),
               onPressed: fetchRecentScans,
-              icon: const Icon(Icons.refresh, size: 16),
-              label: const Text('Coba Lagi'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.accent,
-              ),
+              variant: BouncyButtonVariant.primaryPill,
+              icon: Icons.refresh,
+              text: 'Coba Lagi',
             ),
           ],
         ),
@@ -675,73 +480,57 @@ class HomeScreenState extends State<HomeScreen> {
     }
 
     if (_recentScans == null || _recentScans!.isEmpty) {
-      return Container(
+      return PlayfulCard(
         key: const Key('recent_scans_empty'),
+        backgroundColor: AppColors.paper,
+        border: Border.all(color: AppColors.graphite, width: 1.0),
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.xl,
-          vertical: AppSpacing.xxl,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.paper,
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: Border.all(color: AppColors.line),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.ink.withValues(alpha: 0.02),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          horizontal: AppSpacing.cardPadding,
+          vertical: 28.0,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 52,
-              height: 52,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: BorderRadius.circular(AppRadius.xl),
+                color: AppColors.paper,
+                borderRadius: BorderRadius.circular(12.0),
+                border: Border.all(color: AppColors.graphite, width: 1.0),
               ),
               child: const Icon(
                 Icons.history_toggle_off_outlined,
-                color: AppColors.muted,
-                size: 28,
+                color: AppColors.graphite,
+                size: 22,
               ),
             ),
-            const SizedBox(height: AppSpacing.m),
+            const SizedBox(height: AppSpacing.s12),
             Text(
-              'Belum Ada Riwayat Pindai',
+              'BELUM ADA RIWAYAT PINDAI',
               style: AppTextStyles.titleSmall.copyWith(
-                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                letterSpacing: 1.0,
+                color: AppColors.graphite,
               ),
             ),
-            const SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: 4),
             Text(
               'Pindai label harga rak produk di toko untuk mulai mencatat dan membandingkan harga.',
               textAlign: TextAlign.center,
               style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.muted,
-                height: 1.4,
+                color: AppColors.fog,
+                fontSize: 11,
+                height: 1.3,
               ),
             ),
-            const SizedBox(height: AppSpacing.l),
-            OutlinedButton.icon(
+            const SizedBox(height: AppSpacing.s16),
+            BouncyButton(
               key: const Key('home_start_scan_cta'),
               onPressed: _openScanCamera,
-              icon: const Icon(Icons.camera_alt_outlined, size: 18),
-              label: const Text('Mulai Pindai Rak'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.accent,
-                side: const BorderSide(color: AppColors.accent),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.l),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.l,
-                  vertical: AppSpacing.s,
-                ),
-              ),
+              variant: BouncyButtonVariant.accentAction,
+              icon: Icons.camera_alt_outlined,
+              text: 'Mulai Pindai Rak',
             ),
           ],
         ),
@@ -756,12 +545,15 @@ class HomeScreenState extends State<HomeScreen> {
 
   Widget _buildRecentScanCard(RecentScan scan) {
     final String storeName = scan.storeName ?? 'Toko Terdekat';
-    final String productCountText = '${scan.productCount} produk dipindai';
+    final String productCountText = '${scan.productCount} Produk';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.m),
-      child: InkWell(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s12),
+      child: PlayfulCard(
         key: Key('recent_scan_item_${scan.id}'),
+        backgroundColor: AppColors.paper,
+        border: Border.all(color: AppColors.graphite, width: 1.0),
+        padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
         onTap: () {
           Navigator.push(
             context,
@@ -774,82 +566,54 @@ class HomeScreenState extends State<HomeScreen> {
             ),
           );
         },
-        borderRadius: BorderRadius.circular(AppRadius.l),
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.l),
-          decoration: BoxDecoration(
-            color: AppColors.paper,
-            borderRadius: BorderRadius.circular(AppRadius.l),
-            border: Border.all(color: AppColors.line),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.ink.withValues(alpha: 0.02),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: AppSpacing.s,
-                runSpacing: AppSpacing.xs,
-                children: [
-                  Text(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
                     storeName,
                     style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      letterSpacing: 0.6,
                     ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.s,
-                      vertical: AppSpacing.xs,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.accentSoft,
-                      borderRadius: BorderRadius.circular(AppRadius.s),
-                    ),
-                    child: Text(
-                      productCountText,
-                      style: AppTextStyles.labelSmall.copyWith(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                ),
+                const SizedBox(width: AppSpacing.s),
+                StatusBadge(
+                  status: productCountText,
+                  customBackgroundColor: AppColors.periwinkle,
+                  customTextColor: AppColors.paper,
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(
+                  Icons.access_time,
+                  size: 12,
+                  color: AppColors.fog,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _formatDateTime(scan.timestamp),
+                  style: AppTextStyles.monoTag.copyWith(
+                    color: AppColors.fog,
+                    fontSize: 10,
                   ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.s),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.access_time,
-                    size: 13,
-                    color: AppColors.muted,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _formatDateTime(scan.timestamp),
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.muted,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
-
 
   String _formatDateTime(DateTime dt) {
     final localDt = dt.toLocal();
@@ -864,9 +628,97 @@ class HomeScreenState extends State<HomeScreen> {
     final minute = localDt.minute.toString().padLeft(2, '0');
     return '$day $month $year, $hour:$minute';
   }
-
-
-
 }
 
+/// A compact, responsive quick-action button item (Gojek menu pattern) featuring bouncy scale press feedback.
+class _QuickActionButton extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
 
+  const _QuickActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  State<_QuickActionButton> createState() => _QuickActionButtonState();
+}
+
+class _QuickActionButtonState extends State<_QuickActionButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: AppDurations.fast,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.92).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: AppCurves.snappy,
+        reverseCurve: AppCurves.bouncy,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) => _controller.reverse(),
+      onTapCancel: () => _controller.reverse(),
+      onTap: widget.onTap,
+      child: AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) => Transform.scale(
+          scale: _scaleAnimation.value,
+          child: child,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: AppColors.paper,
+                borderRadius: BorderRadius.circular(14.0),
+                border: Border.all(color: AppColors.graphite, width: 1.0),
+              ),
+              child: Icon(
+                widget.icon,
+                color: AppColors.graphite,
+                size: 22,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              widget.label.toUpperCase(),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.caption.copyWith(
+                fontSize: 10,
+                letterSpacing: 0.5,
+                color: AppColors.graphite,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

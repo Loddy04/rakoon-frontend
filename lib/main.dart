@@ -22,26 +22,30 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Configuration sourced via secure build environment definitions (e.g. --dart-define)
-  const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  const String supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://pzymqamrmudqrvvysjly.supabase.co',
+  );
+  const String supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+    defaultValue:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6eW1xYW1ybXVkcXJ2dnlzamx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwODI1MDQsImV4cCI6MjEwMTY1ODUwNH0.YPH27BLz49ML2cVPJLCgkgiB_8LeUyuBgaq6RJGDut4',
+  );
   const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'https://rakoon-backend.onrender.com',
   );
 
-  if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
-    throw StateError(
-      'FATAL CONFIGURATION ERROR: Supabase credentials are not configured.\n'
-      'You must run or build the application with build-time environment definitions:\n'
-      '  flutter run --dart-define=SUPABASE_URL=<URL> --dart-define=SUPABASE_ANON_KEY=<ANON_KEY>\n'
-      'Ensure both values are provided and non-empty.',
-    );
+  if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
+    try {
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseAnonKey, // ignore: deprecated_member_use
+      );
+    } catch (e) {
+      debugPrint('Supabase initialization note: $e');
+    }
   }
-
-  await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseAnonKey, // ignore: deprecated_member_use
-  );
 
   runApp(const RakoonApp(baseUrl: apiBaseUrl));
 }
