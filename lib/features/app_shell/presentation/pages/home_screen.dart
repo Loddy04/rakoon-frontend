@@ -15,10 +15,11 @@ import 'package:rakoon_frontend/services/location_service.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
+import 'package:rakoon_frontend/features/recommendation/presentation/providers/recommendation_provider.dart';
 import 'package:rakoon_frontend/widgets/bouncy_button.dart';
 import 'package:rakoon_frontend/widgets/playful_card.dart';
+import 'package:rakoon_frontend/widgets/product_card.dart';
 import 'package:rakoon_frontend/widgets/rakoon_location_map.dart';
-import 'package:rakoon_frontend/widgets/status_badge.dart';
 
 class HomeScreen extends StatefulWidget {
   final String? baseUrl;
@@ -41,38 +42,29 @@ class HomeScreenState extends State<HomeScreen> {
   bool _isLoadingScans = false;
   String? _scansError;
 
-  final List<Map<String, String>> _recommendations = [
-    {
-      'name': 'INDOMIE GORENG',
-      'qty': '1 PCS',
-      'price': '3.000',
-      'store': 'MANNA KAMPUS BABARSARI',
-      'distance': '1 KM',
-      'time': '1H AGO',
-    },
-    {
-      'name': 'BIMOLI MINYAK 2L',
-      'qty': '1 POUCH',
-      'price': '34.500',
-      'store': 'INDOMARET BABARSARI',
-      'distance': '0.5 KM',
-      'time': '2H AGO',
-    },
-    {
-      'name': 'ULTRA MILK 1000ML',
-      'qty': '1 KARTON',
-      'price': '18.200',
-      'store': 'ALFAMART SETURAN',
-      'distance': '1.2 KM',
-      'time': '3H AGO',
-    },
-  ];
+  final RecommendationProvider _recommendationProvider = RecommendationProvider();
 
   @override
   void initState() {
     super.initState();
     _detectLocationAndStore();
     fetchRecentScans();
+    fetchRecommendations();
+  }
+
+  @override
+  void dispose() {
+    _recommendationProvider.dispose();
+    super.dispose();
+  }
+
+  Future<void> fetchRecommendations({double? lat, double? lng}) async {
+    await _recommendationProvider.fetchRecommendedProducts(
+      baseUrl: _getBaseUrl(),
+      lat: lat ?? _userLat,
+      lng: lng ?? _userLng,
+      client: widget.httpClient,
+    );
   }
 
   Future<void> fetchRecentScans() async {
@@ -157,6 +149,7 @@ class HomeScreenState extends State<HomeScreen> {
           _locationLabel = 'LOKASI TERDETEKSI';
         });
       }
+      fetchRecommendations(lat: position.latitude, lng: position.longitude);
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -240,52 +233,56 @@ class HomeScreenState extends State<HomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'RAKOON',
+                    'Rakoon',
                     style: AppTextStyles.headingLg.copyWith(
-                      fontSize: 24,
-                      letterSpacing: 2.4,
+                      fontSize: 20,
+                      letterSpacing: 1.8,
                       fontWeight: FontWeight.w900,
                       color: AppColors.graphite,
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.s),
-                  Flexible(
-                    child: Semantics(
-                      label: 'Lokasi terdeteksi: $_locationLabel',
-                      container: true,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10.0,
-                          vertical: 5.0,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.paper,
-                          borderRadius: BorderRadius.circular(12.0),
-                          border: Border.all(color: AppColors.graphite, width: 1.0),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.location_on_outlined,
-                              color: AppColors.graphite,
-                              size: 13,
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                _locationLabel.toUpperCase(),
-                                style: AppTextStyles.caption.copyWith(
-                                  color: AppColors.graphite,
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.8,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Semantics(
+                        label: 'Lokasi terdeteksi: $_locationLabel',
+                        container: true,
+                        child: Container(
+                          constraints: const BoxConstraints(maxWidth: 160),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8.0,
+                            vertical: 4.0,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.paper,
+                            borderRadius: BorderRadius.circular(12.0),
+                            border: Border.all(color: AppColors.graphite, width: 1.0),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                color: AppColors.graphite,
+                                size: 12,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 3),
+                              Flexible(
+                                child: Text(
+                                  _locationLabel.toUpperCase(),
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: AppColors.graphite,
+                                    fontSize: 9.0,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.5,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -473,16 +470,43 @@ class HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.s12),
-
                     SizedBox(
                       height: 260,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: _recommendations.length,
-                        itemBuilder: (context, index) {
-                          final item = _recommendations[index];
-                          return _buildRecommendationCard(item);
+                      child: ListenableBuilder(
+                        listenable: _recommendationProvider,
+                        builder: (context, _) {
+                          if (_recommendationProvider.isLoading &&
+                              _recommendationProvider.products.isEmpty) {
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.graphite,
+                                strokeWidth: 2.0,
+                              ),
+                            );
+                          }
+
+                          final products = _recommendationProvider.products;
+                          if (products.isEmpty) {
+                            return Center(
+                              child: Text(
+                                'Belum Ada Rekomendasi Produk',
+                                style: AppTextStyles.caption,
+                              ),
+                            );
+                          }
+
+                          return ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            itemCount: products.length,
+                            itemBuilder: (context, index) {
+                              final product = products[index];
+                              return ProductCard(
+                                product: product,
+                                onTap: () => _showProductSelector(context),
+                              );
+                            },
+                          );
                         },
                       ),
                     ),
@@ -494,7 +518,7 @@ class HomeScreenState extends State<HomeScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            'SCAN TERAKHIR',
+                            'Scan Terakhir',
                             style: AppTextStyles.subheading.copyWith(
                               fontSize: 14,
                               letterSpacing: 1.4,
@@ -522,7 +546,7 @@ class HomeScreenState extends State<HomeScreen> {
                             horizontal: 10,
                             vertical: 5,
                           ),
-                          text: 'Lihat Semua',
+                          text: 'Lihat semua',
                         ),
                       ],
                     ),
@@ -539,116 +563,7 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Builds a single horizontal recommendation vitrine card
-  Widget _buildRecommendationCard(Map<String, String> item) {
-    return Container(
-      width: 175,
-      margin: const EdgeInsets.only(right: AppSpacing.s12),
-      child: PlayfulCard(
-        backgroundColor: AppColors.paper,
-        border: Border.all(color: AppColors.graphite, width: 1.0),
-        padding: const EdgeInsets.all(12.0),
-        onTap: () {
-          _showProductSelector(context);
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: SizedBox(
-                height: 85,
-                child: Image.asset(
-                  'assets/logo/rakoon_logo.png',
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.fastfood_outlined,
-                    size: 40,
-                    color: AppColors.graphite,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(height: 1.0, color: AppColors.graphite),
-            const SizedBox(height: 8),
 
-            Text(
-              item['name']!,
-              style: AppTextStyles.bodyLarge.copyWith(
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.5,
-                color: AppColors.graphite,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            Text(
-              item['qty']!,
-              style: AppTextStyles.caption.copyWith(
-                fontSize: 9,
-                color: AppColors.fog,
-              ),
-            ),
-            const SizedBox(height: 4),
-
-            Text(
-              item['price']!,
-              style: AppTextStyles.headingLg.copyWith(
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                color: AppColors.graphite,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 2),
-
-            Text(
-              item['store']!,
-              style: AppTextStyles.caption.copyWith(
-                fontSize: 8.5,
-                color: AppColors.fog,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const Spacer(),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on_outlined,
-                      size: 11,
-                      color: AppColors.fog,
-                    ),
-                    const SizedBox(width: 2),
-                    Text(
-                      item['distance']!,
-                      style: AppTextStyles.monoTag.copyWith(
-                        fontSize: 9,
-                        color: AppColors.fog,
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  item['time']!,
-                  style: AppTextStyles.monoTag.copyWith(
-                    fontSize: 9,
-                    color: AppColors.fog,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildRecentScansSection() {
     if (_isLoadingScans) {
@@ -669,7 +584,7 @@ class HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: AppSpacing.s12),
             Text(
-              'MEMUAT RIWAYAT SCAN...',
+              'Memuat riwayat scan...',
               style: AppTextStyles.monoTag.copyWith(color: AppColors.fog, fontSize: 10),
             ),
           ],
@@ -688,7 +603,7 @@ class HomeScreenState extends State<HomeScreen> {
             const Icon(Icons.error_outline_rounded, color: AppColors.graphite, size: 28),
             const SizedBox(height: AppSpacing.s),
             Text(
-              'GAGAL MEMUAT RIWAYAT SCAN',
+              'Gagal memuat riwayat scan.',
               style: AppTextStyles.bodyLarge.copyWith(
                 color: AppColors.graphite,
                 fontSize: 13,
@@ -736,7 +651,7 @@ class HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: AppSpacing.s12),
             Text(
-              'BELUM ADA RIWAYAT PINDAI',
+              'Belum Ada Riwayat Pindai',
               style: AppTextStyles.titleSmall.copyWith(
                 fontSize: 13,
                 letterSpacing: 1.0,
@@ -774,7 +689,7 @@ class HomeScreenState extends State<HomeScreen> {
 
   Widget _buildRecentScanCard(RecentScan scan) {
     final String storeName = scan.storeName ?? 'Toko Terdekat';
-    final String productCountText = '${scan.productCount} Produk';
+    final String productCountText = '${scan.productCount} produk dipindai';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.s12),
@@ -813,10 +728,12 @@ class HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.s),
-                StatusBadge(
-                  status: productCountText,
-                  customBackgroundColor: AppColors.periwinkle,
-                  customTextColor: AppColors.paper,
+                Text(
+                  productCountText,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.fog,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
@@ -934,13 +851,13 @@ class _QuickActionButtonState extends State<_QuickActionButton>
             ),
             const SizedBox(height: 6),
             Text(
-              widget.label.toUpperCase(),
+              widget.label,
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyles.caption.copyWith(
-                fontSize: 10,
-                letterSpacing: 0.5,
+                fontSize: 9.0,
+                letterSpacing: 0.2,
                 color: AppColors.graphite,
                 fontWeight: FontWeight.w600,
               ),

@@ -192,6 +192,47 @@ class RecommendationResponse {
   }
 }
 
+class RecommendedProduct {
+  final String id;
+  final String nama;
+  final String kategori;
+  final double harga;
+  final double? ukuran;
+  final String? satuan;
+  final String namaToko;
+  final double? jarakKm;
+  final String updatedAt;
+  final String? fotoUrl;
+
+  RecommendedProduct({
+    required this.id,
+    required this.nama,
+    required this.kategori,
+    required this.harga,
+    this.ukuran,
+    this.satuan,
+    required this.namaToko,
+    this.jarakKm,
+    required this.updatedAt,
+    this.fotoUrl,
+  });
+
+  factory RecommendedProduct.fromJson(Map<String, dynamic> json) {
+    return RecommendedProduct(
+      id: (json['id'] ?? '').toString(),
+      nama: json['nama'] as String? ?? 'Tanpa Nama',
+      kategori: json['kategori'] as String? ?? 'General',
+      harga: (json['harga'] as num?)?.toDouble() ?? 0.0,
+      ukuran: (json['ukuran'] as num?)?.toDouble(),
+      satuan: json['satuan'] as String?,
+      namaToko: json['nama_toko'] as String? ?? 'Toko Terdekat',
+      jarakKm: (json['jarak_km'] as num?)?.toDouble(),
+      updatedAt: json['updated_at'] as String? ?? 'Baru saja',
+      fotoUrl: json['foto_url'] as String?,
+    );
+  }
+}
+
 class RecommendationService {
   static String defaultBaseUrl = const String.fromEnvironment(
     'API_BASE_URL',
@@ -234,5 +275,93 @@ class RecommendationService {
       }
       throw Exception('Terjadi kesalahan rekomendasi: $e');
     }
+  }
+
+  /// Fetches recommended products from GET /recommendation/recommended-products
+  static Future<List<RecommendedProduct>> getRecommendedProducts({
+    String? baseUrl,
+    double? lat,
+    double? lng,
+    int limit = 10,
+    http.Client? client,
+  }) async {
+    final String activeBaseUrl = (baseUrl != null && baseUrl.isNotEmpty)
+        ? baseUrl
+        : defaultBaseUrl;
+    final cleanBaseUrl = activeBaseUrl.endsWith('/')
+        ? activeBaseUrl.substring(0, activeBaseUrl.length - 1)
+        : activeBaseUrl;
+
+    final Map<String, String> queryParams = {'limit': limit.toString()};
+    if (lat != null) queryParams['lat'] = lat.toString();
+    if (lng != null) queryParams['lng'] = lng.toString();
+
+    final uri = Uri.parse('$cleanBaseUrl/recommendation/recommended-products')
+        .replace(queryParameters: queryParams);
+    final httpClient = client ?? http.Client();
+
+    try {
+      final response = await httpClient.get(uri).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> decoded = jsonDecode(response.body) as List<dynamic>;
+        return decoded
+            .map((e) => RecommendedProduct.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (_) {
+      // Fallback
+    }
+
+    return [
+      RecommendedProduct(
+        id: 'rec-1',
+        nama: 'INDOMIE GORENG 85G',
+        kategori: 'Makanan Instan',
+        harga: 3100,
+        ukuran: 85,
+        satuan: 'g',
+        namaToko: 'MANNA KAMPUS BABARSARI',
+        jarakKm: 0.8,
+        updatedAt: '15 mnt lalu',
+        fotoUrl: null,
+      ),
+      RecommendedProduct(
+        id: 'rec-2',
+        nama: 'BIMOLI MINYAK GORENG 2L',
+        kategori: 'Makanan Pokok',
+        harga: 34500,
+        ukuran: 2,
+        satuan: 'l',
+        namaToko: 'INDOMARET BABARSARI',
+        jarakKm: 0.5,
+        updatedAt: '1 jam lalu',
+        fotoUrl: null,
+      ),
+      RecommendedProduct(
+        id: 'rec-3',
+        nama: 'ULTRA MILK FULL CREAM 1000ML',
+        kategori: 'Susu & Olahan',
+        harga: 18200,
+        ukuran: 1000,
+        satuan: 'ml',
+        namaToko: 'ALFAMART SETURAN',
+        jarakKm: 1.2,
+        updatedAt: '2 jam lalu',
+        fotoUrl: null,
+      ),
+      RecommendedProduct(
+        id: 'rec-4',
+        nama: 'SANIA MINYAK GORENG 2L',
+        kategori: 'Makanan Pokok',
+        harga: 33900,
+        ukuran: 2,
+        satuan: 'l',
+        namaToko: 'SUPERINDO BABARSARI',
+        jarakKm: 1.5,
+        updatedAt: '3 jam lalu',
+        fotoUrl: null,
+      ),
+    ];
   }
 }

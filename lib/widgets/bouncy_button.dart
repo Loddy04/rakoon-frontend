@@ -153,9 +153,13 @@ class _BouncyButtonState extends State<BouncyButton>
                   const SizedBox(width: AppSpacing.s),
                 ],
                 if (widget.text != null)
-                  Text(
-                    widget.text!.toUpperCase(),
-                    style: AppTextStyles.buttonLabel.copyWith(color: textColor),
+                  Flexible(
+                    child: Text(
+                      widget.text!,
+                      style: AppTextStyles.buttonLabel.copyWith(color: textColor),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
               ],
             ));
