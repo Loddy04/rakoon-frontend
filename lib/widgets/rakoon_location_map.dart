@@ -24,15 +24,7 @@ class MapStoreMarker {
   });
 }
 
-/// Reusable map widget used by both NearbyStoresScreen and PriceComparisonScreen.
-///
-/// Renders:
-/// - User location marker (blue)
-/// - Store markers (green accent, animated selection)
-/// - Recenter FAB
-/// - Empty state (only user marker when [markers] is empty)
-///
-/// The caller owns the [MapController] and [selectedStoreId] state.
+/// Reusable map widget used by both NearbyStoresScreen, PriceComparisonScreen, and HomeScreen.
 class RakoonLocationMap extends StatelessWidget {
   const RakoonLocationMap({
     super.key,
@@ -44,6 +36,10 @@ class RakoonLocationMap extends StatelessWidget {
     this.onMarkerTap,
     this.height = 260,
     this.heroTag = 'rakoon_map_recenter',
+    this.margin,
+    this.borderRadius,
+    this.border,
+    this.boxShadow,
   });
 
   final double userLat;
@@ -53,31 +49,43 @@ class RakoonLocationMap extends StatelessWidget {
   final String? selectedStoreId;
   final void Function(String storeId)? onMarkerTap;
 
-  /// Fixed pixel height of the map container. Callers control this to keep
-  /// the map from dominating the screen, especially in PriceComparisonScreen.
+  /// Fixed pixel height of the map container.
   final double height;
 
-  /// Hero tag for the FAB — must be unique per page if two maps are on screen.
+  /// Hero tag for the FAB — must be unique per page.
   final String heroTag;
+
+  /// Optional custom outer margin. Defaults to standard screen margin if null.
+  final EdgeInsetsGeometry? margin;
+
+  /// Optional custom border radius.
+  final BorderRadiusGeometry? borderRadius;
+
+  /// Optional custom border.
+  final Border? border;
+
+  /// Optional custom box shadow.
+  final List<BoxShadow>? boxShadow;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveMargin = margin ??
+        const EdgeInsets.symmetric(
+          horizontal: AppSpacing.l,
+          vertical: AppSpacing.s,
+        );
+    final effectiveRadius = borderRadius ?? BorderRadius.circular(3.0);
+    final effectiveBorder =
+        border ?? Border.all(color: AppColors.graphite, width: 1.0);
+
     return Container(
       height: height,
-      margin: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.l,
-        vertical: AppSpacing.s,
-      ),
+      margin: effectiveMargin,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: AppColors.line, width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.ink.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: AppColors.paper,
+        borderRadius: effectiveRadius,
+        border: effectiveBorder,
+        boxShadow: boxShadow,
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -112,11 +120,16 @@ class RakoonLocationMap extends StatelessWidget {
               child: FloatingActionButton.small(
                 heroTag: heroTag,
                 backgroundColor: AppColors.paper,
-                foregroundColor: AppColors.ink,
+                foregroundColor: AppColors.graphite,
+                elevation: 1,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(3.0),
+                  side: const BorderSide(color: AppColors.graphite, width: 1.0),
+                ),
                 onPressed: () {
                   mapController.move(LatLng(userLat, userLng), 14.0);
                 },
-                child: const Icon(Icons.gps_fixed),
+                child: const Icon(Icons.gps_fixed, size: 16),
               ),
             ),
           ),
@@ -137,17 +150,17 @@ class RakoonLocationMap extends StatelessWidget {
         label: 'Lokasi Anda saat ini',
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF3B82F6).withValues(alpha: 0.2),
+            color: AppColors.periwinkle.withValues(alpha: 0.25),
             shape: BoxShape.circle,
             border: Border.all(
-              color: const Color(0xFF2563EB),
+              color: AppColors.periwinkle,
               width: 1.5,
             ),
           ),
           child: const Center(
             child: Icon(
               Icons.my_location,
-              color: Color(0xFF1D4ED8),
+              color: AppColors.periwinkle,
               size: 20.0,
             ),
           ),
@@ -157,22 +170,17 @@ class RakoonLocationMap extends StatelessWidget {
   }
 
   // ---------------------------------------------------------------------------
-  // Store marker — accent green, animated when selected
+  // Store marker — minimal pin icon
   // ---------------------------------------------------------------------------
   Marker _buildStoreMarker(MapStoreMarker store) {
     final isSelected = selectedStoreId == store.storeId;
-    final hasPrice = store.sublabel != null;
 
     return Marker(
       point: LatLng(store.lat, store.lng),
-      width: 56.0,
-      height: hasPrice ? 68.0 : 52.0,
+      width: 44.0,
+      height: 44.0,
       child: Semantics(
-        label: [
-          'Toko: ${store.label ?? store.storeId}',
-          if (store.sublabel != null) store.sublabel!,
-          if (isSelected) '(dipilih)',
-        ].join(', '),
+        label: 'Toko: ${store.label ?? store.storeId}',
         button: true,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
@@ -180,48 +188,23 @@ class RakoonLocationMap extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: isSelected ? 40.0 : 32.0,
-                height: isSelected ? 40.0 : 32.0,
-                decoration: isSelected
-                    ? BoxDecoration(
-                        color: AppColors.accentSoft,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.accent,
-                          width: 2.0,
-                        ),
-                      )
-                    : const BoxDecoration(),
+              Container(
+                width: 32.0,
+                height: 32.0,
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.periwinkle : AppColors.paper,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.graphite,
+                    width: 1.0,
+                  ),
+                ),
                 child: Icon(
-                  Icons.store,
-                  color: isSelected
-                      ? AppColors.accent
-                      : AppColors.accent.withValues(alpha: 0.75),
-                  size: isSelected ? 24.0 : 20.0,
+                  Icons.storefront_outlined,
+                  color: isSelected ? AppColors.paper : AppColors.graphite,
+                  size: 18.0,
                 ),
               ),
-              // Price sublabel on marker
-              if (hasPrice)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppColors.accent : AppColors.ink.withValues(alpha: 0.75),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    store.sublabel!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      height: 1.2,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
             ],
           ),
         ),

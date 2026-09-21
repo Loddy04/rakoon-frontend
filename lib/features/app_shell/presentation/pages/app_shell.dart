@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/home_screen.dart';
-import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
 import 'package:rakoon_frontend/features/profile/presentation/pages/profile_page.dart';
+import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 
 class AppShell extends StatefulWidget {
@@ -30,10 +30,10 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final bool showBottomNav = _selectedIndex != 1; // Hide during Scan tab
+    final bool showBottomNav = _selectedIndex != 1; // Hide during Scan camera screen
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.paper,
       body: IndexedStack(
         index: _selectedIndex,
         children: [
@@ -52,32 +52,34 @@ class _AppShellState extends State<AppShell> {
       ),
       bottomNavigationBar: showBottomNav
           ? Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.paper,
-                border: Border(
-                  top: BorderSide(color: AppColors.line, width: 1.0),
-                ),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24.0)),
+                border: Border.all(color: AppColors.graphite, width: 1.0),
               ),
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 10.0, bottom: 20.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
-                      _buildNavItem(
-                        1,
-                        Icons.qr_code_scanner_outlined,
-                        Icons.qr_code_scanner,
-                        'Scan',
-                      ),
-                      _buildNavItem(
-                        2,
-                        Icons.person_outline,
-                        Icons.person,
-                        'Profil',
-                      ),
-                    ],
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24.0)),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildNavItem(0, Icons.home_outlined, Icons.home, 'HOME'),
+                        _buildNavItem(
+                          1,
+                          Icons.crop_free_rounded,
+                          Icons.qr_code_scanner,
+                          'SCAN',
+                        ),
+                        _buildNavItem(
+                          2,
+                          Icons.person_outline,
+                          Icons.person,
+                          'PROFILE',
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -103,32 +105,25 @@ class _AppShellState extends State<AppShell> {
         behavior: HitTestBehavior.opaque,
         onTap: () => _onItemTapped(index),
         child: SizedBox(
-          width: 72, // Ensure tap target is large enough (width/height >= 48dp)
+          width: 72,
           height: 48,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: 36,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: isActive ? AppColors.ink : Colors.transparent,
-                  borderRadius: BorderRadius.circular(AppRadius.l),
-                ),
-                child: Icon(
-                  icon,
-                  color: isActive ? AppColors.paper : AppColors.muted,
-                  size: 20,
-                ),
+              Icon(
+                icon,
+                color: isActive ? AppColors.graphite : AppColors.fog,
+                size: 24,
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 label,
-                style: TextStyle(
+                style: AppTextStyles.caption.copyWith(
                   fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: isActive ? AppColors.ink : AppColors.muted,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  color: isActive ? AppColors.graphite : AppColors.fog,
+                  letterSpacing: 1.0,
                 ),
               ),
             ],

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/features/budget_shopping/budget_shopping_screen.dart';
 import 'package:rakoon_frontend/features/history/presentation/pages/product_history_list_page.dart';
@@ -16,6 +17,7 @@ import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/widgets/bouncy_button.dart';
 import 'package:rakoon_frontend/widgets/playful_card.dart';
+import 'package:rakoon_frontend/widgets/rakoon_location_map.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -29,10 +31,43 @@ class HomeScreen extends StatefulWidget {
 }
 
 class HomeScreenState extends State<HomeScreen> {
-  String _locationLabel = 'Mencari lokasi...';
+  String _locationLabel = 'LOKASI BELUM TERDETEKSI';
+  double _userLat = -7.7829;
+  double _userLng = 110.4083;
+  final MapController _mapController = MapController();
+
+  List<StoreNearby> _nearbyStores = [];
   List<RecentScan>? _recentScans;
   bool _isLoadingScans = false;
   String? _scansError;
+
+  // Static mock dataset for REKOMENDASI horizontal carousel matching design vitrine
+  final List<Map<String, String>> _recommendations = [
+    {
+      'name': 'INDOMIE GORENG',
+      'qty': '1 PCS',
+      'price': '3.000',
+      'store': 'MANNA KAMPUS BABARSARI',
+      'distance': '1 KM',
+      'time': '1H AGO',
+    },
+    {
+      'name': 'BIMOLI MINYAK 2L',
+      'qty': '1 POUCH',
+      'price': '34.500',
+      'store': 'INDOMARET BABARSARI',
+      'distance': '0.5 KM',
+      'time': '2H AGO',
+    },
+    {
+      'name': 'ULTRA MILK 1000ML',
+      'qty': '1 KARTON',
+      'price': '18.200',
+      'store': 'ALFAMART SETURAN',
+      'distance': '1.2 KM',
+      'time': '3H AGO',
+    },
+  ];
 
   @override
   void initState() {
@@ -110,17 +145,23 @@ class HomeScreenState extends State<HomeScreen> {
       if (response.stores.isNotEmpty) {
         final nearest = response.stores.first;
         setState(() {
+          _userLat = position.latitude;
+          _userLng = position.longitude;
+          _nearbyStores = response.stores;
           _locationLabel = '${nearest.nama} · ${nearest.jarakKm.toStringAsFixed(1)} km';
         });
       } else {
         setState(() {
-          _locationLabel = 'Lokasi Terdeteksi';
+          _userLat = position.latitude;
+          _userLng = position.longitude;
+          _nearbyStores = [];
+          _locationLabel = 'LOKASI TERDETEKSI';
         });
       }
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _locationLabel = 'Lokasi Belum Terdeteksi';
+        _locationLabel = 'LOKASI BELUM TERDETEKSI';
       });
     }
   }
@@ -177,7 +218,7 @@ class HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Shupatto Minimalist Header Section (Clean White Canvas)
+            // 1. Shupatto Editorial Header Section
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.s16,
@@ -189,8 +230,9 @@ class HomeScreenState extends State<HomeScreen> {
                   Text(
                     'RAKOON',
                     style: AppTextStyles.headingLg.copyWith(
-                      fontSize: 20,
-                      letterSpacing: 2.0,
+                      fontSize: 24,
+                      letterSpacing: 2.4,
+                      fontWeight: FontWeight.w900,
                       color: AppColors.graphite,
                     ),
                   ),
@@ -199,11 +241,40 @@ class HomeScreenState extends State<HomeScreen> {
                     child: Semantics(
                       label: 'Lokasi terdeteksi: $_locationLabel',
                       container: true,
-                      child: StatusBadge(
-                        status: _locationLabel,
-                        icon: Icons.location_on_outlined,
-                        customBackgroundColor: AppColors.paper,
-                        customTextColor: AppColors.graphite,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10.0,
+                          vertical: 5.0,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.paper,
+                          borderRadius: BorderRadius.circular(12.0),
+                          border: Border.all(color: AppColors.graphite, width: 1.0),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.location_on_outlined,
+                              color: AppColors.graphite,
+                              size: 13,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                _locationLabel.toUpperCase(),
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.graphite,
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.8,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -218,12 +289,47 @@ class HomeScreenState extends State<HomeScreen> {
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.s16,
-                  vertical: AppSpacing.s16,
+                  vertical: AppSpacing.s12,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // 1. Ramping Compact Hero "Scan Rak Produk" Banner
+                    // 2. Full-Bleed Map Widget with 3px Radius and Single 1px Hairline Border
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3.0),
+                      child: RakoonLocationMap(
+                        userLat: _userLat,
+                        userLng: _userLng,
+                        mapController: _mapController,
+                        height: 150,
+                        heroTag: 'home_location_map',
+                        margin: EdgeInsets.zero,
+                        borderRadius: BorderRadius.circular(3.0),
+                        border: Border.all(color: AppColors.graphite, width: 1.0),
+                        boxShadow: const [],
+                        markers: _nearbyStores.map((store) {
+                          return MapStoreMarker(
+                            storeId: store.storeId,
+                            lat: store.lat,
+                            lng: store.lng,
+                            label: store.nama,
+                          );
+                        }).toList(),
+                        onMarkerTap: (storeId) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => NearbyStoresScreen(
+                                baseUrl: _getBaseUrl(),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.s12),
+
+                    // 3. Compact Scan Hero Banner
                     PlayfulCard(
                       onTap: _openScanCamera,
                       backgroundColor: AppColors.paper,
@@ -235,8 +341,8 @@ class HomeScreenState extends State<HomeScreen> {
                       child: Row(
                         children: [
                           Container(
-                            width: 42,
-                            height: 42,
+                            width: 44,
+                            height: 44,
                             decoration: BoxDecoration(
                               color: AppColors.paper,
                               borderRadius: BorderRadius.circular(12.0),
@@ -258,7 +364,7 @@ class HomeScreenState extends State<HomeScreen> {
                                   'SCAN RAK PRODUK',
                                   style: AppTextStyles.subheading.copyWith(
                                     fontSize: 14,
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w800,
                                     letterSpacing: 1.0,
                                   ),
                                 ),
@@ -273,18 +379,12 @@ class HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                           ),
-
-                          const Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            color: AppColors.graphite,
-                            size: 14,
-                          ),
                         ],
                       ),
                     ),
                     const SizedBox(height: AppSpacing.s16),
 
-                    // 2. Ergonomic 1x4 Quick Action Menu Bar (Gojek Style)
+                    // 4. Ergonomic 1x4 Quick Action Feature Bar (Gojek Pattern)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -292,8 +392,8 @@ class HomeScreenState extends State<HomeScreen> {
                         // Quick Action 1: Riwayat Harga
                         Expanded(
                           child: _QuickActionButton(
-                            icon: Icons.show_chart_rounded,
-                            label: 'Riwayat Harga',
+                            icon: Icons.trending_up_rounded,
+                            label: 'Riwayat\nHarga',
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -307,7 +407,7 @@ class HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
 
-                        // Quick Action 2: Toko Terdekat
+                        // Quick Action 2: Toko
                         Expanded(
                           child: Semantics(
                             label: 'Toko Terdekat, cari toko di sekitar kamu',
@@ -316,7 +416,7 @@ class HomeScreenState extends State<HomeScreen> {
                             excludeSemantics: true,
                             child: _QuickActionButton(
                               icon: Icons.storefront_outlined,
-                              label: 'Toko Terdekat',
+                              label: 'Toko',
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -331,7 +431,7 @@ class HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
 
-                        // Quick Action 3: Bandingkan Harga
+                        // Quick Action 3: Bandingkan
                         Expanded(
                           child: Semantics(
                             label: 'Bandingkan Harga, cari dan bandingkan harga produk',
@@ -339,7 +439,7 @@ class HomeScreenState extends State<HomeScreen> {
                             container: true,
                             excludeSemantics: true,
                             child: _QuickActionButton(
-                              icon: Icons.compare_arrows,
+                              icon: Icons.compare_arrows_rounded,
                               label: 'Bandingkan',
                               onTap: () => _showProductSelector(context),
                             ),
@@ -350,7 +450,7 @@ class HomeScreenState extends State<HomeScreen> {
                         Expanded(
                           child: _QuickActionButton(
                             icon: Icons.account_balance_wallet_outlined,
-                            label: 'Smart Budget',
+                            label: 'Smart\nBudget',
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -367,11 +467,33 @@ class HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: AppSpacing.s20),
 
-                    // Hairline Divider
-                    const Divider(color: AppColors.graphite, height: 1.0, thickness: 1.0),
-                    const SizedBox(height: AppSpacing.s16),
+                    // 5. Section "REKOMENDASI" Horizontal Product Carousel
+                    Text(
+                      'REKOMENDASI',
+                      style: AppTextStyles.subheading.copyWith(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.5,
+                        color: AppColors.graphite,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.s12),
 
-                    // 3. Exposed Section "Scan Terakhir" Feed Header
+                    SizedBox(
+                      height: 260,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: _recommendations.length,
+                        itemBuilder: (context, index) {
+                          final item = _recommendations[index];
+                          return _buildRecommendationCard(item);
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.s20),
+
+                    // 6. Section "SCAN TERAKHIR" Feed Header & List
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -379,8 +501,9 @@ class HomeScreenState extends State<HomeScreen> {
                           child: Text(
                             'SCAN TERAKHIR',
                             style: AppTextStyles.subheading.copyWith(
-                              fontSize: 13,
-                              letterSpacing: 1.2,
+                              fontSize: 14,
+                              letterSpacing: 1.4,
+                              fontWeight: FontWeight.w800,
                               color: AppColors.graphite,
                             ),
                             overflow: TextOverflow.ellipsis,
@@ -414,6 +537,122 @@ class HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Builds a single horizontal recommendation vitrine card matching exact design specification
+  Widget _buildRecommendationCard(Map<String, String> item) {
+    return Container(
+      width: 175,
+      margin: const EdgeInsets.only(right: AppSpacing.s12),
+      child: PlayfulCard(
+        backgroundColor: AppColors.paper,
+        border: Border.all(color: AppColors.graphite, width: 1.0),
+        padding: const EdgeInsets.all(12.0),
+        onTap: () {
+          _showProductSelector(context);
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Product Image Box
+            Center(
+              child: SizedBox(
+                height: 85,
+                child: Image.asset(
+                  'assets/logo/rakoon_logo.png',
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.fastfood_outlined,
+                    size: 40,
+                    color: AppColors.graphite,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(height: 1.0, color: AppColors.graphite),
+            const SizedBox(height: 8),
+
+            // Product Name
+            Text(
+              item['name']!,
+              style: AppTextStyles.bodyLarge.copyWith(
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+                color: AppColors.graphite,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              item['qty']!,
+              style: AppTextStyles.caption.copyWith(
+                fontSize: 9,
+                color: AppColors.fog,
+              ),
+            ),
+            const SizedBox(height: 4),
+
+            // Large Price Display
+            Text(
+              item['price']!,
+              style: AppTextStyles.headingLg.copyWith(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: AppColors.graphite,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 2),
+
+            // Store Title
+            Text(
+              item['store']!,
+              style: AppTextStyles.caption.copyWith(
+                fontSize: 8.5,
+                color: AppColors.fog,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const Spacer(),
+
+            // Footer Distance & Time Micro-Type
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.location_on_outlined,
+                      size: 11,
+                      color: AppColors.fog,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      item['distance']!,
+                      style: AppTextStyles.monoTag.copyWith(
+                        fontSize: 9,
+                        color: AppColors.fog,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  item['time']!,
+                  style: AppTextStyles.monoTag.copyWith(
+                    fontSize: 9,
+                    color: AppColors.fog,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
