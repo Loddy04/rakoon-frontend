@@ -24,7 +24,7 @@ class MapStoreMarker {
   });
 }
 
-/// Reusable map widget used by both NearbyStoresScreen, PriceComparisonScreen, and HomeScreen.
+/// Reusable map widget used by NearbyStoresScreen, PriceComparisonScreen, and HomeScreen.
 class RakoonLocationMap extends StatelessWidget {
   const RakoonLocationMap({
     super.key,
@@ -34,6 +34,7 @@ class RakoonLocationMap extends StatelessWidget {
     this.markers = const [],
     this.selectedStoreId,
     this.onMarkerTap,
+    this.onMapTap,
     this.height = 260,
     this.heroTag = 'rakoon_map_recenter',
     this.margin,
@@ -48,6 +49,7 @@ class RakoonLocationMap extends StatelessWidget {
   final List<MapStoreMarker> markers;
   final String? selectedStoreId;
   final void Function(String storeId)? onMarkerTap;
+  final VoidCallback? onMapTap;
 
   /// Fixed pixel height of the map container.
   final double height;
@@ -88,52 +90,59 @@ class RakoonLocationMap extends StatelessWidget {
         boxShadow: boxShadow,
       ),
       clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          FlutterMap(
-            mapController: mapController,
-            options: MapOptions(
-              initialCenter: LatLng(userLat, userLng),
-              initialZoom: 14.0,
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.rakoon.rakoon_frontend',
-              ),
-              MarkerLayer(
-                markers: [
-                  _buildUserMarker(),
-                  ...markers.map(_buildStoreMarker),
-                ],
-              ),
-            ],
-          ),
-
-          // Recenter FAB
-          Positioned(
-            bottom: AppSpacing.m,
-            right: AppSpacing.m,
-            child: Semantics(
-              label: 'Pusatkan peta ke lokasi Anda',
-              button: true,
-              child: FloatingActionButton.small(
-                heroTag: heroTag,
-                backgroundColor: AppColors.paper,
-                foregroundColor: AppColors.graphite,
-                elevation: 1,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(3.0),
-                  side: const BorderSide(color: AppColors.graphite, width: 1.0),
-                ),
-                onPressed: () {
-                  mapController.move(LatLng(userLat, userLng), 14.0);
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onMapTap,
+        child: Stack(
+          children: [
+            FlutterMap(
+              mapController: mapController,
+              options: MapOptions(
+                initialCenter: LatLng(userLat, userLng),
+                initialZoom: 14.0,
+                onTap: (tapPosition, point) {
+                  onMapTap?.call();
                 },
-                child: const Icon(Icons.gps_fixed, size: 16),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.rakoon.rakoon_frontend',
+                ),
+                MarkerLayer(
+                  markers: [
+                    _buildUserMarker(),
+                    ...markers.map(_buildStoreMarker),
+                  ],
+                ),
+              ],
+            ),
+
+            // Recenter FAB
+            Positioned(
+              bottom: AppSpacing.m,
+              right: AppSpacing.m,
+              child: Semantics(
+                label: 'Pusatkan peta ke lokasi Anda',
+                button: true,
+                child: FloatingActionButton.small(
+                  heroTag: heroTag,
+                  backgroundColor: AppColors.paper,
+                  foregroundColor: AppColors.graphite,
+                  elevation: 1,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(3.0),
+                    side: const BorderSide(color: AppColors.graphite, width: 1.0),
+                  ),
+                  onPressed: () {
+                    mapController.move(LatLng(userLat, userLng), 14.0);
+                  },
+                  child: const Icon(Icons.gps_fixed, size: 16),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -184,7 +193,13 @@ class RakoonLocationMap extends StatelessWidget {
         button: true,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: () => onMarkerTap?.call(store.storeId),
+          onTap: () {
+            if (onMarkerTap != null) {
+              onMarkerTap!(store.storeId);
+            } else if (onMapTap != null) {
+              onMapTap!();
+            }
+          },
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

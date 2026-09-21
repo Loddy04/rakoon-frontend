@@ -41,7 +41,6 @@ class HomeScreenState extends State<HomeScreen> {
   bool _isLoadingScans = false;
   String? _scansError;
 
-  // Static mock dataset for REKOMENDASI horizontal carousel matching design vitrine
   final List<Map<String, String>> _recommendations = [
     {
       'name': 'INDOMIE GORENG',
@@ -164,6 +163,19 @@ class HomeScreenState extends State<HomeScreen> {
         _locationLabel = 'LOKASI BELUM TERDETEKSI';
       });
     }
+  }
+
+  void _navigateToNearbyStores() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NearbyStoresScreen(
+          baseUrl: _getBaseUrl(),
+          initialLat: _userLat,
+          initialLng: _userLng,
+        ),
+      ),
+    );
   }
 
   String _getBaseUrl() {
@@ -294,7 +306,7 @@ class HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // 2. Full-Bleed Map Widget with 3px Radius and Single 1px Hairline Border
+                    // 2. Responsive Interactive Location Map Widget
                     ClipRRect(
                       borderRadius: BorderRadius.circular(3.0),
                       child: RakoonLocationMap(
@@ -307,6 +319,8 @@ class HomeScreenState extends State<HomeScreen> {
                         borderRadius: BorderRadius.circular(3.0),
                         border: Border.all(color: AppColors.graphite, width: 1.0),
                         boxShadow: const [],
+                        onMapTap: _navigateToNearbyStores,
+                        onMarkerTap: (storeId) => _navigateToNearbyStores(),
                         markers: _nearbyStores.map((store) {
                           return MapStoreMarker(
                             storeId: store.storeId,
@@ -315,16 +329,6 @@ class HomeScreenState extends State<HomeScreen> {
                             label: store.nama,
                           );
                         }).toList(),
-                        onMarkerTap: (storeId) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => NearbyStoresScreen(
-                                baseUrl: _getBaseUrl(),
-                              ),
-                            ),
-                          );
-                        },
                       ),
                     ),
                     const SizedBox(height: AppSpacing.s12),
@@ -417,16 +421,7 @@ class HomeScreenState extends State<HomeScreen> {
                             child: _QuickActionButton(
                               icon: Icons.storefront_outlined,
                               label: 'Toko',
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => NearbyStoresScreen(
-                                      baseUrl: _getBaseUrl(),
-                                    ),
-                                  ),
-                                );
-                              },
+                              onTap: _navigateToNearbyStores,
                             ),
                           ),
                         ),
@@ -544,7 +539,7 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Builds a single horizontal recommendation vitrine card matching exact design specification
+  /// Builds a single horizontal recommendation vitrine card
   Widget _buildRecommendationCard(Map<String, String> item) {
     return Container(
       width: 175,
@@ -559,7 +554,6 @@ class HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top Product Image Box
             Center(
               child: SizedBox(
                 height: 85,
@@ -578,7 +572,6 @@ class HomeScreenState extends State<HomeScreen> {
             Container(height: 1.0, color: AppColors.graphite),
             const SizedBox(height: 8),
 
-            // Product Name
             Text(
               item['name']!,
               style: AppTextStyles.bodyLarge.copyWith(
@@ -599,7 +592,6 @@ class HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 4),
 
-            // Large Price Display
             Text(
               item['price']!,
               style: AppTextStyles.headingLg.copyWith(
@@ -611,7 +603,6 @@ class HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 2),
 
-            // Store Title
             Text(
               item['store']!,
               style: AppTextStyles.caption.copyWith(
@@ -624,7 +615,6 @@ class HomeScreenState extends State<HomeScreen> {
             ),
             const Spacer(),
 
-            // Footer Distance & Time Micro-Type
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

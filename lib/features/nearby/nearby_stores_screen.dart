@@ -12,10 +12,14 @@ import 'package:rakoon_frontend/widgets/rakoon_location_map.dart';
 
 class NearbyStoresScreen extends StatefulWidget {
   final String baseUrl;
+  final double? initialLat;
+  final double? initialLng;
 
   const NearbyStoresScreen({
     super.key,
     required this.baseUrl,
+    this.initialLat,
+    this.initialLng,
   });
 
   @override
@@ -52,7 +56,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.s),
-                  Icon(
+                  const Icon(
                     Icons.storefront,
                     color: AppColors.accent,
                     size: 28,
@@ -119,10 +123,10 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
       ],
     );
   }
-  
+
   bool _isLoading = true;
   String? _errorMessage;
-  
+
   Position? _userPosition;
   NearbyStoresResponse? _storesResponse;
   StoreNearby? _selectedStore;
@@ -142,11 +146,25 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
     });
 
     try {
-      // 1. Get GPS coordinates
-      final position = await LocationService.getCurrentLocation();
+      Position position;
+      if (widget.initialLat != null && widget.initialLng != null) {
+        position = Position(
+          latitude: widget.initialLat!,
+          longitude: widget.initialLng!,
+          timestamp: DateTime.now(),
+          accuracy: 1.0,
+          altitude: 0.0,
+          altitudeAccuracy: 1.0,
+          heading: 0.0,
+          headingAccuracy: 1.0,
+          speed: 0.0,
+          speedAccuracy: 1.0,
+        );
+      } else {
+        position = await LocationService.getCurrentLocation();
+      }
       _userPosition = position;
 
-      // 2. Fetch stores using GPS coordinates
       final response = await StoresService.getNearbyStores(
         lat: position.latitude,
         lng: position.longitude,
@@ -278,7 +296,6 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
     final isFallback = response.source == 'local_fallback';
     final hasWarningMsg = response.message != null && response.message!.isNotEmpty;
 
-    // Check if we should display warning banner
     final showWarning = hasWarningMsg;
     final warningText = hasWarningMsg ? response.message! : '';
 
@@ -395,7 +412,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
     );
   }
 
-  /// Renders individual premium store visual card
+  /// Renders individual store card
   Widget _buildStoreCard(StoreNearby store, bool isSelected) {
     return GestureDetector(
       onTap: () {
@@ -542,4 +559,3 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
     );
   }
 }
-
