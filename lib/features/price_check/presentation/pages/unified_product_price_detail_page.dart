@@ -159,6 +159,19 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
     );
   }
 
+  String _formatShortDate(String dateStr) {
+    final dt = DateTime.tryParse(dateStr);
+    if (dt == null) {
+      final parts = dateStr.split('-');
+      if (parts.length >= 3) {
+        return '${parts[2]}/${parts[1]}';
+      }
+      return dateStr;
+    }
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+    return '${dt.day} ${months[dt.month - 1]}';
+  }
+
   Widget _buildChart(List<PriceTrendPoint> trendPoints) {
     if (trendPoints.isEmpty) {
       return Container(
@@ -177,90 +190,149 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
     }
 
     final prices = trendPoints.map((e) => e.price.toDouble()).toList();
-    final minY = (prices.reduce((a, b) => a < b ? a : b) * 0.9).floorToDouble();
-    final maxY = (prices.reduce((a, b) => a > b ? a : b) * 1.1).ceilToDouble();
+    final minPrice = prices.reduce((a, b) => a < b ? a : b);
+    final maxPrice = prices.reduce((a, b) => a > b ? a : b);
 
-    return SizedBox(
-      height: 200,
-      child: Padding(
-        padding: const EdgeInsets.only(right: 16, top: 16, bottom: 8),
-        child: LineChart(
-          LineChartData(
-            minY: minY > 0 ? minY : 0,
-            maxY: maxY > minY ? maxY : minY + 1000,
-            gridData: FlGridData(
-              show: true,
-              drawVerticalLine: false,
-              getDrawingHorizontalLine: (value) => FlLine(
-                color: AppColors.line.withValues(alpha: 0.5),
-                strokeWidth: 1,
+    final priceDiff = maxPrice - minPrice;
+    final paddingY = priceDiff > 0 ? priceDiff * 0.15 : (maxPrice > 0 ? maxPrice * 0.1 : 1000.0);
+    final minY = (minPrice - paddingY) > 0 ? (minPrice - paddingY) : 0.0;
+    final maxY = maxPrice + paddingY;
+
+    return Column(
+      children: [
+        // Dynamic price summary row (Terendah & Tertinggi calculated dynamically)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: AppColors.graphite,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Terendah: ',
+                    style: AppTextStyles.bodySmall.copyWith(fontSize: 11, color: AppColors.fog),
+                  ),
+                  Text(
+                    formatRp(minPrice),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.graphite,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            titlesData: FlTitlesData(
-              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              leftTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  reservedSize: 48,
-                  getTitlesWidget: (value, meta) {
-                    if (value == meta.min || value == meta.max) return const SizedBox.shrink();
-                    return Text(
-                      '${(value / 1000).toStringAsFixed(0)}k',
-                      style: AppTextStyles.bodySmall.copyWith(fontSize: 10, color: AppColors.fog),
-                    );
-                  },
-                ),
-              ),
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  interval: (spots.length / 4).ceilToDouble(),
-                  getTitlesWidget: (value, meta) {
-                    final idx = value.toInt();
-                    if (idx >= 0 && idx < trendPoints.length) {
-                      final dateStr = trendPoints[idx].date;
-                      final parts = dateStr.split('-');
-                      if (parts.length >= 3) {
-                        return Text(
-                          '${parts[2]}/${parts[1]}',
-                          style: AppTextStyles.bodySmall.copyWith(fontSize: 10, color: AppColors.fog),
-                        );
-                      }
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-              ),
-            ),
-            borderData: FlBorderData(show: false),
-            lineBarsData: [
-              LineChartBarData(
-                spots: spots,
-                isCurved: true,
-                color: AppColors.periwinkle,
-                barWidth: 3,
-                isStrokeCapRound: true,
-                dotData: FlDotData(
-                  show: true,
-                  getDotPainter: (spot, percent, barData, index) {
-                    return FlDotCirclePainter(
-                      radius: 4,
-                      color: AppColors.paper,
-                      strokeWidth: 2,
-                      strokeColor: AppColors.periwinkle,
-                    );
-                  },
-                ),
-                belowBarData: BarAreaData(
-                  show: true,
-                  color: AppColors.periwinkle.withValues(alpha: 0.12),
-                ),
+              Row(
+                children: [
+                  Text(
+                    'Tertinggi: ',
+                    style: AppTextStyles.bodySmall.copyWith(fontSize: 11, color: AppColors.fog),
+                  ),
+                  Text(
+                    formatRp(maxPrice),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.graphite,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
-      ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 180,
+          child: Padding(
+            padding: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
+            child: LineChart(
+              LineChartData(
+                minY: minY,
+                maxY: maxY,
+                gridData: const FlGridData(show: false),
+                extraLinesData: ExtraLinesData(
+                  horizontalLines: [
+                    HorizontalLine(
+                      y: maxPrice,
+                      color: AppColors.graphite.withValues(alpha: 0.35),
+                      strokeWidth: 1.2,
+                      dashArray: [5, 5],
+                    ),
+                    HorizontalLine(
+                      y: minPrice,
+                      color: AppColors.graphite.withValues(alpha: 0.35),
+                      strokeWidth: 1.2,
+                      dashArray: [5, 5],
+                    ),
+                  ],
+                ),
+                titlesData: FlTitlesData(
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 22,
+                      getTitlesWidget: (value, meta) {
+                        final idx = value.toInt();
+                        if (idx >= 0 && idx < trendPoints.length) {
+                          if (idx == 0 || idx == trendPoints.length - 1 || idx == trendPoints.length ~/ 2) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(
+                                _formatShortDate(trendPoints[idx].date),
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  fontSize: 10,
+                                  color: AppColors.fog,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            );
+                          }
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: spots,
+                    isCurved: false,
+                    color: AppColors.graphite,
+                    barWidth: 2.5,
+                    isStrokeCapRound: true,
+                    dotData: const FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppColors.graphite.withValues(alpha: 0.10),
+                          AppColors.graphite.withValues(alpha: 0.0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -625,7 +697,7 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Update: ${ProductCard.formatTimeAgo(item.tanggalUpdate?.toIso8601String())}',
+                              'Update: ${ProductCard.formatTimeAgo(item.tanggalUpdate)}',
                               style: AppTextStyles.bodySmall.copyWith(
                                 fontSize: 11,
                                 color: AppColors.fog,
