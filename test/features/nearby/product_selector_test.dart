@@ -49,12 +49,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Find "Bandingkan Harga" action card
-      expect(find.text('Bandingkan Harga'), findsOneWidget);
+      // Find "Bandingkan" action button
+      final bandingkanFinder = find.bySemanticsLabel('Bandingkan Harga, cari dan bandingkan harga produk');
+      expect(bandingkanFinder, findsOneWidget);
 
       // Ensure visible and tap on the card to open product selector modal
-      await tester.ensureVisible(find.text('Bandingkan Harga'));
-      await tester.tap(find.text('Bandingkan Harga'));
+      await tester.ensureVisible(bandingkanFinder);
+      await tester.tap(bandingkanFinder);
       await tester.pumpAndSettle();
 
       // Verify bottom sheet modal opened

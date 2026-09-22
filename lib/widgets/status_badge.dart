@@ -86,7 +86,7 @@ class StatusBadge extends StatelessWidget {
           ],
           Flexible(
             child: Text(
-              status.toUpperCase(),
+              status,
               style: AppTextStyles.labelSmall.copyWith(
                 color: textColor,
                 fontSize: 9.0,

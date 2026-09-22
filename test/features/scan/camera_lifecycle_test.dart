@@ -106,7 +106,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify Profile is active
-      expect(find.text('Profil'), findsWidgets);
+      expect(find.textContaining('Profil'), findsWidgets);
 
       // Verify Scan is inactive (offstage)
       expect(

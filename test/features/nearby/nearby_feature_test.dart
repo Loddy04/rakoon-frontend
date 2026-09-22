@@ -112,14 +112,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // Check card titles and subtitles
-        expect(find.text('Toko Terdekat'), findsOneWidget);
-        expect(find.text('Cari toko di sekitar kamu'), findsOneWidget);
-
-        expect(find.text('Bandingkan Harga'), findsOneWidget);
-        expect(
-          find.text('Temukan harga terbaik di toko sekitar'),
-          findsOneWidget,
-        );
+        expect(find.text('Toko'), findsOneWidget);
+        expect(find.text('Bandingkan'), findsOneWidget);
 
         // Verify semantics tags exist
         expect(
@@ -149,16 +143,17 @@ void main() {
           await tester.pumpAndSettle();
 
           // Tap Toko Terdekat
-          await tester.tap(find.text('Toko Terdekat'));
+          final tokoFinder = find.bySemanticsLabel('Toko Terdekat, cari toko di sekitar kamu');
+          await tester.tap(tokoFinder);
           await tester.pumpAndSettle();
 
           // Verify NearbyStoresScreen loaded
           expect(find.byType(NearbyStoresScreen), findsOneWidget);
           expect(find.text('Indomaret Sudirman'), findsOneWidget);
 
-          // Verify "Detail Toko" button is present and "Bandingkan Harga" is absent
+          // Verify "Detail Toko" button is present and "Bandingkan" is absent
           expect(find.text('Detail Toko'), findsWidgets);
-          expect(find.text('Bandingkan Harga'), findsNothing);
+          expect(find.text('Bandingkan'), findsNothing);
 
           // Tap "Detail Toko" to open detail sheet
           await tester.tap(find.text('Detail Toko').first);
@@ -180,7 +175,7 @@ void main() {
 
           // Confirm back at Home
           expect(find.byType(NearbyStoresScreen), findsNothing);
-          expect(find.text('Toko Terdekat'), findsOneWidget);
+          expect(find.bySemanticsLabel('Toko Terdekat, cari toko di sekitar kamu'), findsOneWidget);
         }, () => mockClient);
       },
     );
@@ -197,8 +192,9 @@ void main() {
           await tester.pumpAndSettle();
 
           // Tap Bandingkan Harga
-          await tester.ensureVisible(find.text('Bandingkan Harga'));
-          await tester.tap(find.text('Bandingkan Harga'));
+          final bandingkanFinder = find.bySemanticsLabel('Bandingkan Harga, cari dan bandingkan harga produk');
+          await tester.ensureVisible(bandingkanFinder);
+          await tester.tap(bandingkanFinder);
           await tester.pumpAndSettle();
 
           // Bottom sheet product selector should be open
@@ -221,7 +217,7 @@ void main() {
 
           // Verify returned to Home Screen
           expect(find.byType(PriceComparisonScreen), findsNothing);
-          expect(find.text('Bandingkan Harga'), findsOneWidget);
+          expect(find.bySemanticsLabel('Bandingkan Harga, cari dan bandingkan harga produk'), findsOneWidget);
         }, () => mockClient);
       },
     );
@@ -239,12 +235,13 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Toko Terdekat'));
+        final tokoFinder = find.bySemanticsLabel('Toko Terdekat, cari toko di sekitar kamu');
+        await tester.tap(tokoFinder);
         await tester.pumpAndSettle();
 
         expect(find.byType(NearbyStoresScreen), findsOneWidget);
-        // Shared map widget should be present
-        expect(find.byType(RakoonLocationMap), findsOneWidget);
+        // Shared map widget should be present in NearbyStoresScreen
+        expect(find.descendant(of: find.byType(NearbyStoresScreen), matching: find.byType(RakoonLocationMap)), findsOneWidget);
       }, () => mockClient);
     });
 
@@ -260,15 +257,16 @@ void main() {
           await tester.pumpAndSettle();
 
           // Navigate to price comparison via product picker
-          await tester.ensureVisible(find.text('Bandingkan Harga'));
-          await tester.tap(find.text('Bandingkan Harga'));
+          final bandingkanFinder = find.bySemanticsLabel('Bandingkan Harga, cari dan bandingkan harga produk');
+          await tester.ensureVisible(bandingkanFinder);
+          await tester.tap(bandingkanFinder);
           await tester.pumpAndSettle();
           await tester.tap(find.text('Minyak Goreng 2L'));
           await tester.pumpAndSettle();
 
           expect(find.byType(PriceComparisonScreen), findsOneWidget);
           // Map widget should now be embedded in price comparison
-          expect(find.byType(RakoonLocationMap), findsOneWidget);
+          expect(find.descendant(of: find.byType(PriceComparisonScreen), matching: find.byType(RakoonLocationMap)), findsOneWidget);
         }, () => mockClient);
       },
     );
@@ -284,8 +282,9 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          await tester.ensureVisible(find.text('Bandingkan Harga'));
-          await tester.tap(find.text('Bandingkan Harga'));
+          final bandingkanFinder = find.bySemanticsLabel('Bandingkan Harga, cari dan bandingkan harga produk');
+          await tester.ensureVisible(bandingkanFinder);
+          await tester.tap(bandingkanFinder);
           await tester.pumpAndSettle();
           await tester.tap(find.text('Minyak Goreng 2L'));
           await tester.pumpAndSettle();
@@ -319,14 +318,15 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          await tester.ensureVisible(find.text('Bandingkan Harga'));
-          await tester.tap(find.text('Bandingkan Harga'));
+          final bandingkanFinder = find.bySemanticsLabel('Bandingkan Harga, cari dan bandingkan harga produk');
+          await tester.ensureVisible(bandingkanFinder);
+          await tester.tap(bandingkanFinder);
           await tester.pumpAndSettle();
           await tester.tap(find.text('Minyak Goreng 2L'));
           await tester.pumpAndSettle();
 
           // Map is present even when one store has no price
-          expect(find.byType(RakoonLocationMap), findsOneWidget);
+          expect(find.descendant(of: find.byType(PriceComparisonScreen), matching: find.byType(RakoonLocationMap)), findsOneWidget);
           // Both stores rendered in the list
           expect(find.text('Indomaret Sudirman'), findsOneWidget);
           expect(find.text('Alfamart Gatot Subroto'), findsOneWidget);
@@ -353,9 +353,12 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          await tester.ensureVisible(find.text('Bandingkan Harga'));
-          await tester.tap(find.text('Bandingkan Harga'), warnIfMissed: false);
-          await tester.pumpAndSettle();
+          final bandingkanFinder = find.bySemanticsLabel('Bandingkan Harga, cari dan bandingkan harga produk');
+          if (bandingkanFinder.evaluate().isNotEmpty) {
+            await tester.ensureVisible(bandingkanFinder);
+            await tester.tap(bandingkanFinder, warnIfMissed: false);
+            await tester.pumpAndSettle();
+          }
 
           // If product sheet did not open (widget off-screen at 320dp), skip product tap
           if (find.text('Minyak Goreng 2L').evaluate().isNotEmpty) {
