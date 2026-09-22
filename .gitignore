@@ -52,3 +52,6 @@ app.*.map.json
 # VS Code settings
 .vscode/
 
+# Crash dumps
+*.stackdump
+
