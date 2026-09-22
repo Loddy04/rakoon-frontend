@@ -249,12 +249,6 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
   }
 
   void _openEditBottomSheet(ScanResultItem item) {
-    final nameController = TextEditingController(text: item.namaProduk ?? '');
-    final priceController = TextEditingController(text: item.harga?.toInt().toString() ?? '');
-    final sizeController = TextEditingController(text: item.ukuran?.toString() ?? '');
-    final unitController = TextEditingController(text: item.satuan ?? '');
-    String selectedCategory = item.kategori ?? 'Lainnya';
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -263,170 +257,12 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Edit Produk',
-                        style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  const Divider(),
-                  const SizedBox(height: 12),
-                  
-                  TextField(
-                    key: const Key('edit_name_field'),
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama Produk',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  DropdownButtonFormField<String>(
-                    key: const Key('edit_category_dropdown'),
-                    initialValue: selectedCategory,
-                    decoration: const InputDecoration(
-                      labelText: 'Kategori',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: productCategories.map((cat) {
-                      return DropdownMenuItem<String>(
-                        value: cat,
-                        child: Text(cat),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setModalState(() {
-                          selectedCategory = val;
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-
-                  TextField(
-                    key: const Key('edit_price_field'),
-                    controller: priceController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Harga (Rupiah)',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          key: const Key('edit_size_field'),
-                          controller: sizeController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Ukuran',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          key: const Key('edit_unit_field'),
-                          controller: unitController,
-                          decoration: const InputDecoration(
-                            labelText: 'Satuan',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  ElevatedButton(
-                    key: const Key('save_edit_button'),
-                    onPressed: () {
-                      final name = nameController.text.trim();
-                      final priceText = priceController.text.trim();
-                      final sizeText = sizeController.text.trim();
-                      final unit = unitController.text.trim().toLowerCase();
-
-                      if (name.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Nama produk tidak boleh kosong.')),
-                        );
-                        return;
-                      }
-
-                      final parsedPrice = double.tryParse(priceText);
-                      if (parsedPrice == null || parsedPrice <= 0) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Harga harus lebih besar dari 0.')),
-                        );
-                        return;
-                      }
-
-                      final parsedSize = double.tryParse(sizeText);
-                      if (parsedSize == null || parsedSize <= 0) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Ukuran harus lebih besar dari 0.')),
-                        );
-                        return;
-                      }
-
-                      final allowedUnits = ['ml', 'mili', 'milliliter', 'cc', 'l', 'liter', 'litre', 'g', 'gr', 'gram', 'kg', 'kilo', 'kilogram', 'pcs', 'piece', 'pieces', 'buah', 'biji', 'pack', 'bungkus'];
-                      if (unit.isEmpty || !allowedUnits.contains(unit)) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Satuan tidak didukung. Gunakan ml, l, g, kg, pcs, dll.')),
-                        );
-                        return;
-                      }
-
-                      setState(() {
-                        item.namaProduk = name;
-                        item.harga = parsedPrice;
-                        item.ukuran = parsedSize;
-                        item.satuan = unit;
-                        item.kategori = selectedCategory;
-                        _errorMessage = null;
-                      });
-
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      foregroundColor: AppColors.paper,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.l),
-                      ),
-                    ),
-                    child: const Text('Simpan Perubahan'),
-                  ),
-                ],
-              ),
-            );
+        return _EditProductBottomSheet(
+          item: item,
+          onSaved: () {
+            setState(() {
+              _errorMessage = null;
+            });
           },
         );
       },
@@ -434,12 +270,6 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
   }
 
   void _openAddBottomSheet() {
-    final nameController = TextEditingController();
-    final priceController = TextEditingController();
-    final sizeController = TextEditingController();
-    final unitController = TextEditingController();
-    String selectedCategory = 'Makanan Pokok';
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -448,176 +278,12 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Tambah Produk Manual',
-                        style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  const Divider(),
-                  const SizedBox(height: 12),
-                  
-                  TextField(
-                    key: const Key('add_name_field'),
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama Produk',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  DropdownButtonFormField<String>(
-                    key: const Key('add_category_dropdown'),
-                    initialValue: selectedCategory,
-                    decoration: const InputDecoration(
-                      labelText: 'Kategori',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: productCategories.map((cat) {
-                      return DropdownMenuItem<String>(
-                        value: cat,
-                        child: Text(cat),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setModalState(() {
-                          selectedCategory = val;
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-
-                  TextField(
-                    key: const Key('add_price_field'),
-                    controller: priceController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Harga (Rupiah)',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          key: const Key('add_size_field'),
-                          controller: sizeController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Ukuran',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          key: const Key('add_unit_field'),
-                          controller: unitController,
-                          decoration: const InputDecoration(
-                            labelText: 'Satuan',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  ElevatedButton(
-                    key: const Key('save_add_button'),
-                    onPressed: () {
-                      final name = nameController.text.trim();
-                      final priceText = priceController.text.trim();
-                      final sizeText = sizeController.text.trim();
-                      final unit = unitController.text.trim().toLowerCase();
-
-                      if (name.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Nama produk tidak boleh kosong.')),
-                        );
-                        return;
-                      }
-
-                      final parsedPrice = double.tryParse(priceText);
-                      if (parsedPrice == null || parsedPrice <= 0) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Harga harus lebih besar dari 0.')),
-                        );
-                        return;
-                      }
-
-                      final parsedSize = double.tryParse(sizeText);
-                      if (parsedSize == null || parsedSize <= 0) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Ukuran harus lebih besar dari 0.')),
-                        );
-                        return;
-                      }
-
-                      final allowedUnits = ['ml', 'mili', 'milliliter', 'cc', 'l', 'liter', 'litre', 'g', 'gr', 'gram', 'kg', 'kilo', 'kilogram', 'pcs', 'piece', 'pieces', 'buah', 'biji', 'pack', 'bungkus'];
-                      if (unit.isEmpty || !allowedUnits.contains(unit)) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Satuan tidak didukung. Gunakan ml, l, g, kg, pcs, dll.')),
-                        );
-                        return;
-                      }
-
-                      final newItem = ScanResultItem(
-                        namaProduk: name,
-                        harga: parsedPrice,
-                        ukuran: parsedSize,
-                        satuan: unit,
-                        kategori: selectedCategory,
-                        confidence: 'tinggi',
-                        needsVerification: false,
-                      );
-
-                      setState(() {
-                        _items.add(newItem);
-                        _errorMessage = null;
-                      });
-
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      foregroundColor: AppColors.paper,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.l),
-                      ),
-                    ),
-                    child: const Text('Tambah Produk'),
-                  ),
-                ],
-              ),
-            );
+        return _AddProductBottomSheet(
+          onAdded: (newItem) {
+            setState(() {
+              _items.add(newItem);
+              _errorMessage = null;
+            });
           },
         );
       },
@@ -1659,6 +1325,406 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _EditProductBottomSheet extends StatefulWidget {
+  final ScanResultItem item;
+  final VoidCallback onSaved;
+
+  const _EditProductBottomSheet({
+    required this.item,
+    required this.onSaved,
+  });
+
+  @override
+  State<_EditProductBottomSheet> createState() => _EditProductBottomSheetState();
+}
+
+class _EditProductBottomSheetState extends State<_EditProductBottomSheet> {
+  late final TextEditingController nameController;
+  late final TextEditingController priceController;
+  late final TextEditingController sizeController;
+  late final TextEditingController unitController;
+  late String selectedCategory;
+
+  @override
+  void initState() {
+    super.initState();
+    nameController = TextEditingController(text: widget.item.namaProduk ?? '');
+    priceController = TextEditingController(text: widget.item.harga?.toInt().toString() ?? '');
+    sizeController = TextEditingController(text: widget.item.ukuran?.toString() ?? '');
+    unitController = TextEditingController(text: widget.item.satuan ?? '');
+    selectedCategory = widget.item.kategori ?? 'Lainnya';
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    priceController.dispose();
+    sizeController.dispose();
+    unitController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Edit Produk',
+                style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const Divider(),
+          const SizedBox(height: 12),
+          
+          TextField(
+            key: const Key('edit_name_field'),
+            controller: nameController,
+            decoration: const InputDecoration(
+              labelText: 'Nama Produk',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          DropdownButtonFormField<String>(
+            key: const Key('edit_category_dropdown'),
+            initialValue: selectedCategory,
+            decoration: const InputDecoration(
+              labelText: 'Kategori',
+              border: OutlineInputBorder(),
+            ),
+            items: productCategories.map((cat) {
+              return DropdownMenuItem<String>(
+                value: cat,
+                child: Text(cat),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) {
+                setState(() {
+                  selectedCategory = val;
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+
+          TextField(
+            key: const Key('edit_price_field'),
+            controller: priceController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Harga (Rupiah)',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const Key('edit_size_field'),
+                  controller: sizeController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Ukuran',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  key: const Key('edit_unit_field'),
+                  controller: unitController,
+                  decoration: const InputDecoration(
+                    labelText: 'Satuan',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          ElevatedButton(
+            key: const Key('save_edit_button'),
+            onPressed: () {
+              final name = nameController.text.trim();
+              final priceText = priceController.text.trim();
+              final sizeText = sizeController.text.trim();
+              final unit = unitController.text.trim().toLowerCase();
+
+              if (name.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Nama produk tidak boleh kosong.')),
+                );
+                return;
+              }
+
+              final parsedPrice = double.tryParse(priceText);
+              if (parsedPrice == null || parsedPrice <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Harga harus lebih besar dari 0.')),
+                );
+                return;
+              }
+
+              final parsedSize = double.tryParse(sizeText);
+              if (parsedSize == null || parsedSize <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Ukuran harus lebih besar dari 0.')),
+                );
+                return;
+              }
+
+              final allowedUnits = ['ml', 'mili', 'milliliter', 'cc', 'l', 'liter', 'litre', 'g', 'gr', 'gram', 'kg', 'kilo', 'kilogram', 'pcs', 'piece', 'pieces', 'buah', 'biji', 'pack', 'bungkus'];
+              if (unit.isEmpty || !allowedUnits.contains(unit)) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Satuan tidak didukung. Gunakan ml, l, g, kg, pcs, dll.')),
+                );
+                return;
+              }
+
+              widget.item.namaProduk = name;
+              widget.item.harga = parsedPrice;
+              widget.item.ukuran = parsedSize;
+              widget.item.satuan = unit;
+              widget.item.kategori = selectedCategory;
+
+              widget.onSaved();
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.accent,
+              foregroundColor: AppColors.paper,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.l),
+              ),
+            ),
+            child: const Text('Simpan Perubahan'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AddProductBottomSheet extends StatefulWidget {
+  final ValueChanged<ScanResultItem> onAdded;
+
+  const _AddProductBottomSheet({
+    required this.onAdded,
+  });
+
+  @override
+  State<_AddProductBottomSheet> createState() => _AddProductBottomSheetState();
+}
+
+class _AddProductBottomSheetState extends State<_AddProductBottomSheet> {
+  final nameController = TextEditingController();
+  final priceController = TextEditingController();
+  final sizeController = TextEditingController();
+  final unitController = TextEditingController();
+  String selectedCategory = 'Makanan Pokok';
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    priceController.dispose();
+    sizeController.dispose();
+    unitController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Tambah Produk Manual',
+                style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const Divider(),
+          const SizedBox(height: 12),
+          
+          TextField(
+            key: const Key('add_name_field'),
+            controller: nameController,
+            decoration: const InputDecoration(
+              labelText: 'Nama Produk',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          DropdownButtonFormField<String>(
+            key: const Key('add_category_dropdown'),
+            initialValue: selectedCategory,
+            decoration: const InputDecoration(
+              labelText: 'Kategori',
+              border: OutlineInputBorder(),
+            ),
+            items: productCategories.map((cat) {
+              return DropdownMenuItem<String>(
+                value: cat,
+                child: Text(cat),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) {
+                setState(() {
+                  selectedCategory = val;
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+
+          TextField(
+            key: const Key('add_price_field'),
+            controller: priceController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Harga (Rupiah)',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const Key('add_size_field'),
+                  controller: sizeController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Ukuran',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  key: const Key('add_unit_field'),
+                  controller: unitController,
+                  decoration: const InputDecoration(
+                    labelText: 'Satuan',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          ElevatedButton(
+            key: const Key('save_add_button'),
+            onPressed: () {
+              final name = nameController.text.trim();
+              final priceText = priceController.text.trim();
+              final sizeText = sizeController.text.trim();
+              final unit = unitController.text.trim().toLowerCase();
+
+              if (name.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Nama produk tidak boleh kosong.')),
+                );
+                return;
+              }
+
+              final parsedPrice = double.tryParse(priceText);
+              if (parsedPrice == null || parsedPrice <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Harga harus lebih besar dari 0.')),
+                );
+                return;
+              }
+
+              final parsedSize = double.tryParse(sizeText);
+              if (parsedSize == null || parsedSize <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Ukuran harus lebih besar dari 0.')),
+                );
+                return;
+              }
+
+              final allowedUnits = ['ml', 'mili', 'milliliter', 'cc', 'l', 'liter', 'litre', 'g', 'gr', 'gram', 'kg', 'kilo', 'kilogram', 'pcs', 'piece', 'pieces', 'buah', 'biji', 'pack', 'bungkus'];
+              if (unit.isEmpty || !allowedUnits.contains(unit)) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Satuan tidak didukung. Gunakan ml, l, g, kg, pcs, dll.')),
+                );
+                return;
+              }
+
+              final newItem = ScanResultItem(
+                namaProduk: name,
+                harga: parsedPrice,
+                ukuran: parsedSize,
+                satuan: unit,
+                kategori: selectedCategory,
+                confidence: 'tinggi',
+                needsVerification: false,
+              );
+
+              widget.onAdded(newItem);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.accent,
+              foregroundColor: AppColors.paper,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.l),
+              ),
+            ),
+            child: const Text('Tambah Produk'),
+          ),
+        ],
       ),
     );
   }
