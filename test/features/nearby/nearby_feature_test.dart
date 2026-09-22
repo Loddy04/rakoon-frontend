@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:network_image_mock/network_image_mock.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/home_screen.dart';
 import 'package:rakoon_frontend/features/nearby/nearby_stores_screen.dart';
 import 'package:rakoon_frontend/features/nearby/price_comparison_screen.dart';
+import 'package:rakoon_frontend/features/price_check/presentation/pages/price_check_catalog_page.dart';
 import 'package:rakoon_frontend/widgets/rakoon_location_map.dart';
 
 void main() {
@@ -96,13 +98,37 @@ void main() {
             }),
             200,
           );
+        } else if (request.url.path.contains('/products/catalog')) {
+          return http.Response(
+            jsonEncode([
+              {
+                "id": "prod-1",
+                "nama": "Minyak Goreng 2L",
+                "kategori": "Makanan Pokok",
+                "ukuran": 2.0,
+                "satuan": "L",
+                "harga_terendah": 32000.0,
+                "nama_toko_terendah": "Indomaret Sudirman",
+                "jumlah_toko": 1,
+                "foto_url": null,
+                "updated_at": "2026-08-10T12:00:00Z",
+              },
+            ]),
+            200,
+          );
+        } else if (request.url.host.contains('openstreetmap.org') || request.url.path.endsWith('.png')) {
+          return http.Response.bytes(
+            [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82],
+            200,
+            headers: {'content-type': 'image/png'},
+          );
         }
         return http.Response('Not Found', 404);
       });
     });
 
     testWidgets(
-      'Home renders Toko Terdekat and Bandingkan Harga cards with correct text and accessibility semantics',
+      'Home renders Cek Harga and Toko Sekitar quick actions with correct semantics',
       (WidgetTester tester) async {
         final handle = tester.ensureSemantics();
 
@@ -111,19 +137,18 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Check card titles and subtitles
-        expect(find.text('Toko'), findsOneWidget);
-        expect(find.text('Bandingkan'), findsOneWidget);
+        // Check card titles
+        expect(find.text('Cek Harga'), findsOneWidget);
+        expect(find.text('Toko Sekitar'), findsOneWidget);
+        expect(find.text('Smart Budget'), findsOneWidget);
 
         // Verify semantics tags exist
         expect(
-          find.bySemanticsLabel('Toko Terdekat, cari toko di sekitar kamu'),
+          find.bySemanticsLabel('Toko Sekitar, cari toko terdekat di sekitar kamu'),
           findsOneWidget,
         );
         expect(
-          find.bySemanticsLabel(
-            'Bandingkan Harga, cari dan bandingkan harga produk',
-          ),
+          find.bySemanticsLabel('Cek Harga, buka katalog produk dan perbandingan harga'),
           findsOneWidget,
         );
 
@@ -132,93 +157,87 @@ void main() {
     );
 
     testWidgets(
-      'Tapping Toko Terdekat opens NearbyStoresScreen, store cards have Detail Toko action (no longer opens product selector), and Back returns safely',
+      'Tapping Toko Sekitar opens NearbyStoresScreen, store cards have Detail Toko action, and Back returns safely',
       (WidgetTester tester) async {
-        await http.runWithClient(() async {
-          await tester.pumpWidget(
-            const MaterialApp(
-              home: HomeScreen(baseUrl: 'http://localhost:8000'),
-            ),
-          );
-          await tester.pumpAndSettle();
+        await mockNetworkImagesFor(() async {
+          await http.runWithClient(() async {
+            await tester.pumpWidget(
+              const MaterialApp(
+                home: HomeScreen(baseUrl: 'http://localhost:8000'),
+              ),
+            );
+            await tester.pumpAndSettle();
 
-          // Tap Toko Terdekat
-          final tokoFinder = find.bySemanticsLabel('Toko Terdekat, cari toko di sekitar kamu');
-          await tester.tap(tokoFinder);
-          await tester.pumpAndSettle();
+            // Tap Toko Sekitar
+            final tokoFinder = find.bySemanticsLabel('Toko Sekitar, cari toko terdekat di sekitar kamu');
+            await tester.tap(tokoFinder);
+            await tester.pumpAndSettle();
 
-          // Verify NearbyStoresScreen loaded
-          expect(find.byType(NearbyStoresScreen), findsOneWidget);
-          expect(find.text('Indomaret Sudirman'), findsOneWidget);
+            // Verify NearbyStoresScreen loaded
+            expect(find.byType(NearbyStoresScreen), findsOneWidget);
+            expect(find.text('Indomaret Sudirman'), findsOneWidget);
 
-          // Verify "Detail Toko" button is present and "Bandingkan" is absent
-          expect(find.text('Detail Toko'), findsWidgets);
-          expect(find.text('Bandingkan'), findsNothing);
+            // Verify "Detail Toko" button is present and "Bandingkan" is absent
+            expect(find.text('Detail Toko'), findsWidgets);
+            expect(find.text('Bandingkan'), findsNothing);
 
-          // Tap "Detail Toko" to open detail sheet
-          await tester.tap(find.text('Detail Toko').first);
-          await tester.pumpAndSettle();
+            // Tap "Detail Toko" to open detail sheet
+            await tester.tap(find.text('Detail Toko').first);
+            await tester.pumpAndSettle();
 
-          // Verify Detail bottom sheet items are rendered
-          expect(find.text('Koordinat'), findsOneWidget);
-          expect(find.text('Jarak dari lokasi Anda'), findsOneWidget);
-          expect(find.text('Sumber Data POI'), findsOneWidget);
-          expect(find.text('Lat: -6.208800, Lng: 106.845600'), findsOneWidget);
+            // Verify Detail bottom sheet items are rendered
+            expect(find.text('Koordinat'), findsOneWidget);
+            expect(find.text('Jarak dari lokasi Anda'), findsOneWidget);
+            expect(find.text('Sumber Data POI'), findsOneWidget);
+            expect(find.text('Lat: -6.208800, Lng: 106.845600'), findsOneWidget);
 
-          // Close bottom sheet
-          await tester.tap(find.text('Tutup'));
-          await tester.pumpAndSettle();
+            // Close bottom sheet
+            await tester.tap(find.text('Tutup'));
+            await tester.pumpAndSettle();
 
-          // Back out of map view
-          await tester.tap(find.byType(BackButton));
-          await tester.pumpAndSettle();
+            // Back out of map view
+            await tester.tap(find.byType(BackButton));
+            await tester.pumpAndSettle();
 
-          // Confirm back at Home
-          expect(find.byType(NearbyStoresScreen), findsNothing);
-          expect(find.bySemanticsLabel('Toko Terdekat, cari toko di sekitar kamu'), findsOneWidget);
-        }, () => mockClient);
+            // Confirm back at Home
+            expect(find.byType(NearbyStoresScreen), findsNothing);
+            expect(find.bySemanticsLabel('Toko Sekitar, cari toko terdekat di sekitar kamu'), findsOneWidget);
+          }, () => mockClient);
+        });
       },
     );
 
     testWidgets(
-      'Tapping Bandingkan Harga opens product search, selecting product navigates directly to PriceComparisonScreen, and Back returns correctly',
+      'Tapping Cek Harga opens PriceCheckCatalogPage, and Back returns correctly',
       (WidgetTester tester) async {
-        await http.runWithClient(() async {
-          await tester.pumpWidget(
-            const MaterialApp(
-              home: HomeScreen(baseUrl: 'http://localhost:8000'),
-            ),
-          );
-          await tester.pumpAndSettle();
+        await mockNetworkImagesFor(() async {
+          await http.runWithClient(() async {
+            await tester.pumpWidget(
+              const MaterialApp(
+                home: HomeScreen(baseUrl: 'http://localhost:8000'),
+              ),
+            );
+            await tester.pumpAndSettle();
 
-          // Tap Bandingkan Harga
-          final bandingkanFinder = find.bySemanticsLabel('Bandingkan Harga, cari dan bandingkan harga produk');
-          await tester.ensureVisible(bandingkanFinder);
-          await tester.tap(bandingkanFinder);
-          await tester.pumpAndSettle();
+            // Tap Cek Harga
+            final cekHargaFinder = find.bySemanticsLabel('Cek Harga, buka katalog produk dan perbandingan harga');
+            await tester.ensureVisible(cekHargaFinder);
+            await tester.tap(cekHargaFinder);
+            await tester.pumpAndSettle();
 
-          // Bottom sheet product selector should be open
-          expect(find.text('Pilih Produk untuk Dibandingkan'), findsOneWidget);
-          expect(find.text('Minyak Goreng 2L'), findsOneWidget);
+            // PriceCheckCatalogPage should be open
+            expect(find.byType(PriceCheckCatalogPage), findsOneWidget);
+            expect(find.text('CEK HARGA'), findsOneWidget);
 
-          // Tap product in the sheet
-          await tester.tap(find.text('Minyak Goreng 2L'));
-          await tester.pumpAndSettle();
+            // Tap back button in catalog view
+            await tester.tap(find.byType(BackButton));
+            await tester.pumpAndSettle();
 
-          // Should navigate directly to PriceComparisonScreen
-          expect(find.byType(PriceComparisonScreen), findsOneWidget);
-          expect(find.text('Perbandingan Harga'), findsOneWidget);
-          expect(find.text('Minyak Goreng 2L'), findsOneWidget);
-          expect(find.text('Rp 32.000'), findsWidgets);
-
-          // Tap back button in price comparison view
-          await tester.tap(find.byType(BackButton));
-          await tester.pumpAndSettle();
-
-          // Verify returned to Home Screen
-          expect(find.byType(PriceComparisonScreen), findsNothing);
-          expect(find.bySemanticsLabel('Bandingkan Harga, cari dan bandingkan harga produk'), findsOneWidget);
-        }, () => mockClient);
+            // Verify returned to Home Screen
+            expect(find.byType(PriceCheckCatalogPage), findsNothing);
+            expect(find.bySemanticsLabel('Cek Harga, buka katalog produk dan perbandingan harga'), findsOneWidget);
+          }, () => mockClient);
+        });
       },
     );
 
@@ -229,140 +248,131 @@ void main() {
     testWidgets('NearbyStoresScreen renders RakoonLocationMap widget', (
       WidgetTester tester,
     ) async {
-      await http.runWithClient(() async {
-        await tester.pumpWidget(
-          const MaterialApp(home: HomeScreen(baseUrl: 'http://localhost:8000')),
-        );
-        await tester.pumpAndSettle();
+      await mockNetworkImagesFor(() async {
+        await http.runWithClient(() async {
+          await tester.pumpWidget(
+            const MaterialApp(home: HomeScreen(baseUrl: 'http://localhost:8000')),
+          );
+          await tester.pumpAndSettle();
 
-        final tokoFinder = find.bySemanticsLabel('Toko Terdekat, cari toko di sekitar kamu');
-        await tester.tap(tokoFinder);
-        await tester.pumpAndSettle();
+          final tokoFinder = find.bySemanticsLabel('Toko Sekitar, cari toko terdekat di sekitar kamu');
+          await tester.tap(tokoFinder);
+          await tester.pumpAndSettle();
 
-        expect(find.byType(NearbyStoresScreen), findsOneWidget);
-        // Shared map widget should be present in NearbyStoresScreen
-        expect(find.descendant(of: find.byType(NearbyStoresScreen), matching: find.byType(RakoonLocationMap)), findsOneWidget);
-      }, () => mockClient);
+          expect(find.byType(NearbyStoresScreen), findsOneWidget);
+          // Shared map widget should be present in NearbyStoresScreen
+          expect(find.descendant(of: find.byType(NearbyStoresScreen), matching: find.byType(RakoonLocationMap)), findsOneWidget);
+        }, () => mockClient);
+      });
     });
 
     testWidgets(
       'PriceComparisonScreen renders RakoonLocationMap with store markers',
       (WidgetTester tester) async {
-        await http.runWithClient(() async {
-          await tester.pumpWidget(
-            const MaterialApp(
-              home: HomeScreen(baseUrl: 'http://localhost:8000'),
-            ),
-          );
-          await tester.pumpAndSettle();
+        await mockNetworkImagesFor(() async {
+          await http.runWithClient(() async {
+            await tester.pumpWidget(
+              const MaterialApp(
+                home: PriceComparisonScreen(
+                  productId: 'prod-1',
+                  productName: 'Minyak Goreng 2L',
+                  baseUrl: 'http://localhost:8000',
+                ),
+              ),
+            );
+            await tester.pumpAndSettle();
 
-          // Navigate to price comparison via product picker
-          final bandingkanFinder = find.bySemanticsLabel('Bandingkan Harga, cari dan bandingkan harga produk');
-          await tester.ensureVisible(bandingkanFinder);
-          await tester.tap(bandingkanFinder);
-          await tester.pumpAndSettle();
-          await tester.tap(find.text('Minyak Goreng 2L'));
-          await tester.pumpAndSettle();
-
-          expect(find.byType(PriceComparisonScreen), findsOneWidget);
-          // Map widget should now be embedded in price comparison
-          expect(find.descendant(of: find.byType(PriceComparisonScreen), matching: find.byType(RakoonLocationMap)), findsOneWidget);
-        }, () => mockClient);
+            expect(find.byType(PriceComparisonScreen), findsOneWidget);
+            // Map widget should now be embedded in price comparison
+            expect(find.descendant(of: find.byType(PriceComparisonScreen), matching: find.byType(RakoonLocationMap)), findsOneWidget);
+          }, () => mockClient);
+        });
       },
     );
 
     testWidgets(
       'PriceComparisonScreen: cheapest card keeps accent border when another card is tapped',
       (WidgetTester tester) async {
-        await http.runWithClient(() async {
-          await tester.pumpWidget(
-            const MaterialApp(
-              home: HomeScreen(baseUrl: 'http://localhost:8000'),
-            ),
-          );
-          await tester.pumpAndSettle();
+        await mockNetworkImagesFor(() async {
+          await http.runWithClient(() async {
+            await tester.pumpWidget(
+              const MaterialApp(
+                home: PriceComparisonScreen(
+                  productId: 'prod-1',
+                  productName: 'Minyak Goreng 2L',
+                  baseUrl: 'http://localhost:8000',
+                ),
+              ),
+            );
+            await tester.pumpAndSettle();
 
-          final bandingkanFinder = find.bySemanticsLabel('Bandingkan Harga, cari dan bandingkan harga produk');
-          await tester.ensureVisible(bandingkanFinder);
-          await tester.tap(bandingkanFinder);
-          await tester.pumpAndSettle();
-          await tester.tap(find.text('Minyak Goreng 2L'));
-          await tester.pumpAndSettle();
+            expect(find.byType(PriceComparisonScreen), findsOneWidget);
 
-          expect(find.byType(PriceComparisonScreen), findsOneWidget);
+            // Cheapest store card shows 'Termurah' badge — verify it's present
+            expect(find.text('Termurah'), findsOneWidget);
 
-          // Cheapest store card shows 'Termurah' badge — verify it's present
-          expect(find.text('Termurah'), findsOneWidget);
+            // The store without price shows 'Belum ada data' badge
+            expect(find.text('Belum ada data'), findsOneWidget);
 
-          // The store without price shows 'Belum ada data' badge
-          expect(find.text('Belum ada data'), findsOneWidget);
+            // Tapping the no-data card should not remove Termurah badge from cheapest
+            await tester.tap(find.text('Alfamart Gatot Subroto'), warnIfMissed: false);
+            await tester.pumpAndSettle();
 
-          // Tapping the no-data card should not remove Termurah badge from cheapest
-          await tester.tap(find.text('Alfamart Gatot Subroto'));
-          await tester.pumpAndSettle();
-
-          // Termurah badge must still exist
-          expect(find.text('Termurah'), findsOneWidget);
-        }, () => mockClient);
+            // Termurah badge must still exist
+            expect(find.text('Termurah'), findsOneWidget);
+          }, () => mockClient);
+        });
       },
     );
 
     testWidgets(
       'PriceComparisonScreen: store without price still shows on map (via RakoonLocationMap)',
       (WidgetTester tester) async {
-        await http.runWithClient(() async {
-          await tester.pumpWidget(
-            const MaterialApp(
-              home: HomeScreen(baseUrl: 'http://localhost:8000'),
-            ),
-          );
-          await tester.pumpAndSettle();
+        await mockNetworkImagesFor(() async {
+          await http.runWithClient(() async {
+            await tester.pumpWidget(
+              const MaterialApp(
+                home: PriceComparisonScreen(
+                  productId: 'prod-1',
+                  productName: 'Minyak Goreng 2L',
+                  baseUrl: 'http://localhost:8000',
+                ),
+              ),
+            );
+            await tester.pumpAndSettle();
 
-          final bandingkanFinder = find.bySemanticsLabel('Bandingkan Harga, cari dan bandingkan harga produk');
-          await tester.ensureVisible(bandingkanFinder);
-          await tester.tap(bandingkanFinder);
-          await tester.pumpAndSettle();
-          await tester.tap(find.text('Minyak Goreng 2L'));
-          await tester.pumpAndSettle();
-
-          // Map is present even when one store has no price
-          expect(find.descendant(of: find.byType(PriceComparisonScreen), matching: find.byType(RakoonLocationMap)), findsOneWidget);
-          // Both stores rendered in the list
-          expect(find.text('Indomaret Sudirman'), findsOneWidget);
-          expect(find.text('Alfamart Gatot Subroto'), findsOneWidget);
-        }, () => mockClient);
+            // Map is present even when one store has no price
+            expect(find.descendant(of: find.byType(PriceComparisonScreen), matching: find.byType(RakoonLocationMap)), findsOneWidget);
+            // Both stores rendered in the list
+            expect(find.text('Indomaret Sudirman'), findsOneWidget);
+            expect(find.text('Alfamart Gatot Subroto'), findsOneWidget);
+          }, () => mockClient);
+        });
       },
     );
 
     testWidgets(
       'Responsive Layout 320dp — PriceComparisonScreen with map has no overflows',
       (WidgetTester tester) async {
-        await http.runWithClient(() async {
-          tester.view.physicalSize = const Size(320 * 3, 568 * 3);
-          tester.view.devicePixelRatio = 3.0;
+        await mockNetworkImagesFor(() async {
+          await http.runWithClient(() async {
+            tester.view.physicalSize = const Size(320 * 3, 568 * 3);
+            tester.view.devicePixelRatio = 3.0;
 
-          addTearDown(() {
-            tester.view.resetPhysicalSize();
-            tester.view.resetDevicePixelRatio();
-          });
+            addTearDown(() {
+              tester.view.resetPhysicalSize();
+              tester.view.resetDevicePixelRatio();
+            });
 
-          await tester.pumpWidget(
-            const MaterialApp(
-              home: HomeScreen(baseUrl: 'http://localhost:8000'),
-            ),
-          );
-          await tester.pumpAndSettle();
-
-          final bandingkanFinder = find.bySemanticsLabel('Bandingkan Harga, cari dan bandingkan harga produk');
-          if (bandingkanFinder.evaluate().isNotEmpty) {
-            await tester.ensureVisible(bandingkanFinder);
-            await tester.tap(bandingkanFinder, warnIfMissed: false);
-            await tester.pumpAndSettle();
-          }
-
-          // If product sheet did not open (widget off-screen at 320dp), skip product tap
-          if (find.text('Minyak Goreng 2L').evaluate().isNotEmpty) {
-            await tester.tap(find.text('Minyak Goreng 2L'));
+            await tester.pumpWidget(
+              const MaterialApp(
+                home: PriceComparisonScreen(
+                  productId: 'prod-1',
+                  productName: 'Minyak Goreng 2L',
+                  baseUrl: 'http://localhost:8000',
+                ),
+              ),
+            );
             await tester.pumpAndSettle();
 
             final exception = tester.takeException();
@@ -371,12 +381,8 @@ void main() {
             }
             expect(exception, isNull);
             expect(find.byType(PriceComparisonScreen), findsOneWidget);
-          } else {
-            // Widget was off-screen; just verify home renders without overflow
-            final exception = tester.takeException();
-            expect(exception, isNull);
-          }
-        }, () => mockClient);
+          }, () => mockClient);
+        });
       },
     );
   });

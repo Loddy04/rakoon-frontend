@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rakoon_frontend/features/app_shell/presentation/pages/home_screen.dart';
 import 'package:rakoon_frontend/features/nearby/presentation/widgets/product_selector_bottom_sheet.dart';
 import 'package:rakoon_frontend/services/products_service.dart';
 
@@ -39,28 +38,44 @@ void main() {
       expect(selectedProduct, isNull);
     });
 
-    testWidgets('Opening product selector from HomeScreen Bandingkan Harga card', (
+    testWidgets('Opening product selector as bottom sheet modal and interacting with it', (
       WidgetTester tester,
     ) async {
+      Product? selectedProduct;
+
       await tester.pumpWidget(
-        const MaterialApp(
-          home: HomeScreen(baseUrl: 'http://localhost:8000'),
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (ctx) => ProductSelectorBottomSheet(
+                      baseUrl: 'http://localhost:8000',
+                      onProductSelected: (prod) {
+                        selectedProduct = prod;
+                      },
+                    ),
+                  );
+                },
+                child: const Text('Buka Selector'),
+              ),
+            ),
+          ),
         ),
       );
       await tester.pumpAndSettle();
 
-      // Find "Bandingkan" action button
-      final bandingkanFinder = find.bySemanticsLabel('Bandingkan Harga, cari dan bandingkan harga produk');
-      expect(bandingkanFinder, findsOneWidget);
-
-      // Ensure visible and tap on the card to open product selector modal
-      await tester.ensureVisible(bandingkanFinder);
-      await tester.tap(bandingkanFinder);
+      // Tap button to open modal
+      await tester.tap(find.text('Buka Selector'));
       await tester.pumpAndSettle();
 
       // Verify bottom sheet modal opened
       expect(find.byType(ProductSelectorBottomSheet), findsOneWidget);
       expect(find.text('Pilih Produk untuk Dibandingkan'), findsOneWidget);
+      expect(selectedProduct, isNull);
     });
   });
 }
