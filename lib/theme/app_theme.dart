@@ -18,6 +18,8 @@ class AppColors {
   /// Periwinkle (#7380A5 / #738AE5) - Sole chromatic accent for badges, active states, pressure points
   static const Color periwinkle = Color(0xFF7380A5);
 
+  static const Color softWhite = Color(0xFFF9F9F9);
+
   // --- Aliases for Shupatto Design Token Parity & Legacy Compatibility ---
 
   static const Color inkBlack = graphite;
