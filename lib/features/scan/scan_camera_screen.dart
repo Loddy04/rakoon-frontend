@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:camera/camera.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
@@ -47,6 +48,9 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
     if (widget.isActive) {
       _initializeCamera();
     }
@@ -75,6 +79,12 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
   void dispose() {
     _isDisposed = true;
     WidgetsBinding.instance.removeObserver(this);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     _initToken++;
     _cameraController?.dispose();
     _cameraController = null;
