@@ -8,6 +8,7 @@ class Product {
   final String kategori;
   final double? ukuran;
   final String? satuan;
+  final String? fotoUrl;
 
   Product({
     required this.id,
@@ -15,6 +16,7 @@ class Product {
     required this.kategori,
     this.ukuran,
     this.satuan,
+    this.fotoUrl,
   });
 
   /// Factory constructor to parse product JSON.
@@ -25,6 +27,7 @@ class Product {
       kategori: json['kategori'] as String? ?? 'General',
       ukuran: (json['ukuran'] as num?)?.toDouble(),
       satuan: json['satuan'] as String?,
+      fotoUrl: json['foto_url'] as String?,
     );
   }
 }
@@ -35,7 +38,9 @@ class ProductsService {
   static Future<List<Product>> getProducts({
     required String baseUrl,
     String? search,
+    String? category,
     int limit = 20,
+    http.Client? client,
   }) async {
     final cleanBaseUrl = baseUrl.endsWith('/')
         ? baseUrl.substring(0, baseUrl.length - 1)
@@ -48,13 +53,17 @@ class ProductsService {
     if (search != null && search.trim().isNotEmpty) {
       queryParams['search'] = search.trim();
     }
+    if (category != null && category.trim().isNotEmpty && category.trim().toLowerCase() != 'semua') {
+      queryParams['category'] = category.trim();
+    }
 
     final uri = Uri.parse('$cleanBaseUrl/products/').replace(
       queryParameters: queryParams,
     );
 
     try {
-      final response = await http.get(uri).timeout(
+      final httpClient = client ?? http.Client();
+      final response = await httpClient.get(uri).timeout(
         const Duration(seconds: 10),
       );
 

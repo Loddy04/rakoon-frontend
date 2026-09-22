@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/features/auth/presentation/widgets/login_bottom_sheet.dart';
+import 'package:rakoon_frontend/features/admin/presentation/pages/admin_product_photo_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Profile / Account screen showing user identity, sync status, app metadata,
@@ -299,34 +300,72 @@ class _ProfilePageState extends State<ProfilePage> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: AppSpacing.m),
-                // Status Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.m,
-                    vertical: AppSpacing.xs,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.accentSoft,
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.check_circle,
-                        color: AppColors.accent,
-                        size: 14,
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      Flexible(
-                        child: Text(
-                          'Akun Terverifikasi',
-                          style: AppTextStyles.labelSmall,
-                          overflow: TextOverflow.ellipsis,
+                // Status Badges (Admin + Verified)
+                Wrap(
+                  spacing: AppSpacing.s,
+                  runSpacing: AppSpacing.xs,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    if (AuthService.isAdmin)
+                      Container(
+                        key: const Key('profile_admin_badge'),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.m,
+                          vertical: AppSpacing.xs,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.paper,
+                          borderRadius: BorderRadius.circular(AppRadius.full),
+                          border: Border.all(color: AppColors.graphite, width: 1.5),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.admin_panel_settings,
+                              color: AppColors.graphite,
+                              size: 14,
+                            ),
+                            const SizedBox(width: AppSpacing.xs),
+                            Text(
+                              'Admin Rakoon',
+                              style: AppTextStyles.labelSmall.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.graphite,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.m,
+                        vertical: AppSpacing.xs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentSoft,
+                        borderRadius: BorderRadius.circular(AppRadius.full),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.check_circle,
+                            color: AppColors.accent,
+                            size: 14,
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Flexible(
+                            child: Text(
+                              'Akun Terverifikasi',
+                              style: AppTextStyles.labelSmall,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 const Divider(color: AppColors.line, height: 1),
@@ -372,6 +411,79 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
             ),
           ),
+
+          if (AuthService.isAdmin) ...[
+            const SizedBox(height: AppSpacing.l),
+            InkWell(
+              key: const Key('admin_panel_tile'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AdminProductPhotoPage(),
+                  ),
+                );
+              },
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.l),
+                decoration: BoxDecoration(
+                  color: AppColors.paper,
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
+                  border: Border.all(color: AppColors.graphite, width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.ink.withValues(alpha: 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.accentSoft,
+                        borderRadius: BorderRadius.circular(AppRadius.m),
+                      ),
+                      child: const Icon(
+                        Icons.add_photo_alternate_outlined,
+                        color: AppColors.accent,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.m),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Kelola Foto Produk',
+                            style: AppTextStyles.bodyLarge.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.graphite,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Upload atau masukkan tautan foto produk',
+                            style: AppTextStyles.caption.copyWith(color: AppColors.fog),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: AppColors.graphite,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
 
           const SizedBox(height: AppSpacing.l),
 
