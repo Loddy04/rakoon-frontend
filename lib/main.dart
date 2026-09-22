@@ -16,24 +16,15 @@ import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/splash_screen.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/onboarding_screen.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/app_shell.dart';
+import 'package:rakoon_frontend/core/config/app_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Configuration sourced via secure build environment definitions (e.g. --dart-define)
-  const String supabaseUrl = String.fromEnvironment(
-    'SUPABASE_URL',
-    defaultValue: 'https://pzymqamrmudqrvvysjly.supabase.co',
-  );
-  const String supabaseAnonKey = String.fromEnvironment(
-    'SUPABASE_ANON_KEY',
-    defaultValue:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6eW1xYW1ybXVkcXJ2dnlzamx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwODI1MDQsImV4cCI6MjEwMTY1ODUwNH0.YPH27BLz49ML2cVPJLCgkgiB_8LeUyuBgaq6RJGDut4',
-  );
-  const String apiBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'https://rakoon-backend.onrender.com',
-  );
+  // Configuration sourced via build environment definitions (e.g. --dart-define-from-file=.env.json)
+  final String supabaseUrl = AppConfig.supabaseUrl;
+  final String supabaseAnonKey = AppConfig.supabaseAnonKey;
+  final String apiBaseUrl = AppConfig.apiBaseUrl;
 
   if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
     try {
@@ -44,9 +35,14 @@ void main() async {
     } catch (e) {
       debugPrint('Supabase initialization note: $e');
     }
+  } else {
+    debugPrint(
+      'ℹ️ Info: SUPABASE_URL atau SUPABASE_ANON_KEY belum terisi. '
+      'Aplikasi berjalan tanpa koneksi langsung Supabase (gunakan --dart-define-from-file=.env).',
+    );
   }
 
-  runApp(const RakoonApp(baseUrl: apiBaseUrl));
+  runApp(RakoonApp(baseUrl: apiBaseUrl));
 }
 
 class RakoonApp extends StatelessWidget {
@@ -55,11 +51,7 @@ class RakoonApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const String envBaseUrl = String.fromEnvironment(
-      'API_BASE_URL',
-      defaultValue: 'https://rakoon-backend.onrender.com',
-    );
-    final String effectiveBaseUrl = baseUrl ?? envBaseUrl;
+    final String effectiveBaseUrl = baseUrl ?? AppConfig.apiBaseUrl;
 
     return MaterialApp(
       title: 'Rakoon',
@@ -104,10 +96,7 @@ class IntegrationDashboardPage extends StatefulWidget {
 class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
   // Input Controller untuk Base URL Backend FastAPI
   final TextEditingController _urlController = TextEditingController(
-    text: const String.fromEnvironment(
-      'API_BASE_URL',
-      defaultValue: 'https://rakoon-backend.onrender.com',
-    ),
+    text: AppConfig.apiBaseUrl,
   );
 
   // Input Controllers untuk POST /price
