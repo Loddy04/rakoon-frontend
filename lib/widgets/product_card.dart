@@ -18,6 +18,76 @@ class ProductCard extends StatelessWidget {
     this.width = 175,
   });
 
+  static String formatDistance(double? jarakKm) {
+    if (jarakKm == null) return '800 M';
+    if (jarakKm < 1.0) {
+      final meters = (jarakKm * 1000).round();
+      return '$meters M';
+    } else {
+      return '${jarakKm.toStringAsFixed(1)} KM';
+    }
+  }
+
+  static String formatTimeAgo(String? rawUpdatedAt) {
+    if (rawUpdatedAt == null || rawUpdatedAt.trim().isEmpty) {
+      return 'just now';
+    }
+    final trimmed = rawUpdatedAt.trim();
+
+    // 1. Try parsing standard DateTime / ISO format
+    final parsed = DateTime.tryParse(trimmed);
+    if (parsed != null) {
+      final now = DateTime.now();
+      final diff = now.difference(parsed.toLocal());
+      if (diff.isNegative || diff.inSeconds < 60) {
+        return 'just now';
+      }
+      if (diff.inMinutes < 60) {
+        return '${diff.inMinutes}m ago';
+      }
+      if (diff.inHours < 24) {
+        return '${diff.inHours}h ago';
+      }
+      if (diff.inDays < 7) {
+        return '${diff.inDays}d ago';
+      }
+      final weeks = diff.inDays ~/ 7;
+      return '${weeks}w ago';
+    }
+
+    // 2. Fallback for relative strings (e.g. "15 mnt lalu", "1 jam lalu", "2 jam lalu", "1 minggu lalu", "Baru saja")
+    final lower = trimmed.toLowerCase();
+    if (lower.contains('baru saja') || lower.contains('just now')) {
+      return 'just now';
+    }
+
+    final regWeeks = RegExp(r'(\d+)\s*(minggu|w|week|wk)\b');
+    final matchWeek = regWeeks.firstMatch(lower);
+    if (matchWeek != null) {
+      return '${matchWeek.group(1)}w ago';
+    }
+
+    final regDays = RegExp(r'(\d+)\s*(hari|d|day)\b');
+    final matchDay = regDays.firstMatch(lower);
+    if (matchDay != null) {
+      return '${matchDay.group(1)}d ago';
+    }
+
+    final regHours = RegExp(r'(\d+)\s*(jam|h|hr)\b');
+    final matchHour = regHours.firstMatch(lower);
+    if (matchHour != null) {
+      return '${matchHour.group(1)}h ago';
+    }
+
+    final regMinutes = RegExp(r'(\d+)\s*(mnt|menit|m)\b');
+    final matchMin = regMinutes.firstMatch(lower);
+    if (matchMin != null) {
+      return '${matchMin.group(1)}m ago';
+    }
+
+    return trimmed;
+  }
+
   @override
   Widget build(BuildContext context) {
     final String formattedPrice = formatRp(product.harga);
@@ -25,9 +95,8 @@ class ProductCard extends StatelessWidget {
         ? '${product.ukuran!.toStringAsFixed(product.ukuran! % 1 == 0 ? 0 : 1)} ${product.satuan!.toUpperCase()}'
         : product.kategori.toUpperCase();
 
-    final String distanceStr = product.jarakKm != null
-        ? '${product.jarakKm!.toStringAsFixed(1)} KM'
-        : '0.8 KM';
+    final String distanceStr = formatDistance(product.jarakKm);
+    final String timeAgoStr = formatTimeAgo(product.updatedAt);
 
     return Container(
       width: width,
@@ -162,7 +231,7 @@ class ProductCard extends StatelessWidget {
                       const SizedBox(width: 2),
                       Flexible(
                         child: Text(
-                          product.updatedAt.toUpperCase(),
+                          timeAgoStr,
                           style: AppTextStyles.caption.copyWith(
                             fontSize: 8.5,
                             color: AppColors.fog,

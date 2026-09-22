@@ -35,6 +35,7 @@ class RecommendationProvider extends ChangeNotifier {
     required String baseUrl,
     double? lat,
     double? lng,
+    double radiusKm = 1.0,
     int limit = 10,
     http.Client? client,
   }) async {
@@ -47,6 +48,7 @@ class RecommendationProvider extends ChangeNotifier {
         baseUrl: baseUrl,
         lat: lat,
         lng: lng,
+        radiusKm: radiusKm,
         limit: limit,
         client: client,
       );

@@ -58,11 +58,16 @@ class HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> fetchRecommendations({double? lat, double? lng}) async {
+  Future<void> fetchRecommendations({
+    double? lat,
+    double? lng,
+    double radiusKm = 1.0,
+  }) async {
     await _recommendationProvider.fetchRecommendedProducts(
       baseUrl: _getBaseUrl(),
       lat: lat ?? _userLat,
       lng: lng ?? _userLng,
+      radiusKm: radiusKm,
       client: widget.httpClient,
     );
   }
@@ -149,7 +154,11 @@ class HomeScreenState extends State<HomeScreen> {
           _locationLabel = 'LOKASI TERDETEKSI';
         });
       }
-      fetchRecommendations(lat: position.latitude, lng: position.longitude);
+      fetchRecommendations(
+        lat: position.latitude,
+        lng: position.longitude,
+        radiusKm: 1.0,
+      );
     } catch (_) {
       if (!mounted) return;
       setState(() {

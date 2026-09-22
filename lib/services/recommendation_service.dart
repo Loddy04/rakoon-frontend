@@ -282,6 +282,7 @@ class RecommendationService {
     String? baseUrl,
     double? lat,
     double? lng,
+    double radiusKm = 1.0,
     int limit = 10,
     http.Client? client,
   }) async {
@@ -292,7 +293,10 @@ class RecommendationService {
         ? activeBaseUrl.substring(0, activeBaseUrl.length - 1)
         : activeBaseUrl;
 
-    final Map<String, String> queryParams = {'limit': limit.toString()};
+    final Map<String, String> queryParams = {
+      'limit': limit.toString(),
+      'radius_km': radiusKm.toString(),
+    };
     if (lat != null) queryParams['lat'] = lat.toString();
     if (lng != null) queryParams['lng'] = lng.toString();
 
