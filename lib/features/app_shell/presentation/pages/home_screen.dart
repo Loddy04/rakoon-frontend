@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/features/budget_shopping/budget_shopping_screen.dart';
-import 'package:rakoon_frontend/features/history/presentation/pages/product_history_list_page.dart';
 import 'package:rakoon_frontend/features/nearby/nearby_stores_screen.dart';
-import 'package:rakoon_frontend/features/nearby/price_comparison_screen.dart';
-import 'package:rakoon_frontend/features/nearby/presentation/widgets/product_selector_bottom_sheet.dart';
+import 'package:rakoon_frontend/features/price_check/presentation/pages/price_check_catalog_page.dart';
+import 'package:rakoon_frontend/features/price_check/presentation/pages/unified_product_price_detail_page.dart';
 import 'package:rakoon_frontend/features/scan/presentation/pages/scan_history_screen.dart';
 import 'package:rakoon_frontend/features/scan/presentation/pages/scan_session_detail_screen.dart';
 import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
@@ -16,6 +15,7 @@ import 'package:rakoon_frontend/services/scan_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/features/recommendation/presentation/providers/recommendation_provider.dart';
+import 'package:rakoon_frontend/services/recommendation_service.dart';
 import 'package:rakoon_frontend/widgets/bouncy_button.dart';
 import 'package:rakoon_frontend/widgets/playful_card.dart';
 import 'package:rakoon_frontend/widgets/product_card.dart';
@@ -180,6 +180,21 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _navigateToProductDetail(RecommendedProduct product) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UnifiedProductPriceDetailPage(
+          product: product,
+          baseUrl: _getBaseUrl(),
+          httpClient: widget.httpClient,
+          userLat: _userLat,
+          userLng: _userLng,
+        ),
+      ),
+    );
+  }
+
   String _getBaseUrl() {
     if (widget.baseUrl != null && widget.baseUrl!.isNotEmpty) {
       return widget.baseUrl!;
@@ -189,40 +204,6 @@ class HomeScreenState extends State<HomeScreen> {
       return envBaseUrl;
     }
     return kIsWeb ? 'http://localhost:8000' : 'https://rakoon-backend.onrender.com';
-  }
-
-  void _showProductSelector(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.cards)),
-      ),
-      backgroundColor: AppColors.paper,
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: ProductSelectorBottomSheet(
-            baseUrl: _getBaseUrl(),
-            onProductSelected: (prod) {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PriceComparisonScreen(
-                    productId: prod.id,
-                    productName: prod.nama,
-                    baseUrl: _getBaseUrl(),
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -394,64 +375,58 @@ class HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: AppSpacing.s16),
 
-                    // 4. Ergonomic 1x4 Quick Action Feature Bar (Gojek Pattern)
+                    // 4. Ergonomic 1x3 Quick Action Feature Bar
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Quick Action 1: Riwayat Harga
+                        // Quick Action 1: Cek Harga
                         Expanded(
-                          child: _QuickActionButton(
-                            icon: Icons.trending_up_rounded,
-                            label: 'Riwayat\nHarga',
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ProductHistoryListPage(
-                                    baseUrl: _getBaseUrl(),
+                          child: Semantics(
+                            label: 'Cek Harga, buka katalog produk dan perbandingan harga',
+                            button: true,
+                            container: true,
+                            excludeSemantics: true,
+                            child: _QuickActionButton(
+                              icon: Icons.sell_outlined,
+                              label: 'Cek Harga',
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => PriceCheckCatalogPage(
+                                      baseUrl: _getBaseUrl(),
+                                      httpClient: widget.httpClient,
+                                      userLat: _userLat,
+                                      userLng: _userLng,
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
+                                );
+                              },
+                            ),
                           ),
                         ),
 
-                        // Quick Action 2: Toko
+                        // Quick Action 2: Toko Sekitar
                         Expanded(
                           child: Semantics(
-                            label: 'Toko Terdekat, cari toko di sekitar kamu',
+                            label: 'Toko Sekitar, cari toko terdekat di sekitar kamu',
                             button: true,
                             container: true,
                             excludeSemantics: true,
                             child: _QuickActionButton(
                               icon: Icons.storefront_outlined,
-                              label: 'Toko',
+                              label: 'Toko Sekitar',
                               onTap: _navigateToNearbyStores,
                             ),
                           ),
                         ),
 
-                        // Quick Action 3: Bandingkan
-                        Expanded(
-                          child: Semantics(
-                            label: 'Bandingkan Harga, cari dan bandingkan harga produk',
-                            button: true,
-                            container: true,
-                            excludeSemantics: true,
-                            child: _QuickActionButton(
-                              icon: Icons.compare_arrows_rounded,
-                              label: 'Bandingkan',
-                              onTap: () => _showProductSelector(context),
-                            ),
-                          ),
-                        ),
-
-                        // Quick Action 4: Smart Budget
+                        // Quick Action 3: Smart Budget
                         Expanded(
                           child: _QuickActionButton(
                             icon: Icons.account_balance_wallet_outlined,
-                            label: 'Smart\nBudget',
+                            label: 'Smart Budget',
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -512,7 +487,7 @@ class HomeScreenState extends State<HomeScreen> {
                               final product = products[index];
                               return ProductCard(
                                 product: product,
-                                onTap: () => _showProductSelector(context),
+                                onTap: () => _navigateToProductDetail(product),
                               );
                             },
                           );
