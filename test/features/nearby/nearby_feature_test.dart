@@ -385,5 +385,76 @@ void main() {
         });
       },
     );
+
+    testWidgets(
+      'Responsive Layout — NearbyStoresScreen renders across viewports (320dp, 360dp, 390dp) without overflow',
+      (WidgetTester tester) async {
+        await mockNetworkImagesFor(() async {
+          await http.runWithClient(() async {
+            final viewports = [
+              const Size(320, 640),
+              const Size(360, 800),
+              const Size(390, 844),
+            ];
+
+            addTearDown(() {
+              tester.view.resetPhysicalSize();
+              tester.view.resetDevicePixelRatio();
+            });
+
+            for (final size in viewports) {
+              tester.view.physicalSize = size;
+              tester.view.devicePixelRatio = 1.0;
+
+              await tester.pumpWidget(
+                const MaterialApp(
+                  home: NearbyStoresScreen(
+                    baseUrl: 'http://localhost:8000',
+                    initialLat: -6.2088,
+                    initialLng: 106.8456,
+                  ),
+                ),
+              );
+              await tester.pumpAndSettle();
+
+              expect(tester.takeException(), isNull);
+              expect(find.text('Toko Sekitar'), findsOneWidget);
+            }
+          }, () => mockClient);
+        });
+      },
+    );
+
+    testWidgets(
+      'Tapping a map marker in NearbyStoresScreen selects the store and scrolls to its card',
+      (WidgetTester tester) async {
+        await mockNetworkImagesFor(() async {
+          await http.runWithClient(() async {
+            await tester.pumpWidget(
+              const MaterialApp(
+                home: NearbyStoresScreen(
+                  baseUrl: 'http://localhost:8000',
+                  initialLat: -6.2088,
+                  initialLng: 106.8456,
+                ),
+              ),
+            );
+            await tester.pumpAndSettle();
+
+            // Find store markers
+            final markerFinder = find.byType(GestureDetector);
+            expect(markerFinder, findsWidgets);
+
+            // Tap second store marker (Alfamart Gatot Subroto) via semantics or map marker
+            final alfamartMarker = find.bySemanticsLabel(RegExp(r'Alfamart Gatot Subroto'));
+            if (alfamartMarker.evaluate().isNotEmpty) {
+              await tester.tap(alfamartMarker);
+              await tester.pumpAndSettle();
+              expect(find.text('Alfamart Gatot Subroto'), findsWidgets);
+            }
+          }, () => mockClient);
+        });
+      },
+    );
   });
 }

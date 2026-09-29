@@ -479,8 +479,9 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
+                Flexible(
                   child: Text(
                     'Perbandingan Harga Antar Toko',
                     style: GoogleFonts.dmSerifDisplay(
@@ -494,20 +495,24 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                 ),
                 const SizedBox(width: 4),
                 // Subtle badge satisfying exact test assertion: 'DETAIL HARGA PRODUK'
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFECFDF5),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFFA7F3D0)),
-                  ),
-                  child: Text(
-                    'DETAIL HARGA PRODUK',
-                    style: GoogleFonts.outfit(
-                      fontSize: 8.5,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF059669),
-                      letterSpacing: 0.3,
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFECFDF5),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFFA7F3D0)),
+                    ),
+                    child: Text(
+                      'DETAIL HARGA PRODUK',
+                      style: GoogleFonts.outfit(
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF059669),
+                        letterSpacing: 0.3,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),

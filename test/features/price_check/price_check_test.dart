@@ -60,6 +60,40 @@ void main() {
       expect(find.text('Makanan Instan'), findsOneWidget);
     });
 
+    testWidgets('PriceCheckCatalogPage renders across viewports without overflow and supports scrolling', (tester) async {
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final viewports = [
+        const Size(320, 640),
+        const Size(360, 800),
+        const Size(390, 844),
+        const Size(430, 932),
+      ];
+
+      for (final size in viewports) {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1.0;
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: PriceCheckCatalogPage(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('CEK HARGA'), findsOneWidget);
+        expect(find.text('Grafik Tren Fluktuasi Harga'), findsOneWidget);
+        expect(find.byType(CustomScrollView), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      }
+
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
     testWidgets('UnifiedProductPriceDetailPage renders product summary header and chart title', (widgetTester) async {
       final mockProduct = RecommendedProduct(
         id: 'prod-001',

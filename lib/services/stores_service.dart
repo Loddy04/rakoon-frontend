@@ -51,7 +51,7 @@ class NearbyStoresResponse {
   });
 
   factory NearbyStoresResponse.fromJson(Map<String, dynamic> json) {
-    final String src = json['source'] as String? ?? 'local_fallback';
+    final String src = json['source'] as String? ?? 'live';
     final rawStores = json['stores'] as List<dynamic>? ?? [];
     
     final List<StoreNearby> parsedStores = rawStores

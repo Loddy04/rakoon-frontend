@@ -38,6 +38,8 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
   Position? _userPosition;
   NearbyStoresResponse? _storesResponse;
   StoreNearby? _selectedStore;
+  final ScrollController _listScrollController = ScrollController();
+  final Map<String, GlobalKey> _cardKeys = {};
 
   @override
   void initState() {
@@ -48,11 +50,58 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _listScrollController.dispose();
     super.dispose();
+  }
+
+  /// Scrolls the card list to the selected store and animates the map to it
+  void _scrollToStore(StoreNearby store) {
+    setState(() => _selectedStore = store);
+    _mapController.move(
+      LatLng(store.lat, store.lng),
+      _mapController.camera.zoom,
+    );
+
+    final stores = _storesResponse?.stores ?? [];
+    final index = stores.indexWhere((s) => s.storeId == store.storeId);
+
+    if (index == 0 && _listScrollController.hasClients) {
+      _listScrollController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOut,
+      );
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final key = _cardKeys[store.storeId];
+      if (key?.currentContext != null) {
+        Scrollable.ensureVisible(
+          key!.currentContext!,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeInOut,
+          alignment: 0.0,
+        );
+      } else if (index != -1 && _listScrollController.hasClients) {
+        const cardHeightWithMargin = 220.0;
+        final targetOffset = (index * cardHeightWithMargin).clamp(
+          0.0,
+          _listScrollController.position.maxScrollExtent,
+        );
+        _listScrollController.animateTo(
+          targetOffset,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
   }
 
   /// Gets location and queries the backend for stores.
   Future<void> _fetchLocationAndStores() async {
+    _cardKeys.clear();
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -428,6 +477,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
       backgroundColor: const Color(0xFFFAF7F2),
       appBar: AppBar(
         titleSpacing: 0,
+        leadingWidth: 42,
         leading: const BackButton(color: Color(0xFF0D2818)),
         title: Row(
           children: [
@@ -437,51 +487,60 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
               errorBuilder: (c, e, s) => const Icon(Icons.shopping_basket_rounded, color: Color(0xFF059669), size: 24),
             ),
             const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'Rakoon',
-                      style: GoogleFonts.outfit(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w900,
-                        color: const Color(0xFF0D2818),
-                        height: 1.1,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    // Small tag satisfying test finding 'Toko Terdekat'
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFECFDF5),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: const Color(0xFFA7F3D0)),
-                      ),
-                      child: Text(
-                        'Toko Terdekat',
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Rakoon',
                         style: GoogleFonts.outfit(
-                          fontSize: 8.5,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF059669),
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF0D2818),
+                          height: 1.1,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                Text(
-                  'Belanja Lebih Cerdas',
-                  style: GoogleFonts.outfit(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF059669),
-                    height: 1.0,
+                      const SizedBox(width: 5),
+                      // Small tag satisfying test finding 'Toko Terdekat'
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFECFDF5),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFFA7F3D0)),
+                          ),
+                          child: Text(
+                            'Toko Terdekat',
+                            style: GoogleFonts.outfit(
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF059669),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                  Text(
+                    'Belanja Lebih Cerdas',
+                    style: GoogleFonts.outfit(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF059669),
+                      height: 1.0,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -635,72 +694,52 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
               const SizedBox(height: 8),
 
               // Distance filter chips
-              Row(
-                children: [
-                  for (final r in ['1 km', '3 km', '5 km']) ...[
-                    GestureDetector(
-                      onTap: () => setState(() => _selectedRadius = r),
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          gradient: _selectedRadius == r
-                              ? const LinearGradient(
-                                  colors: [Color(0xFF0D2818), Color(0xFF2E6644)],
-                                )
-                              : null,
-                          color: _selectedRadius == r ? null : const Color(0xFFFAF7F2),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: _selectedRadius == r ? Colors.transparent : const Color(0xFFE8E4DC),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (final r in ['1 km', '3 km', '5 km']) ...[
+                      GestureDetector(
+                        onTap: () => setState(() => _selectedRadius = r),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            gradient: _selectedRadius == r
+                                ? const LinearGradient(
+                                    colors: [Color(0xFF0D2818), Color(0xFF2E6644)],
+                                  )
+                                : null,
+                            color: _selectedRadius == r ? null : const Color(0xFFFAF7F2),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _selectedRadius == r ? Colors.transparent : const Color(0xFFE8E4DC),
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.near_me_rounded,
-                              size: 13,
-                              color: _selectedRadius == r ? Colors.white : const Color(0xFF059669),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              r,
-                              style: GoogleFonts.outfit(
-                                fontSize: 11,
-                                fontWeight: _selectedRadius == r ? FontWeight.w800 : FontWeight.w600,
-                                color: _selectedRadius == r ? Colors.white : const Color(0xFF374151),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.near_me_rounded,
+                                size: 13,
+                                color: _selectedRadius == r ? Colors.white : const Color(0xFF059669),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Text(
+                                r,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 11,
+                                  fontWeight: _selectedRadius == r ? FontWeight.w800 : FontWeight.w600,
+                                  color: _selectedRadius == r ? Colors.white : const Color(0xFF374151),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFAF7F2),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE8E4DC)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.format_list_bulleted_rounded, size: 14, color: Color(0xFF0D2818)),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Daftar',
-                          style: GoogleFonts.outfit(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF0D2818),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
@@ -723,11 +762,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                 (s) => s.storeId == storeId,
                 orElse: () => stores.first,
               );
-              setState(() => _selectedStore = store);
-              _mapController.move(
-                LatLng(store.lat, store.lng),
-                _mapController.camera.zoom,
-              );
+              _scrollToStore(store);
             },
             markers: stores
                 .map((s) => MapStoreMarker(
@@ -805,27 +840,34 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Toko Sekitar',
-                            style: GoogleFonts.dmSerifDisplay(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF0D2818),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Toko Sekitar',
+                              style: GoogleFonts.dmSerifDisplay(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF0D2818),
+                              ),
                             ),
-                          ),
-                          Text(
-                            'Temukan supermarket dan minimarket terdekat dari lokasi Anda',
-                            style: GoogleFonts.outfit(
-                              fontSize: 11,
-                              color: const Color(0xFF6B7280),
+                            Text(
+                              'Temukan supermarket dan minimarket terdekat dari lokasi Anda',
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                color: const Color(0xFF6B7280),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                      if (isFallback) const StatusBadge(status: 'Offline'),
+                      if (isFallback) ...[
+                        const SizedBox(width: 8),
+                        const StatusBadge(status: 'Offline'),
+                      ],
                     ],
                   ),
                 ),
@@ -836,7 +878,9 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                   child: stores.isEmpty
                       ? _buildEmptyStoresState()
                       : ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+                          controller: _listScrollController,
+                          cacheExtent: 10000.0,
+                          padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
                           itemCount: stores.length,
                           itemBuilder: (context, index) {
                             final store = stores[index];
@@ -856,41 +900,44 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
   /// Renders individual store card matching Ref UI 5
   Widget _buildStoreCard(StoreNearby store, bool isSelected, bool isFirst) {
     final walkingMinutes = (store.jarakKm * 12).round();
+    final cardKey = _cardKeys.putIfAbsent(store.storeId, () => GlobalKey());
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedStore = store;
-        });
-        _mapController.move(
-          LatLng(store.lat, store.lng),
-          _mapController.camera.zoom,
-        );
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.only(bottom: 12.0),
-        padding: const EdgeInsets.all(14.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(22.0),
-          border: Border.all(
-            color: isSelected ? const Color(0xFF059669) : const Color(0xFFE8E4DC),
-            width: isSelected ? 1.8 : 1.0,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: isSelected
-                  ? const Color(0xFF059669).withValues(alpha: 0.1)
-                  : Colors.black.withValues(alpha: 0.03),
-              blurRadius: isSelected ? 10 : 6,
-              offset: const Offset(0, 2),
+    return Container(
+      key: cardKey,
+      margin: const EdgeInsets.only(bottom: 12.0),
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedStore = store;
+          });
+          _mapController.move(
+            LatLng(store.lat, store.lng),
+            _mapController.camera.zoom,
+          );
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(14.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22.0),
+            border: Border.all(
+              color: isSelected ? const Color(0xFF059669) : const Color(0xFFE8E4DC),
+              width: isSelected ? 1.8 : 1.0,
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+            boxShadow: [
+              BoxShadow(
+                color: isSelected
+                    ? const Color(0xFF059669).withValues(alpha: 0.1)
+                    : Colors.black.withValues(alpha: 0.03),
+                blurRadius: isSelected ? 10 : 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // Top Row: Logo, Name, Distance & Walking Badge
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -914,11 +961,17 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          Text(
-                            '${(store.jarakKm * 1000).round()} m · Jl. Kaliurang, Depok',
-                            style: GoogleFonts.outfit(
-                              fontSize: 11,
-                              color: const Color(0xFF6B7280),
+                          Expanded(
+                            child: Text(
+                              (store.alamat != null && store.alamat!.trim().isNotEmpty)
+                                  ? '${(store.jarakKm * 1000).round()} m · ${store.alamat}'
+                                  : '${(store.jarakKm * 1000).round()} m · Sekitar Lokasi Anda',
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                color: const Color(0xFF6B7280),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -935,12 +988,16 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            'Buka · Tutup 22:00',
-                            style: GoogleFonts.outfit(
-                              fontSize: 10.5,
-                              color: const Color(0xFF059669),
-                              fontWeight: FontWeight.w600,
+                          Expanded(
+                            child: Text(
+                              'Buka · Tutup 22:00',
+                              style: GoogleFonts.outfit(
+                                fontSize: 10.5,
+                                color: const Color(0xFF059669),
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -1071,8 +1128,9 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   /// Renders state if no stores are found nearby
   Widget _buildEmptyStoresState() {
