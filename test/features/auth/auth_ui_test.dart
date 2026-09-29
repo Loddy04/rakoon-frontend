@@ -143,6 +143,74 @@ void main() {
       expect(find.text('Daftar Rakoon'), findsNothing);
     });
 
+    testWidgets('Google register redirects to AppShell when session succeeds', (
+      WidgetTester tester,
+    ) async {
+      final mockSession = Session(
+        accessToken: 'mock-es256-access-token-xyz',
+        refreshToken: 'mock-refresh-token',
+        expiresIn: 3600,
+        tokenType: 'bearer',
+        user: User(
+          id: 'mock-google-user-uuid',
+          appMetadata: {},
+          userMetadata: {'full_name': 'Google User'},
+          aud: 'authenticated',
+          createdAt: DateTime.now().toIso8601String(),
+        ),
+      );
+      AuthService.mockSession = mockSession;
+
+      await tester.pumpWidget(const MaterialApp(home: RegisterPage()));
+
+      // Tap Google Register button
+      await tester.tap(find.byKey(const Key('google_register_button')));
+      await tester.pumpAndSettle();
+
+      // Should redirect to AppShell
+      expect(find.byType(AppShell), findsOneWidget);
+      expect(find.byType(RegisterPage), findsNothing);
+
+      AuthService.mockSession = null;
+    });
+
+    testWidgets('LoginPage opening RegisterPage and completing Google register navigates to AppShell', (
+      WidgetTester tester,
+    ) async {
+      final mockSession = Session(
+        accessToken: 'mock-es256-access-token-xyz',
+        refreshToken: 'mock-refresh-token',
+        expiresIn: 3600,
+        tokenType: 'bearer',
+        user: User(
+          id: 'mock-google-user-uuid',
+          appMetadata: {},
+          userMetadata: {'full_name': 'Google User'},
+          aud: 'authenticated',
+          createdAt: DateTime.now().toIso8601String(),
+        ),
+      );
+      AuthService.mockSession = mockSession;
+
+      await tester.pumpWidget(const MaterialApp(home: LoginPage()));
+
+      // Go to Register screen
+      await tester.tap(find.byKey(const Key('goto_register_button')));
+      await tester.pumpAndSettle();
+      expect(find.byType(RegisterPage), findsOneWidget);
+
+      // Tap Google Register button
+      await tester.tap(find.byKey(const Key('google_register_button')));
+      await tester.pumpAndSettle();
+
+      // Should pop RegisterPage and replace LoginPage with AppShell
+      expect(find.byType(AppShell), findsOneWidget);
+      expect(find.byType(LoginPage), findsNothing);
+      expect(find.byType(RegisterPage), findsNothing);
+
+      AuthService.mockSession = null;
+    });
+
     group('JWT Auth Integration Tests', () {
       late Session mockSession;
 
