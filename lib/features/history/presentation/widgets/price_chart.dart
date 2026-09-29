@@ -106,11 +106,18 @@ class PriceChart extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : AppColors.paper,
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isDark ? const Color(0xFF334155) : AppColors.line,
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE5E7EB),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Column(
           children: [
@@ -125,7 +132,7 @@ class PriceChart extends StatelessWidget {
                       return FlLine(
                         color: isDark
                             ? const Color(0xFF334155)
-                            : AppColors.line,
+                            : const Color(0xFFF3F4F6),
                         strokeWidth: 1,
                         dashArray: [3, 4],
                       );
@@ -160,7 +167,7 @@ class PriceChart extends StatelessWidget {
                                 fontWeight: FontWeight.w500,
                                 color: isDark
                                     ? const Color(0xFF94A3B8)
-                                    : AppColors.muted,
+                                    : const Color(0xFF6B7280),
                               ),
                             ),
                           );
@@ -175,8 +182,8 @@ class PriceChart extends StatelessWidget {
                     LineChartBarData(
                       spots: spots,
                       isCurved: false,
-                      color: isDark ? AppColors.paper : AppColors.ink,
-                      barWidth: 2,
+                      color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
+                      barWidth: 2.5,
                       isStrokeCapRound: true,
                       dotData: FlDotData(
                         show: true,
@@ -186,8 +193,8 @@ class PriceChart extends StatelessWidget {
                         },
                         getDotPainter: (spot, percent, barData, index) {
                           return FlDotCirclePainter(
-                            color: AppColors.accent,
-                            strokeColor: AppColors.paper,
+                            color: const Color(0xFF059669),
+                            strokeColor: Colors.white,
                             strokeWidth: 2.5,
                             radius: 5,
                           );
@@ -199,8 +206,8 @@ class PriceChart extends StatelessWidget {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            AppColors.accent.withValues(alpha: 0.16),
-                            AppColors.accent.withValues(alpha: 0.0),
+                            const Color(0xFF10B981).withValues(alpha: 0.18),
+                            const Color(0xFF10B981).withValues(alpha: 0.0),
                           ],
                         ),
                       ),

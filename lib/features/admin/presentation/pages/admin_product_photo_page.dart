@@ -206,9 +206,9 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
                 Container(
                   height: 48,
                   decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(AppRadius.l),
-                    border: Border.all(color: AppColors.line),
+                    color: const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
                   ),
                   child: TextField(
                     key: const Key('admin_product_search_input'),
@@ -218,7 +218,7 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
                     decoration: InputDecoration(
                       hintText: 'Cari nama produk...',
                       hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.fog),
-                      prefixIcon: const Icon(Icons.search, color: AppColors.graphite),
+                      prefixIcon: const Icon(Icons.search, color: Color(0xFF059669)),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: 18),
@@ -254,14 +254,14 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                            color: isSelected ? AppColors.paper : AppColors.graphite,
+                            color: isSelected ? Colors.white : const Color(0xFF4B5563),
                           ),
                         ),
                         selected: isSelected,
-                        selectedColor: AppColors.graphite,
+                        selectedColor: AppColors.primaryEmerald,
                         backgroundColor: AppColors.paper,
                         side: BorderSide(
-                          color: isSelected ? AppColors.graphite : AppColors.line,
+                          color: isSelected ? Colors.transparent : const Color(0xFFE5E7EB),
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(AppRadius.full),
@@ -451,16 +451,16 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
                   key: Key('edit_photo_btn_${product.id}'),
                   onPressed: () => _openEditPhotoModal(product),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       color: product.fotoUrl != null && product.fotoUrl!.isNotEmpty
-                          ? AppColors.paper
-                          : AppColors.accent,
-                      borderRadius: BorderRadius.circular(AppRadius.m),
+                          ? const Color(0xFFF3F4F6)
+                          : AppColors.primaryEmerald,
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: product.fotoUrl != null && product.fotoUrl!.isNotEmpty
-                            ? AppColors.graphite
-                            : AppColors.accent,
+                            ? const Color(0xFFE5E7EB)
+                            : AppColors.primaryEmerald,
                       ),
                     ),
                     child: Row(
@@ -472,8 +472,8 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
                               : Icons.add_a_photo_outlined,
                           size: 14,
                           color: product.fotoUrl != null && product.fotoUrl!.isNotEmpty
-                              ? AppColors.graphite
-                              : AppColors.paper,
+                              ? const Color(0xFF374151)
+                              : Colors.white,
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -484,8 +484,8 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: product.fotoUrl != null && product.fotoUrl!.isNotEmpty
-                                ? AppColors.graphite
-                                : AppColors.paper,
+                                ? const Color(0xFF374151)
+                                : Colors.white,
                           ),
                         ),
                       ],
@@ -820,7 +820,7 @@ class _EditPhotoSheetState extends State<_EditPhotoSheet> with SingleTickerProvi
               key: const Key('admin_save_photo_button'),
               onPressed: _isSaving ? null : _savePhoto,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
+                backgroundColor: AppColors.primaryEmerald,
                 foregroundColor: AppColors.paper,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.l),

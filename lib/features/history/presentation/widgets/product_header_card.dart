@@ -55,11 +55,18 @@ class ProductHeaderCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : AppColors.paper,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF334155) : AppColors.line,
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE5E7EB),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,7 +75,8 @@ class ProductHeaderCard extends StatelessWidget {
             'Produk',
             style: TextStyle(
               fontSize: 12,
-              color: isDark ? const Color(0xFF94A3B8) : AppColors.muted,
+              fontWeight: FontWeight.w500,
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280),
             ),
           ),
           const SizedBox(height: 2),
@@ -77,7 +85,8 @@ class ProductHeaderCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: isDark ? AppColors.paper : AppColors.ink,
+              letterSpacing: -0.3,
+              color: isDark ? AppColors.paper : const Color(0xFF111827),
             ),
           ),
           const SizedBox(height: 12),
@@ -90,9 +99,10 @@ class ProductHeaderCard extends StatelessWidget {
                 formatRp(currentPrice),
                 style: TextStyle(
                   fontSize: 26,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                   height: 1.0,
-                  color: isDark ? AppColors.paper : AppColors.ink,
+                  letterSpacing: -0.5,
+                  color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
                 ),
               ),
               StatusBadge(status: trendStatus, icon: trendIcon),

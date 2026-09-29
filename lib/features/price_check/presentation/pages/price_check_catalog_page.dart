@@ -4,8 +4,6 @@ import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/features/price_check/presentation/pages/unified_product_price_detail_page.dart';
 import 'package:rakoon_frontend/features/price_check/presentation/providers/price_check_provider.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
-import 'package:rakoon_frontend/theme/app_theme.dart';
-import 'package:rakoon_frontend/widgets/bouncy_button.dart';
 import 'package:rakoon_frontend/widgets/product_card.dart';
 
 class PriceCheckCatalogPage extends StatefulWidget {
@@ -86,46 +84,63 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.paper,
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           'CEK HARGA',
-          style: AppTextStyles.subheading.copyWith(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w900,
-            letterSpacing: 1.5,
-            color: AppColors.graphite,
+            letterSpacing: 1.2,
+            color: Color(0xFF111827),
           ),
         ),
         elevation: 0,
-        backgroundColor: AppColors.paper,
-        foregroundColor: AppColors.graphite,
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF111827),
         centerTitle: true,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(color: const Color(0xFFF1F5F9), height: 1.0),
+        ),
       ),
       body: SafeArea(
         child: Column(
           children: [
-            // 1. Search Bar Container
+            // 1. Modern Search Bar Container
             Container(
-              color: AppColors.paper,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.s16,
-                vertical: AppSpacing.s10,
-              ),
+              color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
               child: TextField(
                 controller: _searchController,
                 onChanged: (val) {
                   setState(() {});
                   _onSearchChanged(val);
                 },
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.graphite),
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF111827),
+                ),
                 decoration: InputDecoration(
                   hintText: 'Cari nama produk...',
-                  hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.fog),
-                  prefixIcon: const Icon(Icons.search, color: AppColors.graphite),
+                  hintStyle: const TextStyle(
+                    fontSize: 13.0,
+                    color: Color(0xFF9CA3AF),
+                    fontWeight: FontWeight.w400,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    color: Color(0xFF059669),
+                    size: 22,
+                  ),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear, color: AppColors.graphite),
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: Color(0xFF9CA3AF),
+                            size: 18,
+                          ),
                           onPressed: () {
                             _searchController.clear();
                             setState(() {});
@@ -138,103 +153,133 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
                         )
                       : null,
                   filled: true,
-                  fillColor: AppColors.softWhite,
+                  fillColor: const Color(0xFFF3F4F6),
                   contentPadding: const EdgeInsets.symmetric(
-                    vertical: AppSpacing.s12,
-                    horizontal: AppSpacing.s16,
+                    vertical: 12.0,
+                    horizontal: 16.0,
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.cards),
-                    borderSide: BorderSide(color: AppColors.graphite.withValues(alpha: 0.2), width: 1),
+                    borderRadius: BorderRadius.circular(24.0),
+                    borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.cards),
-                    borderSide: const BorderSide(color: AppColors.graphite, width: 1.5),
+                    borderRadius: BorderRadius.circular(24.0),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF10B981),
+                      width: 1.5,
+                    ),
                   ),
                 ),
               ),
             ),
 
             // 2. Horizontal Scrollable Category Filter Chips
-            SizedBox(
-              height: 48,
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16, vertical: 6),
-                scrollDirection: Axis.horizontal,
-                itemCount: PriceCheckProvider.categories.length,
-                separatorBuilder: (context, index) => const SizedBox(width: AppSpacing.s10),
-                itemBuilder: (context, index) {
-                  final category = PriceCheckProvider.categories[index];
-                  return ListenableBuilder(
-                    listenable: _priceCheckProvider,
-                    builder: (context, child) {
-                      final isSelected = _priceCheckProvider.selectedCategory == category;
-                      return BouncyButton(
-                        onPressed: () => _onCategorySelected(category),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        borderRadius: BorderRadius.circular(AppRadius.cards),
-                        variant: isSelected ? BouncyButtonVariant.accentAction : BouncyButtonVariant.primaryPill,
-                        child: Text(
-                          category,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                            color: isSelected ? AppColors.paper : AppColors.graphite,
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.only(bottom: 10),
+              child: SizedBox(
+                height: 38,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: PriceCheckProvider.categories.length,
+                  separatorBuilder: (context, index) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    final category = PriceCheckProvider.categories[index];
+                    return ListenableBuilder(
+                      listenable: _priceCheckProvider,
+                      builder: (context, child) {
+                        final isSelected = _priceCheckProvider.selectedCategory == category;
+                        return GestureDetector(
+                          onTap: () => _onCategorySelected(category),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              gradient: isSelected
+                                  ? const LinearGradient(
+                                      colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                    )
+                                  : null,
+                              color: isSelected ? null : const Color(0xFFF3F4F6),
+                              borderRadius: BorderRadius.circular(20.0),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Text(
+                              category,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                color: isSelected ? Colors.white : const Color(0xFF4B5563),
+                              ),
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  );
-                },
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ),
 
-            const Divider(height: 1, color: AppColors.line),
+            Container(color: const Color(0xFFF1F5F9), height: 1.0),
 
-            // 3. 2-Column Marketplace Product Grid (Tokopedia/Shopee style)
+            // 3. 2-Column Marketplace Product Grid (Modern Colorful Style)
             Expanded(
               child: ListenableBuilder(
                 listenable: _priceCheckProvider,
                 builder: (context, child) {
                   if (_priceCheckProvider.isLoading) {
                     return const Center(
-                      child: CircularProgressIndicator(color: AppColors.periwinkle),
+                      child: CircularProgressIndicator(color: Color(0xFF059669)),
                     );
                   }
 
                   if (_priceCheckProvider.products.isEmpty) {
                     return Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.cardPadding),
+                        padding: const EdgeInsets.all(24.0),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(AppSpacing.s16),
+                              padding: const EdgeInsets.all(20),
                               decoration: const BoxDecoration(
-                                color: AppColors.softWhite,
+                                color: Color(0xFFECFDF5),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
                                 Icons.search_off_rounded,
-                                size: 40,
-                                color: AppColors.fog,
+                                size: 44,
+                                color: Color(0xFF059669),
                               ),
                             ),
-                            const SizedBox(height: AppSpacing.s16),
-                            Text(
+                            const SizedBox(height: 16),
+                            const Text(
                               'Produk Tidak Ditemukan',
-                              style: AppTextStyles.subheading.copyWith(
+                              style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.graphite,
+                                color: Color(0xFF111827),
                               ),
                             ),
-                            const SizedBox(height: AppSpacing.s10),
-                            Text(
+                            const SizedBox(height: 8),
+                            const Text(
                               'Tidak ada produk yang cocok dengan pencarian atau filter kategori yang dipilih.',
                               textAlign: TextAlign.center,
-                              style: AppTextStyles.bodySmall.copyWith(color: AppColors.fog),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF6B7280),
+                                height: 1.35,
+                              ),
                             ),
                           ],
                         ),
@@ -247,14 +292,14 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
                       baseUrl: widget.baseUrl,
                       client: widget.httpClient,
                     ),
-                    color: AppColors.periwinkle,
+                    color: const Color(0xFF059669),
                     child: GridView.builder(
-                      padding: const EdgeInsets.all(AppSpacing.s16),
+                      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 14.0),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
-                        crossAxisSpacing: AppSpacing.s12,
-                        mainAxisSpacing: AppSpacing.s12,
-                        childAspectRatio: 0.65,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 0.58,
                       ),
                       itemCount: _priceCheckProvider.products.length,
                       itemBuilder: (context, index) {

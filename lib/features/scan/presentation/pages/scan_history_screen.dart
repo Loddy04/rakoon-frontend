@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/features/scan/presentation/pages/scan_session_detail_screen.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
-import 'package:rakoon_frontend/theme/app_theme.dart';
 
 class ScanHistoryScreen extends StatefulWidget {
   final String? baseUrl;
@@ -85,12 +84,28 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: const Text('Riwayat Scan'),
-        backgroundColor: AppColors.paper,
-        foregroundColor: AppColors.ink,
+        title: const Text(
+          'Riwayat Scan',
+          style: TextStyle(
+            color: Color(0xFF111827),
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF111827)),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(color: const Color(0xFFF3F4F6), height: 1.0),
+        ),
       ),
       body: SafeArea(
         child: _buildBody(),
@@ -110,13 +125,13 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
               height: 28,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: AppColors.accent,
+                color: Color(0xFF059669),
               ),
             ),
-            const SizedBox(height: AppSpacing.m),
-            Text(
+            const SizedBox(height: 14),
+            const Text(
               'Memuat riwayat scan...',
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.muted),
+              style: TextStyle(color: Color(0xFF6B7280), fontSize: 13),
             ),
           ],
         ),
@@ -127,32 +142,32 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
       return Center(
         key: const Key('scan_history_error'),
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xxl),
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(
-                Icons.error_outline,
+                Icons.error_outline_rounded,
                 size: 48,
-                color: AppColors.error,
+                color: Color(0xFFDC2626),
               ),
-              const SizedBox(height: AppSpacing.m),
+              const SizedBox(height: 14),
               Text(
                 _errorMessage!,
                 textAlign: TextAlign.center,
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.ink),
+                style: const TextStyle(color: Color(0xFF111827), fontSize: 14),
               ),
-              const SizedBox(height: AppSpacing.l),
+              const SizedBox(height: 18),
               OutlinedButton.icon(
                 key: const Key('retry_scan_history_button'),
                 onPressed: _fetchScans,
-                icon: const Icon(Icons.refresh, size: 16),
+                icon: const Icon(Icons.refresh_rounded, size: 16),
                 label: const Text('Coba Lagi'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.accent,
-                  side: const BorderSide(color: AppColors.accent),
+                  foregroundColor: const Color(0xFF059669),
+                  side: const BorderSide(color: Color(0xFF059669)),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.full),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                 ),
               ),
@@ -166,35 +181,37 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
       return Center(
         key: const Key('scan_history_empty'),
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xxl),
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 64,
-                height: 64,
+                width: 68,
+                height: 68,
                 decoration: BoxDecoration(
-                  color: AppColors.accentSoft,
-                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(24),
                 ),
                 child: const Icon(
-                  Icons.qr_code_scanner,
-                  color: AppColors.accent,
-                  size: 32,
+                  Icons.qr_code_scanner_rounded,
+                  color: Color(0xFF059669),
+                  size: 34,
                 ),
               ),
-              const SizedBox(height: AppSpacing.m),
-              Text(
+              const SizedBox(height: 16),
+              const Text(
                 'Belum Ada Riwayat Scan',
-                style: AppTextStyles.titleSmall.copyWith(
-                  fontWeight: FontWeight.bold,
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 17,
+                  color: Color(0xFF111827),
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
+              const SizedBox(height: 8),
+              const Text(
                 'Pindai label harga rak produk di toko untuk mulai mencatat dan melihat riwayat scan Anda di sini.',
-                style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
+                style: TextStyle(color: Color(0xFF6B7280), fontSize: 13, height: 1.45),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -205,13 +222,13 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
 
     return RefreshIndicator(
       onRefresh: _fetchScans,
-      color: AppColors.accent,
+      color: const Color(0xFF059669),
       child: ListView.separated(
         key: const Key('scan_history_list'),
-        padding: const EdgeInsets.all(AppSpacing.l),
+        padding: const EdgeInsets.all(16),
         itemCount: _scans!.length,
         separatorBuilder: (context, index) =>
-            const SizedBox(height: AppSpacing.m),
+            const SizedBox(height: 12),
         itemBuilder: (context, index) {
           final scan = _scans![index];
           return _buildScanCard(scan);
@@ -237,74 +254,103 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
           ),
         );
       },
-      borderRadius: BorderRadius.circular(AppRadius.l),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.all(AppSpacing.l),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.paper,
-          borderRadius: BorderRadius.circular(AppRadius.l),
-          border: Border.all(color: AppColors.line),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
           boxShadow: [
             BoxShadow(
-              color: AppColors.ink.withValues(alpha: 0.02),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: AppSpacing.s,
-              runSpacing: AppSpacing.xs,
-              children: [
-                Text(
-                  storeName,
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.s,
-                    vertical: AppSpacing.xs,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.accentSoft,
-                    borderRadius: BorderRadius.circular(AppRadius.s),
-                  ),
-                  child: Text(
-                    productCountText,
-                    style: AppTextStyles.labelSmall.copyWith(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFEDD5),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.storefront_rounded,
+                color: Color(0xFFEA580C),
+                size: 22,
+              ),
             ),
-            const SizedBox(height: AppSpacing.s),
-            Row(
-              children: [
-                const Icon(
-                  Icons.access_time,
-                  size: 13,
-                  color: AppColors.muted,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  _formatDateTime(scan.timestamp),
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.muted,
-                    fontSize: 12,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          storeName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                            color: Color(0xFF111827),
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFECFDF5),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          productCountText,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF059669),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.access_time_rounded,
+                        size: 13,
+                        color: Color(0xFF9CA3AF),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatDateTime(scan.timestamp),
+                        style: const TextStyle(
+                          color: Color(0xFF6B7280),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: Color(0xFF9CA3AF),
+              size: 22,
             ),
           ],
         ),

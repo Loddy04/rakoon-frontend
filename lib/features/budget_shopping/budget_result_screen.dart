@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:rakoon_frontend/services/budget_shopping_service.dart';
-import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
 import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 
@@ -25,30 +24,42 @@ class BudgetResultScreen extends StatelessWidget {
     final bool isOverBudget = hasStore && result.remainingBudget < 0;
     final store = result.recommendedStore;
 
-    Color heroBgColor = AppColors.warningSoft;
-    Color heroBorderColor = AppColors.warning;
     String statusText = 'Tidak Ditemukan Toko';
     IconData statusIcon = Icons.warning_amber_rounded;
 
     if (hasStore) {
       if (isOverBudget) {
-        heroBgColor = AppColors.errorSoft;
-        heroBorderColor = AppColors.error;
         statusText = 'Kekurangan Budget';
         statusIcon = Icons.error_outline;
       } else {
-        heroBgColor = AppColors.accentSoft;
-        heroBorderColor = AppColors.accent;
         statusText = 'Rekomendasi Utama';
         statusIcon = Icons.emoji_events;
       }
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: const Text('Rekomendasi Belanja'),
+        title: const Text(
+          'Rekomendasi Belanja',
+          style: TextStyle(
+            color: Color(0xFF111827),
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+          ),
+        ),
         centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF111827)),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(color: const Color(0xFFF3F4F6), height: 1.0),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -57,18 +68,28 @@ class BudgetResultScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // 1. HERO RECOMMENDATION CARD
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.l),
-                  side: BorderSide(
-                    color: heroBorderColor,
+              Container(
+                decoration: BoxDecoration(
+                  color: isOverBudget
+                      ? const Color(0xFFFEF2F2)
+                      : (hasStore ? const Color(0xFFECFDF5) : const Color(0xFFFFFBEB)),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isOverBudget
+                        ? const Color(0xFFFCA5A5)
+                        : (hasStore ? const Color(0xFF6EE7B7) : const Color(0xFFFCD34D)),
                     width: 1.5,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                color: heroBgColor,
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(18.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -83,32 +104,32 @@ class BudgetResultScreen extends StatelessWidget {
                           Flexible(
                             child: Text(
                               'Budget: ${_formatRupiah(result.budget)}',
-                              textAlign: Alignment.centerRight == Alignment.centerRight ? TextAlign.end : TextAlign.start,
+                              textAlign: TextAlign.end,
                               style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.muted,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF4B5563),
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       Semantics(
                         label: 'Toko utama: ${hasStore ? store!.nama : "Tidak Ditemukan"}',
                         child: Text(
                           hasStore ? store!.nama : 'Toko Tidak Ditemukan',
                           style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.ink,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF111827),
                           ),
                         ),
                       ),
                       if (hasStore) ...[
-                        const SizedBox(height: 12),
-                        const Divider(color: AppColors.line),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
+                        const Divider(color: Color(0xFFE5E7EB)),
+                        const SizedBox(height: 14),
                         Wrap(
                           spacing: 24,
                           runSpacing: 12,
@@ -118,14 +139,17 @@ class BudgetResultScreen extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Total Belanja:', style: TextStyle(fontSize: 12, color: AppColors.muted)),
-                                  const SizedBox(height: 2),
+                                  const Text(
+                                    'Total Belanja:',
+                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)),
+                                  ),
+                                  const SizedBox(height: 4),
                                   Text(
                                     _formatRupiah(result.totalCost),
                                     style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.accent,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF059669),
                                     ),
                                   ),
                                 ],
@@ -140,17 +164,17 @@ class BudgetResultScreen extends StatelessWidget {
                                 children: [
                                   Text(
                                     isOverBudget ? 'Kekurangan:' : 'Sisa Budget:',
-                                    style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)),
                                   ),
-                                  const SizedBox(height: 2),
+                                  const SizedBox(height: 4),
                                   Text(
                                     isOverBudget
                                         ? _formatRupiah(-result.remainingBudget)
                                         : _formatRupiah(result.remainingBudget),
                                     style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: isOverBudget ? AppColors.error : AppColors.accent,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w900,
+                                      color: isOverBudget ? const Color(0xFFDC2626) : const Color(0xFF059669),
                                     ),
                                   ),
                                 ],
@@ -167,27 +191,40 @@ class BudgetResultScreen extends StatelessWidget {
               const SizedBox(height: 16),
 
               // 2. EXPLANATION CARD
-              Card(
-                elevation: 1,
-                color: AppColors.paper,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.m),
-                  side: const BorderSide(color: AppColors.line),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(14.0),
+                  padding: const EdgeInsets.all(16.0),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.info_outline, color: AppColors.accent, size: 22),
-                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.info_outline_rounded, color: Color(0xFF2563EB), size: 20),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           result.explanation,
                           style: const TextStyle(
                             fontSize: 13,
-                            height: 1.4,
-                            color: AppColors.ink,
+                            height: 1.45,
+                            color: Color(0xFF374151),
                           ),
                         ),
                       ),
@@ -202,52 +239,58 @@ class BudgetResultScreen extends StatelessWidget {
               if (hasStore) ...[
                 const Text(
                   '📍 Informasi Lokasi Toko',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.ink),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
                 ),
                 const SizedBox(height: 8),
-                Card(
-                  elevation: 1,
-                  color: AppColors.paper,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.m),
-                    side: const BorderSide(color: AppColors.line),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(14.0),
+                    padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           store!.nama,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.ink),
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF111827)),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.location_on_outlined, size: 16, color: AppColors.muted),
-                            const SizedBox(width: 4),
+                            const Icon(Icons.location_on_outlined, size: 18, color: Color(0xFF6B7280)),
+                            const SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 store.alamat ?? 'Alamat tidak tersedia di database',
-                                style: const TextStyle(fontSize: 13, color: AppColors.muted),
+                                style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
                               ),
                             ),
                           ],
                         ),
                         if (store.lat != null && store.lng != null) ...[
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
                           Row(
                             children: [
-                              const Icon(Icons.my_location, size: 16, color: AppColors.accent),
-                              const SizedBox(width: 4),
+                              const Icon(Icons.my_location_rounded, size: 16, color: Color(0xFF059669)),
+                              const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
                                   'Koordinat: ${store.lat}, ${store.lng}',
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'monospace',
-                                    color: AppColors.ink,
+                                    color: Color(0xFF4B5563),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -267,7 +310,7 @@ class BudgetResultScreen extends StatelessWidget {
               if (hasStore && result.items.isNotEmpty) ...[
                 const Text(
                   '🛒 Rincian Barang Belanja',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.ink),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
                 ),
                 const SizedBox(height: 8),
                 ListView.builder(
@@ -276,15 +319,22 @@ class BudgetResultScreen extends StatelessWidget {
                   itemCount: result.items.length,
                   itemBuilder: (context, index) {
                     final item = result.items[index];
-                    return Card(
-                      color: AppColors.paper,
+                    return Container(
                       margin: const EdgeInsets.symmetric(vertical: 4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.m),
-                        side: const BorderSide(color: AppColors.line),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE5E7EB)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.all(12.0),
+                        padding: const EdgeInsets.all(14.0),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -294,12 +344,12 @@ class BudgetResultScreen extends StatelessWidget {
                                 children: [
                                   Text(
                                     item.namaProduk,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.ink),
+                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF111827)),
                                   ),
-                                  const SizedBox(height: 2),
+                                  const SizedBox(height: 3),
                                   Text(
                                     '${item.qty} x ${_formatRupiah(item.hargaSatuan)}',
-                                    style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
                                   ),
                                 ],
                               ),
@@ -308,9 +358,9 @@ class BudgetResultScreen extends StatelessWidget {
                             Text(
                               _formatRupiah(item.subtotal),
                               style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: AppColors.accent,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                                color: Color(0xFF059669),
                               ),
                             ),
                           ],
@@ -325,7 +375,7 @@ class BudgetResultScreen extends StatelessWidget {
               if (!hasStore && result.productAvailabilities != null && result.productAvailabilities!.isNotEmpty) ...[
                 const Text(
                   '📋 Status Ketersediaan Barang',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.ink),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
                 ),
                 const SizedBox(height: 8),
                 ListView.builder(
@@ -334,23 +384,23 @@ class BudgetResultScreen extends StatelessWidget {
                   itemCount: result.productAvailabilities!.length,
                   itemBuilder: (context, index) {
                     final avail = result.productAvailabilities![index];
-                    return Card(
+                    return Container(
                       margin: const EdgeInsets.symmetric(vertical: 4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.m),
-                        side: BorderSide(
-                          color: avail.isAvailable ? AppColors.line : AppColors.error,
+                      decoration: BoxDecoration(
+                        color: avail.isAvailable ? Colors.white : const Color(0xFFFEF2F2),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: avail.isAvailable ? const Color(0xFFE5E7EB) : const Color(0xFFFCA5A5),
                         ),
                       ),
-                      color: avail.isAvailable ? AppColors.paper : AppColors.errorSoft,
                       child: Padding(
-                        padding: const EdgeInsets.all(12.0),
+                        padding: const EdgeInsets.all(14.0),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Icon(
-                              avail.isAvailable ? Icons.check_circle_outline : Icons.cancel_outlined,
-                              color: avail.isAvailable ? AppColors.accent : AppColors.error,
+                              avail.isAvailable ? Icons.check_circle_outline_rounded : Icons.cancel_outlined,
+                              color: avail.isAvailable ? const Color(0xFF059669) : const Color(0xFFDC2626),
                               size: 22,
                             ),
                             const SizedBox(width: 10),
@@ -360,14 +410,14 @@ class BudgetResultScreen extends StatelessWidget {
                                 children: [
                                   Text(
                                     avail.namaProduk,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.ink),
+                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF111827)),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     avail.isAvailable
                                         ? 'Tersedia terendah di ${avail.tokoTerendah}'
                                         : 'Tidak tersedia di toko mana pun',
-                                    style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
                                   ),
                                 ],
                               ),
@@ -377,18 +427,18 @@ class BudgetResultScreen extends StatelessWidget {
                               Text(
                                 _formatRupiah(avail.hargaTerendah ?? 0.0),
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w800,
                                   fontSize: 14,
-                                  color: AppColors.accent,
+                                  color: Color(0xFF059669),
                                 ),
                               )
                             else
                               const Text(
                                 'Tidak Tersedia',
                                 style: TextStyle(
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w800,
                                   fontSize: 12,
-                                  color: AppColors.error,
+                                  color: Color(0xFFDC2626),
                                 ),
                               ),
                           ],
@@ -404,7 +454,7 @@ class BudgetResultScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 const Text(
                   '🏪 Alternatif Toko Lainnya',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.ink),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
                 ),
                 const SizedBox(height: 8),
                 ListView.builder(
@@ -415,15 +465,22 @@ class BudgetResultScreen extends StatelessWidget {
                     final alt = result.storeAlternatives![index];
                     final diff = alt.totalCost - result.totalCost;
                     final diffStr = diff >= 0 ? '+${_formatRupiah(diff)}' : _formatRupiah(diff);
-                    return Card(
-                      color: AppColors.paper,
+                    return Container(
                       margin: const EdgeInsets.symmetric(vertical: 4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.m),
-                        side: const BorderSide(color: AppColors.line),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE5E7EB)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.all(12.0),
+                        padding: const EdgeInsets.all(14.0),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -433,12 +490,12 @@ class BudgetResultScreen extends StatelessWidget {
                                 children: [
                                   Text(
                                     alt.storeInfo.nama,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.ink),
+                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF111827)),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     'Sisa Budget: ${_formatRupiah(alt.remainingBudget)}',
-                                    style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
                                   ),
                                 ],
                               ),
@@ -450,18 +507,18 @@ class BudgetResultScreen extends StatelessWidget {
                                 Text(
                                   _formatRupiah(alt.totalCost),
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w800,
                                     fontSize: 14,
-                                    color: AppColors.ink,
+                                    color: Color(0xFF111827),
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   diffStr,
                                   style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: diff >= 0 ? AppColors.error : AppColors.accent,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: diff >= 0 ? const Color(0xFFDC2626) : const Color(0xFF059669),
                                   ),
                                 ),
                               ],

@@ -32,63 +32,76 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
   void _showStoreDetail(BuildContext context, StoreNearby store) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.0)),
       ),
-      backgroundColor: AppColors.paper,
+      backgroundColor: Colors.white,
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: Text(
-                      store.nama,
-                      style: AppTextStyles.titleSmall.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18.0,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          store.nama,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 18.0,
+                            color: Color(0xFF111827),
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFFEDD5),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.storefront_rounded,
+                          color: Color(0xFFEA580C),
+                          size: 24,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: AppSpacing.s),
-                  const Icon(
-                    Icons.storefront,
-                    color: AppColors.accent,
-                    size: 28,
+                  const SizedBox(height: 12),
+                  const Divider(color: Color(0xFFF1F5F9)),
+                  const SizedBox(height: 10),
+                  _buildDetailRow(Icons.pin_drop_outlined, 'Koordinat', 'Lat: ${store.lat.toStringAsFixed(6)}, Lng: ${store.lng.toStringAsFixed(6)}'),
+                  const SizedBox(height: 8),
+                  _buildDetailRow(Icons.directions_walk, 'Jarak dari lokasi Anda', '${store.jarakKm.toStringAsFixed(2)} km'),
+                  const SizedBox(height: 8),
+                  _buildDetailRow(Icons.cloud_queue_outlined, 'Sumber Data POI', store.source == 'osm' ? 'OpenStreetMap' : 'Database Lokal'),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF059669),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.m),
-              const Divider(color: AppColors.line),
-              const SizedBox(height: AppSpacing.m),
-              _buildDetailRow(Icons.pin_drop_outlined, 'Koordinat', 'Lat: ${store.lat.toStringAsFixed(6)}, Lng: ${store.lng.toStringAsFixed(6)}'),
-              const SizedBox(height: AppSpacing.s),
-              _buildDetailRow(Icons.directions_walk, 'Jarak dari lokasi Anda', '${store.jarakKm.toStringAsFixed(2)} km'),
-              const SizedBox(height: AppSpacing.s),
-              _buildDetailRow(Icons.cloud_queue_outlined, 'Sumber Data POI', store.source == 'osm' ? 'OpenStreetMap' : 'Database Lokal'),
-              const SizedBox(height: AppSpacing.xl),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: AppColors.paper,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.l),
-                    ),
-                  ),
-                  child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
+            ),
           ),
         );
       },
@@ -191,13 +204,28 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
     final hasData = !_isLoading && _userPosition != null && _storesResponse != null;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: const Text('Toko Terdekat'),
+        title: const Text(
+          'Toko Terdekat',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.3,
+            color: Color(0xFF111827),
+          ),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF111827),
         centerTitle: true,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(color: const Color(0xFFF1F5F9), height: 1.0),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF059669)),
             onPressed: _fetchLocationAndStores,
             tooltip: 'Segarkan Data',
           ),
@@ -428,25 +456,27 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
         duration: const Duration(milliseconds: 200),
         width: MediaQuery.of(context).size.width * 0.72,
         margin: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.s,
-          vertical: AppSpacing.s,
+          horizontal: 6.0,
+          vertical: 6.0,
         ),
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.l,
-          vertical: AppSpacing.s,
+          horizontal: 14.0,
+          vertical: 12.0,
         ),
         decoration: BoxDecoration(
-          color: AppColors.paper,
-          borderRadius: BorderRadius.circular(AppRadius.xl),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20.0),
           border: Border.all(
-            color: isSelected ? AppColors.accent : AppColors.line,
+            color: isSelected ? const Color(0xFF10B981) : const Color(0xFFF1F5F9),
             width: isSelected ? 1.8 : 1.0,
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.ink.withValues(alpha: isSelected ? 0.06 : 0.03),
+              color: isSelected
+                  ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                  : Colors.black.withValues(alpha: 0.04),
               blurRadius: isSelected ? 12 : 8,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -465,24 +495,35 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                         store.nama,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.bodyLarge.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.ink,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14.5,
+                          color: Color(0xFF111827),
                         ),
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Icon(
-                      Icons.storefront,
-                      color: isSelected ? AppColors.accent : AppColors.muted,
-                      size: 20.0,
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFEDD5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.storefront_rounded,
+                        color: Color(0xFFEA580C),
+                        size: 18.0,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.xs),
+                const SizedBox(height: 3),
                 Text(
                   'ID: ${store.storeId.length > 8 ? store.storeId.substring(0, 8) : store.storeId}...',
-                  style: AppTextStyles.bodySmall,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF9CA3AF),
+                  ),
                 ),
               ],
             ),
@@ -492,16 +533,17 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                 Row(
                   children: [
                     const Icon(
-                      Icons.directions_walk,
-                      size: 14.0,
-                      color: AppColors.accent,
+                      Icons.directions_walk_rounded,
+                      size: 15.0,
+                      color: Color(0xFF059669),
                     ),
                     const SizedBox(width: 4.0),
                     Text(
                       '${store.jarakKm.toStringAsFixed(2)} km',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.accent,
-                        fontWeight: FontWeight.bold,
+                      style: const TextStyle(
+                        color: Color(0xFF059669),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12.0,
                       ),
                     ),
                   ],
@@ -511,23 +553,23 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 4.0),
+            const SizedBox(height: 6.0),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () => _showStoreDetail(context, store),
-                icon: const Icon(Icons.info_outline, size: 14.0),
+                icon: const Icon(Icons.info_outline_rounded, size: 14.0),
                 label: const Text(
                   'Detail Toko',
                   style: TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  backgroundColor: AppColors.accentSoft,
-                  foregroundColor: AppColors.accent,
+                  padding: const EdgeInsets.symmetric(vertical: 9),
+                  backgroundColor: isSelected ? const Color(0xFF059669) : const Color(0xFFECFDF5),
+                  foregroundColor: isSelected ? Colors.white : const Color(0xFF059669),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.m),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
               ),

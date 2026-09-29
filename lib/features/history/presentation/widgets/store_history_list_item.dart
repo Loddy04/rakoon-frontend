@@ -42,19 +42,26 @@ class StoreHistoryListView extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : AppColors.paper,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF334155) : AppColors.line,
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE5E7EB),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           // Table header
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            color: isDark ? AppColors.ink : AppColors.card,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF9FAFB),
             child: const Row(
               children: [
                 Expanded(
@@ -62,9 +69,9 @@ class StoreHistoryListView extends StatelessWidget {
                     'TOKO',
                     style: TextStyle(
                       fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                      color: AppColors.muted,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                      color: Color(0xFF6B7280),
                     ),
                   ),
                 ),
@@ -72,15 +79,15 @@ class StoreHistoryListView extends StatelessWidget {
                   'HARGA',
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                    color: AppColors.muted,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.6,
+                    color: Color(0xFF6B7280),
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, thickness: 1, color: AppColors.line),
+          const Divider(height: 1, thickness: 1, color: Color(0xFFE5E7EB)),
           // Table items
           ListView.separated(
             shrinkWrap: true,
@@ -89,7 +96,7 @@ class StoreHistoryListView extends StatelessWidget {
             separatorBuilder: (context, index) => Divider(
               height: 1,
               thickness: 1,
-              color: isDark ? const Color(0xFF334155) : AppColors.line,
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFF3F4F6),
             ),
             itemBuilder: (context, index) {
               final item = uniqueItems[index];
@@ -104,12 +111,19 @@ class StoreHistoryListView extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.storefront_outlined,
-                      size: 18,
-                      color: AppColors.muted,
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF0F2F24) : const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.storefront_rounded,
+                        size: 16,
+                        color: Color(0xFF059669),
+                      ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Wrap(
                         crossAxisAlignment: WrapCrossAlignment.center,
@@ -120,10 +134,10 @@ class StoreHistoryListView extends StatelessWidget {
                             item.storeName,
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                               color: isDark
                                   ? AppColors.paper
-                                  : AppColors.ink,
+                                  : const Color(0xFF1F2937),
                             ),
                           ),
                           if (showTermurah)
@@ -138,10 +152,10 @@ class StoreHistoryListView extends StatelessWidget {
                       formatRp(item.price),
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         color: isLowest
-                            ? AppColors.accent
-                            : (isDark ? AppColors.paper : AppColors.ink),
+                            ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
+                            : (isDark ? AppColors.paper : const Color(0xFF111827)),
                       ),
                     ),
                   ],

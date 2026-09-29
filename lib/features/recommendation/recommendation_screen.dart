@@ -73,8 +73,29 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: const Text('Best Value Recommendation', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+        elevation: 0,
+        iconTheme: IconThemeData(
+          color: isDark ? AppColors.paper : const Color(0xFF111827),
+        ),
+        title: Text(
+          'Best Value Recommendation',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            letterSpacing: -0.3,
+            color: isDark ? AppColors.paper : const Color(0xFF111827),
+          ),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE5E7EB),
+            height: 1.0,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

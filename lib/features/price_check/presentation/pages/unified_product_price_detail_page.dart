@@ -7,7 +7,6 @@ import 'package:rakoon_frontend/features/history/data/models/price_history_item.
 import 'package:rakoon_frontend/features/price_check/presentation/providers/price_check_provider.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
-import 'package:rakoon_frontend/widgets/bouncy_button.dart';
 import 'package:rakoon_frontend/widgets/product_card.dart';
 import 'package:rakoon_frontend/widgets/rakoon_location_map.dart';
 
@@ -212,37 +211,37 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                     width: 8,
                     height: 8,
                     decoration: const BoxDecoration(
-                      color: AppColors.graphite,
+                      color: Color(0xFF059669),
                       shape: BoxShape.circle,
                     ),
                   ),
                   const SizedBox(width: 6),
-                  Text(
+                  const Text(
                     'Terendah: ',
-                    style: AppTextStyles.bodySmall.copyWith(fontSize: 11, color: AppColors.fog),
+                    style: TextStyle(fontSize: 11.5, color: Color(0xFF6B7280)),
                   ),
                   Text(
                     formatRp(minPrice),
-                    style: AppTextStyles.bodySmall.copyWith(
-                      fontSize: 11,
+                    style: const TextStyle(
+                      fontSize: 11.5,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.graphite,
+                      color: Color(0xFF059669),
                     ),
                   ),
                 ],
               ),
               Row(
                 children: [
-                  Text(
+                  const Text(
                     'Tertinggi: ',
-                    style: AppTextStyles.bodySmall.copyWith(fontSize: 11, color: AppColors.fog),
+                    style: TextStyle(fontSize: 11.5, color: Color(0xFF6B7280)),
                   ),
                   Text(
                     formatRp(maxPrice),
-                    style: AppTextStyles.bodySmall.copyWith(
-                      fontSize: 11,
+                    style: const TextStyle(
+                      fontSize: 11.5,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.graphite,
+                      color: Color(0xFF111827),
                     ),
                   ),
                 ],
@@ -264,13 +263,13 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                   horizontalLines: [
                     HorizontalLine(
                       y: maxPrice,
-                      color: AppColors.graphite.withValues(alpha: 0.35),
+                      color: const Color(0xFFE5E7EB),
                       strokeWidth: 1.2,
                       dashArray: [5, 5],
                     ),
                     HorizontalLine(
                       y: minPrice,
-                      color: AppColors.graphite.withValues(alpha: 0.35),
+                      color: const Color(0xFF10B981).withValues(alpha: 0.4),
                       strokeWidth: 1.2,
                       dashArray: [5, 5],
                     ),
@@ -292,9 +291,9 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                               padding: const EdgeInsets.only(top: 6),
                               child: Text(
                                 _formatShortDate(trendPoints[idx].date),
-                                style: AppTextStyles.bodySmall.copyWith(
+                                style: const TextStyle(
                                   fontSize: 10,
-                                  color: AppColors.fog,
+                                  color: Color(0xFF9CA3AF),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -310,9 +309,10 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                 lineBarsData: [
                   LineChartBarData(
                     spots: spots,
-                    isCurved: false,
-                    color: AppColors.graphite,
-                    barWidth: 2.5,
+                    isCurved: true,
+                    curveSmoothness: 0.35,
+                    color: const Color(0xFF059669),
+                    barWidth: 2.8,
                     isStrokeCapRound: true,
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
@@ -321,8 +321,8 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          AppColors.graphite.withValues(alpha: 0.10),
-                          AppColors.graphite.withValues(alpha: 0.0),
+                          const Color(0xFF10B981).withValues(alpha: 0.22),
+                          const Color(0xFF10B981).withValues(alpha: 0.0),
                         ],
                       ),
                     ),
@@ -343,36 +343,47 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
         : null;
 
     return Scaffold(
-      backgroundColor: AppColors.paper,
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           'DETAIL HARGA PRODUK',
-          style: AppTextStyles.subheading.copyWith(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w900,
-            letterSpacing: 1.5,
-            color: AppColors.graphite,
+            letterSpacing: 1.0,
+            color: Color(0xFF111827),
           ),
         ),
         elevation: 0,
-        backgroundColor: AppColors.paper,
-        foregroundColor: AppColors.graphite,
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF111827),
         centerTitle: true,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(color: const Color(0xFFF1F5F9), height: 1.0),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.s16),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Top Section: Product Summary Header
+              // 1. Top Section: Product Summary Header Card
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.s16),
+                padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
-                  color: AppColors.softWhite,
-                  borderRadius: BorderRadius.circular(AppRadius.cards),
-                  border: Border.all(color: AppColors.graphite, width: 1),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20.0),
+                  border: Border.all(color: const Color(0xFFF1F5F9), width: 1.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -381,18 +392,17 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: AppColors.paper,
-                            borderRadius: BorderRadius.circular(AppRadius.cards),
-                            border: Border.all(color: AppColors.graphite.withValues(alpha: 0.2)),
+                            color: const Color(0xFFECFDF5),
+                            borderRadius: BorderRadius.circular(12.0),
                           ),
                           child: Text(
                             sizeInfo != null ? '$sizeInfo · ${widget.product.kategori}' : widget.product.kategori,
-                            style: AppTextStyles.bodySmall.copyWith(
+                            style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.graphite,
+                              color: Color(0xFF059669),
                             ),
                           ),
                         ),
@@ -404,35 +414,36 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                         ),
                       ],
                     ),
-                    const SizedBox(height: AppSpacing.s12),
+                    const SizedBox(height: 12),
                     Text(
                       widget.product.nama.toUpperCase(),
-                      style: AppTextStyles.headingSm.copyWith(
-                        fontSize: 18,
+                      style: const TextStyle(
+                        fontSize: 17,
                         fontWeight: FontWeight.w900,
-                        color: AppColors.graphite,
-                        height: 1.2,
+                        color: Color(0xFF111827),
+                        height: 1.25,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.s12),
+                    const SizedBox(height: 10),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.baseline,
                       textBaseline: TextBaseline.alphabetic,
                       children: [
                         Text(
                           formatRp(widget.product.harga),
-                          style: AppTextStyles.headingLg.copyWith(
-                            fontSize: 24,
+                          style: const TextStyle(
+                            fontSize: 22,
                             fontWeight: FontWeight.w900,
-                            color: AppColors.graphite,
+                            color: Color(0xFF059669),
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.s12),
-                        Text(
+                        const SizedBox(width: 8),
+                        const Text(
                           'harga terendah',
-                          style: AppTextStyles.bodySmall.copyWith(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.fog,
+                            color: Color(0xFF6B7280),
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -440,16 +451,23 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                   ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.s20),
+              const SizedBox(height: 16),
 
               // 2. Middle Section: Price History Chart Card
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.s16),
+                padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
-                  color: AppColors.paper,
-                  borderRadius: BorderRadius.circular(AppRadius.cards),
-                  border: Border.all(color: AppColors.graphite, width: 1),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20.0),
+                  border: Border.all(color: const Color(0xFFF1F5F9), width: 1.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,19 +475,30 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
+                        const Text(
                           'TREN FLUKTUASI HARGA',
-                          style: AppTextStyles.subheading.copyWith(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w900,
-                            letterSpacing: 1.2,
-                            color: AppColors.graphite,
+                            letterSpacing: 0.5,
+                            color: Color(0xFF111827),
                           ),
                         ),
-                        const Icon(Icons.show_chart_rounded, color: AppColors.periwinkle, size: 20),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFECFDF5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.show_chart_rounded,
+                            color: Color(0xFF059669),
+                            size: 18,
+                          ),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: AppSpacing.s12),
+                    const SizedBox(height: 12),
 
                     // Time range filter chips (1M, 3M, 6M, Semua)
                     ListenableBuilder(
@@ -487,17 +516,36 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                             final isSelected = _priceCheckProvider.selectedRange == opt['value'];
                             return Padding(
                               padding: const EdgeInsets.only(right: 8),
-                              child: BouncyButton(
-                                onPressed: () => _onRangeChanged(opt['value']!),
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                borderRadius: BorderRadius.circular(AppRadius.cards),
-                                variant: isSelected ? BouncyButtonVariant.accentAction : BouncyButtonVariant.primaryPill,
-                                child: Text(
-                                  opt['label']!,
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    fontSize: 11,
-                                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                    color: isSelected ? AppColors.paper : AppColors.graphite,
+                              child: GestureDetector(
+                                onTap: () => _onRangeChanged(opt['value']!),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    gradient: isSelected
+                                        ? const LinearGradient(
+                                            colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                          )
+                                        : null,
+                                    color: isSelected ? null : const Color(0xFFF3F4F6),
+                                    borderRadius: BorderRadius.circular(16.0),
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                                              blurRadius: 6,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                  child: Text(
+                                    opt['label']!,
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                      color: isSelected ? Colors.white : const Color(0xFF4B5563),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -506,7 +554,7 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                         );
                       },
                     ),
-                    const SizedBox(height: AppSpacing.s12),
+                    const SizedBox(height: 12),
 
                     ListenableBuilder(
                       listenable: _priceCheckProvider,
@@ -515,7 +563,7 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                           return const SizedBox(
                             height: 180,
                             child: Center(
-                              child: CircularProgressIndicator(color: AppColors.periwinkle),
+                              child: CircularProgressIndicator(color: Color(0xFF059669)),
                             ),
                           );
                         }
@@ -527,49 +575,67 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                   ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.s20),
+              const SizedBox(height: 20),
 
               // 3. Bottom Section: Mini Map & Store Price Comparison List
-              Text(
+              const Text(
                 'PERBANDINGAN DI TOKO TERDEKAT',
-                style: AppTextStyles.subheading.copyWith(
-                  fontSize: 13,
+                style: TextStyle(
+                  fontSize: 14,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                  color: AppColors.graphite,
+                  letterSpacing: 0.3,
+                  color: Color(0xFF111827),
                 ),
               ),
-              const SizedBox(height: AppSpacing.s12),
+              const SizedBox(height: 12),
 
-              // Compact Interactive Mini Map (Gesture collision safe)
-              ListenableBuilder(
-                listenable: _priceCheckProvider,
-                builder: (context, child) {
-                  final comparisonItems = _priceCheckProvider.comparisonResponse?.comparison ?? [];
-                  final storeMarkers = <MapStoreMarker>[];
+              // Compact Interactive Mini Map
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20.0),
+                  child: ListenableBuilder(
+                    listenable: _priceCheckProvider,
+                    builder: (context, child) {
+                      final comparisonItems = _priceCheckProvider.comparisonResponse?.comparison ?? [];
+                      final storeMarkers = <MapStoreMarker>[];
 
-                  for (final item in comparisonItems) {
-                    storeMarkers.add(
-                      MapStoreMarker(
-                        storeId: item.storeId,
-                        lat: item.lat,
-                        lng: item.lng,
-                        label: item.namaToko,
-                      ),
-                    );
-                  }
+                      for (final item in comparisonItems) {
+                        storeMarkers.add(
+                          MapStoreMarker(
+                            storeId: item.storeId,
+                            lat: item.lat,
+                            lng: item.lng,
+                            label: item.namaToko,
+                          ),
+                        );
+                      }
 
-                  return RakoonLocationMap(
-                    userLat: widget.userLat,
-                    userLng: widget.userLng,
-                    mapController: _mapController,
-                    markers: storeMarkers,
-                    height: 160,
-                    margin: EdgeInsets.zero,
-                  );
-                },
+                      return RakoonLocationMap(
+                        userLat: widget.userLat,
+                        userLng: widget.userLng,
+                        mapController: _mapController,
+                        markers: storeMarkers,
+                        height: 160,
+                        margin: EdgeInsets.zero,
+                        borderRadius: BorderRadius.circular(20.0),
+                        border: Border.all(color: const Color(0xFFF1F5F9)),
+                        boxShadow: const [],
+                      );
+                    },
+                  ),
+                ),
               ),
-              const SizedBox(height: AppSpacing.s16),
+              const SizedBox(height: 16),
 
               // Store Price Comparison List
               ListenableBuilder(
@@ -578,8 +644,8 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                   if (_priceCheckProvider.isDetailLoading) {
                     return const Center(
                       child: Padding(
-                        padding: EdgeInsets.all(AppSpacing.cardPadding),
-                        child: CircularProgressIndicator(color: AppColors.periwinkle),
+                        padding: EdgeInsets.all(24.0),
+                        child: CircularProgressIndicator(color: Color(0xFF059669)),
                       ),
                     );
                   }
@@ -588,18 +654,21 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
 
                   if (comparisonItems.isEmpty) {
                     return Container(
-                      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+                      padding: const EdgeInsets.all(24.0),
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: AppColors.softWhite,
-                        borderRadius: BorderRadius.circular(AppRadius.cards),
-                        border: Border.all(color: AppColors.graphite.withValues(alpha: 0.2)),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18.0),
+                        border: Border.all(color: const Color(0xFFF1F5F9)),
                       ),
-                      child: Center(
+                      child: const Center(
                         child: Text(
                           'Belum ada data perbandingan harga toko di sekitar lokasi Anda.',
                           textAlign: TextAlign.center,
-                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.fog),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6B7280),
+                          ),
                         ),
                       ),
                     );
@@ -617,20 +686,29 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: sortedList.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.s12),
+                    separatorBuilder: (context, index) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       final item = sortedList[index];
                       final isCheapest = (index == 0 && item.hargaTerbaru != null);
 
                       return Container(
-                        padding: const EdgeInsets.all(AppSpacing.s16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
                         decoration: BoxDecoration(
-                          color: isCheapest ? AppColors.softWhite : AppColors.paper,
-                          borderRadius: BorderRadius.circular(AppRadius.cards),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18.0),
                           border: Border.all(
-                            color: isCheapest ? AppColors.graphite : AppColors.graphite.withValues(alpha: 0.2),
+                            color: isCheapest ? const Color(0xFF10B981) : const Color(0xFFF1F5F9),
                             width: isCheapest ? 1.5 : 1.0,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: isCheapest
+                                  ? const Color(0xFF10B981).withValues(alpha: 0.08)
+                                  : Colors.black.withValues(alpha: 0.03),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -639,58 +717,84 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Expanded(
-                                  child: Text(
-                                    item.namaToko,
-                                    style: AppTextStyles.subheading.copyWith(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppColors.graphite,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(7),
+                                        decoration: BoxDecoration(
+                                          color: isCheapest ? const Color(0xFFECFDF5) : const Color(0xFFF3F4F6),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          Icons.storefront_rounded,
+                                          size: 16,
+                                          color: isCheapest ? const Color(0xFF059669) : const Color(0xFF6B7280),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          item.namaToko,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w800,
+                                            color: Color(0xFF111827),
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 if (isCheapest)
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
-                                      color: AppColors.graphite,
-                                      borderRadius: BorderRadius.circular(AppRadius.cards),
+                                      color: const Color(0xFFD1FAE5),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: Text(
+                                    child: const Text(
                                       'TERMURAH',
-                                      style: AppTextStyles.bodySmall.copyWith(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w900,
-                                        color: AppColors.paper,
-                                        letterSpacing: 0.8,
+                                      style: TextStyle(
+                                        color: Color(0xFF059669),
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w800,
                                       ),
                                     ),
                                   ),
                               ],
                             ),
-                            const SizedBox(height: AppSpacing.s12),
-                            const Divider(height: 1, color: AppColors.line),
-                            const SizedBox(height: AppSpacing.s12),
+                            const SizedBox(height: 10),
+                            const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                            const SizedBox(height: 10),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(Icons.directions_walk_rounded, size: 16, color: AppColors.fog),
+                                    const Icon(
+                                      Icons.directions_walk_rounded,
+                                      size: 15,
+                                      color: Color(0xFF059669),
+                                    ),
                                     const SizedBox(width: 4),
                                     Text(
                                       ProductCard.formatDistance(item.jarakKm),
-                                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.fog),
+                                      style: const TextStyle(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF6B7280),
+                                      ),
                                     ),
                                   ],
                                 ),
                                 Text(
                                   item.hargaTerbaru != null ? formatRp(item.hargaTerbaru!.toDouble()) : 'N/A',
-                                  style: AppTextStyles.subheading.copyWith(
+                                  style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w900,
-                                    color: AppColors.graphite,
+                                    color: isCheapest ? const Color(0xFF059669) : const Color(0xFF111827),
                                   ),
                                 ),
                               ],
@@ -698,9 +802,9 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                             const SizedBox(height: 4),
                             Text(
                               'Update: ${ProductCard.formatTimeAgo(item.tanggalUpdate)}',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                fontSize: 11,
-                                color: AppColors.fog,
+                              style: const TextStyle(
+                                fontSize: 10.5,
+                                color: Color(0xFF9CA3AF),
                               ),
                             ),
                           ],
