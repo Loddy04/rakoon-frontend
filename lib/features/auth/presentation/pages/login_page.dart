@@ -77,13 +77,25 @@ class LoginPage extends StatelessWidget {
                   ),
                   GestureDetector(
                     key: const Key('goto_register_button'),
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      final result = await Navigator.push<bool>(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const RegisterPage(),
                         ),
                       );
+                      if (result == true && context.mounted) {
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context, true);
+                        } else {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AppShell(),
+                            ),
+                          );
+                        }
+                      }
                     },
                     child: Text(
                       'Daftar Sekarang',

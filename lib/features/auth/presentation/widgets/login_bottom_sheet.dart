@@ -97,13 +97,16 @@ class LoginBottomSheet extends StatelessWidget {
                   ),
                   GestureDetector(
                     key: const Key('goto_register_button'),
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      final result = await Navigator.push<bool>(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const RegisterPage(),
                         ),
                       );
+                      if (result == true && context.mounted) {
+                        Navigator.pop(context, true);
+                      }
                     },
                     child: Text(
                       'Daftar Sekarang',
