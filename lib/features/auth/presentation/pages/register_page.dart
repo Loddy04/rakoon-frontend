@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:rakoon_frontend/features/app_shell/presentation/pages/app_shell.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key});
+  final VoidCallback? onSuccess;
+
+  const RegisterPage({super.key, this.onSuccess});
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -28,6 +31,22 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
+  void _handleSuccess() {
+    if (!mounted) return;
+    if (widget.onSuccess != null) {
+      widget.onSuccess!();
+    } else if (Navigator.canPop(context)) {
+      Navigator.pop(context, true);
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const AppShell(),
+        ),
+      );
+    }
+  }
+
   Future<void> _handleGoogleRegister() async {
     setState(() {
       _isGoogleLoading = true;
@@ -37,9 +56,7 @@ class _RegisterPageState extends State<RegisterPage> {
     try {
       final response = await AuthService.signInWithGoogle();
       if (response.session != null) {
-        if (mounted) {
-          Navigator.pop(context);
-        }
+        _handleSuccess();
       }
     } on AuthException catch (e) {
       if (!e.message.toLowerCase().contains('batal') &&
@@ -75,7 +92,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
       final response = await AuthService.signUp(email: email, password: password);
       
-      if (response.user != null) {
+      if (response.session != null) {
+        _handleSuccess();
+      } else if (response.user != null) {
         setState(() {
           _isSuccess = true;
         });
