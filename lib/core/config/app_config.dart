@@ -10,4 +10,10 @@ class AppConfig {
     'API_BASE_URL',
     defaultValue: 'https://rakoon-backend.onrender.com',
   );
+
+  /// Google OAuth Web Client ID for native Google Sign-In.
+  static const String googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+    defaultValue: '814624284238-pgqnd3ara3v98ulgpd4k7a4mh9m9qkpl.apps.googleusercontent.com',
+  );
 }

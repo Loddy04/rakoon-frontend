@@ -39,6 +39,8 @@ void main() {
       expect(find.byKey(const Key('email_field')), findsOneWidget);
       expect(find.byKey(const Key('password_field')), findsOneWidget);
       expect(find.byKey(const Key('login_button')), findsOneWidget);
+      expect(find.byKey(const Key('google_login_button')), findsOneWidget);
+      expect(find.text('Masuk dengan Google'), findsOneWidget);
       expect(find.text('Daftar Sekarang'), findsOneWidget);
     });
 
@@ -54,6 +56,8 @@ void main() {
       expect(find.byKey(const Key('password_field')), findsOneWidget);
       expect(find.byKey(const Key('confirm_password_field')), findsOneWidget);
       expect(find.byKey(const Key('register_button')), findsOneWidget);
+      expect(find.byKey(const Key('google_register_button')), findsOneWidget);
+      expect(find.text('Daftar dengan Google'), findsOneWidget);
       expect(find.text('Masuk'), findsOneWidget);
     });
 

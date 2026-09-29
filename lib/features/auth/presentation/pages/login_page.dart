@@ -21,10 +21,10 @@ class LoginPage extends StatelessWidget {
               // Rakoon Logo / Header
               const Icon(
                 Icons.analytics_outlined,
-                size: 80,
+                size: 60,
                 color: AppColors.accent,
               ),
-              const SizedBox(height: AppSpacing.s),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 'Rakoon',
                 style: AppTextStyles.titleLarge,
@@ -36,7 +36,7 @@ class LoginPage extends StatelessWidget {
                 style: AppTextStyles.bodySmall,
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: AppSpacing.xxxl),
+              const SizedBox(height: AppSpacing.l),
 
               // Card container containing LoginForm
               Card(

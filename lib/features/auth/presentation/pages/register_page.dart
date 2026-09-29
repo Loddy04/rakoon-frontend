@@ -16,6 +16,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
   bool _isSuccess = false;
   String? _errorMessage;
 
@@ -25,6 +26,39 @@ class _RegisterPageState extends State<RegisterPage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleGoogleRegister() async {
+    setState(() {
+      _isGoogleLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final response = await AuthService.signInWithGoogle();
+      if (response.session != null) {
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      }
+    } on AuthException catch (e) {
+      if (!e.message.toLowerCase().contains('batal') &&
+          !e.message.toLowerCase().contains('cancel')) {
+        setState(() {
+          _errorMessage = e.message;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Gagal mendaftar dengan Google: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGoogleLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _handleRegister() async {
@@ -77,16 +111,16 @@ class _RegisterPageState extends State<RegisterPage> {
               // Rakoon Header
               const Icon(
                 Icons.analytics_outlined,
-                size: 80,
+                size: 56,
                 color: AppColors.accent,
               ),
-              const SizedBox(height: AppSpacing.s),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 'Daftar Rakoon',
                 style: AppTextStyles.titleLarge,
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: AppSpacing.xxxl),
+              const SizedBox(height: AppSpacing.l),
 
               // Success View / Registration Form
               Card(
@@ -247,7 +281,7 @@ class _RegisterPageState extends State<RegisterPage> {
                               // Register Button
                               ElevatedButton(
                                 key: const Key('register_button'),
-                                onPressed: _isLoading ? null : _handleRegister,
+                                onPressed: (_isLoading || _isGoogleLoading) ? null : _handleRegister,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.accent,
                                   foregroundColor: AppColors.paper,
@@ -270,12 +304,82 @@ class _RegisterPageState extends State<RegisterPage> {
                                         style: AppTextStyles.bodyLarge.copyWith(color: AppColors.paper),
                                       ),
                               ),
+                              const SizedBox(height: AppSpacing.l),
+
+                              // Divider 'atau'
+                              Row(
+                                children: [
+                                  const Expanded(child: Divider(color: AppColors.line)),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
+                                    child: Text(
+                                      'atau',
+                                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
+                                    ),
+                                  ),
+                                  const Expanded(child: Divider(color: AppColors.line)),
+                                ],
+                              ),
+                              const SizedBox(height: AppSpacing.l),
+
+                              // Google Register Button
+                              OutlinedButton(
+                                key: const Key('google_register_button'),
+                                onPressed: (_isLoading || _isGoogleLoading) ? null : _handleGoogleRegister,
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.l),
+                                  side: const BorderSide(color: AppColors.line, width: 1.5),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(AppRadius.l),
+                                  ),
+                                  backgroundColor: AppColors.paper,
+                                ),
+                                child: _isGoogleLoading
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppColors.accent,
+                                        ),
+                                      )
+                                    : Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Container(
+                                            width: 22,
+                                            height: 22,
+                                            alignment: Alignment.center,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF4285F4),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: const Text(
+                                              'G',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: AppSpacing.m),
+                                          Text(
+                                            'Daftar dengan Google',
+                                            style: AppTextStyles.bodyLarge.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.graphite,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                              ),
                             ],
                           ),
                         ),
                     ),
                   ),
-              const SizedBox(height: AppSpacing.xxl),
+              const SizedBox(height: AppSpacing.l),
 
               // Login Navigation
               if (!_isSuccess)

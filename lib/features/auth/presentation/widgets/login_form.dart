@@ -17,6 +17,7 @@ class _LoginFormState extends State<LoginForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
   String? _errorMessage;
 
   @override
@@ -24,6 +25,39 @@ class _LoginFormState extends State<LoginForm> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    setState(() {
+      _isGoogleLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final response = await AuthService.signInWithGoogle();
+      if (response.session != null) {
+        if (widget.onSuccess != null) {
+          widget.onSuccess!();
+        }
+      }
+    } on AuthException catch (e) {
+      if (!e.message.toLowerCase().contains('batal') &&
+          !e.message.toLowerCase().contains('cancel')) {
+        setState(() {
+          _errorMessage = e.message;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Gagal masuk dengan Google: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGoogleLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _handleLogin() async {
@@ -170,7 +204,7 @@ class _LoginFormState extends State<LoginForm> {
           // Login Button
           ElevatedButton(
             key: const Key('login_button'),
-            onPressed: _isLoading ? null : _handleLogin,
+            onPressed: (_isLoading || _isGoogleLoading) ? null : _handleLogin,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.accent,
               foregroundColor: AppColors.paper,
@@ -193,6 +227,76 @@ class _LoginFormState extends State<LoginForm> {
                     style: AppTextStyles.bodyLarge.copyWith(
                       color: AppColors.paper,
                     ),
+                  ),
+          ),
+          const SizedBox(height: AppSpacing.l),
+
+          // Divider 'atau'
+          Row(
+            children: [
+              const Expanded(child: Divider(color: AppColors.line)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
+                child: Text(
+                  'atau',
+                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
+                ),
+              ),
+              const Expanded(child: Divider(color: AppColors.line)),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.l),
+
+          // Google Sign-In Button
+          OutlinedButton(
+            key: const Key('google_login_button'),
+            onPressed: (_isLoading || _isGoogleLoading) ? null : _handleGoogleLogin,
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.l),
+              side: const BorderSide(color: AppColors.line, width: 1.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.l),
+              ),
+              backgroundColor: AppColors.paper,
+            ),
+            child: _isGoogleLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.accent,
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 22,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4285F4),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'G',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.m),
+                      Text(
+                        'Masuk dengan Google',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.graphite,
+                        ),
+                      ),
+                    ],
                   ),
           ),
         ],
