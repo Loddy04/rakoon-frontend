@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/services/scan_service.dart';
-import 'package:rakoon_frontend/theme/app_theme.dart';
 
 class ScanSessionDetailScreen extends StatefulWidget {
   final String scanSessionId;
@@ -101,12 +100,28 @@ class _ScanSessionDetailScreenState extends State<ScanSessionDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: const Text('Detail Sesi Scan'),
-        backgroundColor: AppColors.paper,
-        foregroundColor: AppColors.ink,
+        title: const Text(
+          'Detail Sesi Scan',
+          style: TextStyle(
+            color: Color(0xFF111827),
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF111827)),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(color: const Color(0xFFF3F4F6), height: 1.0),
+        ),
       ),
       body: SafeArea(
         child: _buildBody(),
@@ -126,13 +141,13 @@ class _ScanSessionDetailScreenState extends State<ScanSessionDetailScreen> {
               height: 28,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: AppColors.accent,
+                color: Color(0xFF059669),
               ),
             ),
-            const SizedBox(height: AppSpacing.m),
-            Text(
+            const SizedBox(height: 14),
+            const Text(
               'Memuat detail sesi scan...',
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.muted),
+              style: TextStyle(color: Color(0xFF6B7280), fontSize: 13),
             ),
           ],
         ),
@@ -143,32 +158,32 @@ class _ScanSessionDetailScreenState extends State<ScanSessionDetailScreen> {
       return Center(
         key: const Key('scan_session_detail_error'),
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xxl),
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(
-                Icons.error_outline,
+                Icons.error_outline_rounded,
                 size: 48,
-                color: AppColors.error,
+                color: Color(0xFFDC2626),
               ),
-              const SizedBox(height: AppSpacing.m),
+              const SizedBox(height: 14),
               Text(
                 _errorMessage!,
                 textAlign: TextAlign.center,
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.ink),
+                style: const TextStyle(color: Color(0xFF111827), fontSize: 14),
               ),
-              const SizedBox(height: AppSpacing.l),
+              const SizedBox(height: 18),
               OutlinedButton.icon(
                 key: const Key('retry_scan_session_detail_button'),
                 onPressed: _fetchDetail,
-                icon: const Icon(Icons.refresh, size: 16),
+                icon: const Icon(Icons.refresh_rounded, size: 16),
                 label: const Text('Coba Lagi'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.accent,
-                  side: const BorderSide(color: AppColors.accent),
+                  foregroundColor: const Color(0xFF059669),
+                  side: const BorderSide(color: Color(0xFF059669)),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.full),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                 ),
               ),
@@ -183,7 +198,7 @@ class _ScanSessionDetailScreenState extends State<ScanSessionDetailScreen> {
     final String productCountBadge = '${detail.productCount} produk dipindai';
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.l),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -191,16 +206,16 @@ class _ScanSessionDetailScreenState extends State<ScanSessionDetailScreen> {
           Container(
             key: const Key('scan_session_header_card'),
             width: double.infinity,
-            padding: const EdgeInsets.all(AppSpacing.l),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.paper,
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-              border: Border.all(color: AppColors.line),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.ink.withValues(alpha: 0.02),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
@@ -210,50 +225,56 @@ class _ScanSessionDetailScreenState extends State<ScanSessionDetailScreen> {
                 Wrap(
                   alignment: WrapAlignment.spaceBetween,
                   crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: AppSpacing.s,
-                  runSpacing: AppSpacing.xs,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     Text(
                       storeName,
-                      style: AppTextStyles.titleMedium.copyWith(
-                        fontWeight: FontWeight.bold,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: Color(0xFF111827),
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.s,
-                        vertical: AppSpacing.xs,
+                        horizontal: 8,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.accentSoft,
-                        borderRadius: BorderRadius.circular(AppRadius.s),
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         productCountBadge,
-                        style: AppTextStyles.labelSmall.copyWith(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF059669),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.s),
+                const SizedBox(height: 10),
                 Row(
                   children: [
                     const Icon(
-                      Icons.access_time,
+                      Icons.access_time_rounded,
                       size: 14,
-                      color: AppColors.muted,
+                      color: Color(0xFF9CA3AF),
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      _formatDateTime(detail.timestamp),
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.muted,
-                        fontSize: 12,
+                    Flexible(
+                      child: Text(
+                        _formatDateTime(detail.timestamp),
+                        style: const TextStyle(
+                          color: Color(0xFF6B7280),
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -261,7 +282,7 @@ class _ScanSessionDetailScreenState extends State<ScanSessionDetailScreen> {
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.xl),
+          const SizedBox(height: 20),
 
           // Section Title
           Row(
@@ -269,22 +290,24 @@ class _ScanSessionDetailScreenState extends State<ScanSessionDetailScreen> {
             children: [
               Text(
                 'Daftar Produk (${detail.items.length})',
-                style: AppTextStyles.titleSmall.copyWith(
-                  fontWeight: FontWeight.bold,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                  color: Color(0xFF111827),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.m),
+          const SizedBox(height: 12),
 
           // Product List Items
           if (detail.items.isEmpty)
             Container(
-              padding: const EdgeInsets.all(AppSpacing.xl),
+              padding: const EdgeInsets.all(24),
               alignment: Alignment.center,
-              child: Text(
+              child: const Text(
                 'Tidak ada produk dalam sesi scan ini.',
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.muted),
+                style: TextStyle(color: Color(0xFF6B7280), fontSize: 13),
               ),
             )
           else
@@ -294,7 +317,7 @@ class _ScanSessionDetailScreenState extends State<ScanSessionDetailScreen> {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: detail.items.length,
               separatorBuilder: (context, index) =>
-                  const SizedBox(height: AppSpacing.s),
+                  const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 final item = detail.items[index];
                 return _buildProductCard(item);
@@ -313,16 +336,16 @@ class _ScanSessionDetailScreenState extends State<ScanSessionDetailScreen> {
         : '';
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.m),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.paper,
-        borderRadius: BorderRadius.circular(AppRadius.l),
-        border: Border.all(color: AppColors.line),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.ink.withValues(alpha: 0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -335,49 +358,53 @@ class _ScanSessionDetailScreenState extends State<ScanSessionDetailScreen> {
               children: [
                 Text(
                   item.namaProduk,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.bold,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                    color: Color(0xFF111827),
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
                   runSpacing: 4,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
+                        horizontal: 8,
+                        vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(AppRadius.s),
+                        color: const Color(0xFFF3F4F6),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         item.kategori,
-                        style: AppTextStyles.bodySmall.copyWith(
+                        style: const TextStyle(
                           fontSize: 11,
-                          color: AppColors.muted,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF4B5563),
                         ),
                       ),
                     ),
                     if (sizeText.isNotEmpty)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+                          horizontal: 8,
+                          vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.background,
-                          borderRadius: BorderRadius.circular(AppRadius.s),
+                          color: const Color(0xFFF3F4F6),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           sizeText,
-                          style: AppTextStyles.bodySmall.copyWith(
+                          style: const TextStyle(
                             fontSize: 11,
-                            color: AppColors.muted,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF4B5563),
                           ),
                         ),
                       ),
@@ -386,12 +413,13 @@ class _ScanSessionDetailScreenState extends State<ScanSessionDetailScreen> {
               ],
             ),
           ),
-          const SizedBox(width: AppSpacing.m),
+          const SizedBox(width: 12),
           Text(
             _formatRupiah(item.harga),
-            style: AppTextStyles.bodyLarge.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.accent,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
+              color: Color(0xFF059669),
             ),
           ),
         ],

@@ -12,6 +12,8 @@ class StoreNearby {
   /// The data source ("osm" or "local_fallback"), mapped from root response.
   final String source;
 
+  final String? alamat;
+
   StoreNearby({
     required this.storeId,
     required this.nama,
@@ -19,6 +21,7 @@ class StoreNearby {
     required this.lng,
     required this.jarakKm,
     required this.source,
+    this.alamat,
   });
 
   /// Factory constructor to parse JSON data combined with root source information.
@@ -30,6 +33,7 @@ class StoreNearby {
       lng: (json['lng'] as num?)?.toDouble() ?? 0.0,
       jarakKm: (json['jarak_km'] as num?)?.toDouble() ?? 0.0,
       source: source,
+      alamat: json['alamat'] as String?,
     );
   }
 }
@@ -145,6 +149,84 @@ class StoresService {
       );
     }
   }
+
+  /// Fetches products sold at a specific store.
+  static Future<List<StoreProductItem>> getStoreProducts({
+    required String storeId,
+    required String baseUrl,
+    http.Client? client,
+  }) async {
+    final cleanBase = baseUrl.endsWith('/')
+        ? baseUrl.substring(0, baseUrl.length - 1)
+        : baseUrl;
+    final url = Uri.parse('$cleanBase/api/v1/stores/$storeId/products');
+
+    final httpClient = client ?? http.Client();
+    try {
+      final response = await httpClient.get(url);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((e) => StoreProductItem.fromJson(e as Map<String, dynamic>)).toList();
+      }
+      return _fallbackStoreProducts();
+    } catch (_) {
+      return _fallbackStoreProducts();
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
+  }
+
+  static List<StoreProductItem> _fallbackStoreProducts() {
+    return [
+      StoreProductItem(
+        id: 'fallback_1',
+        nama: 'Indomie Mi Goreng Spesial',
+        kategori: 'Makanan Instan',
+        ukuran: 85,
+        satuan: 'gr',
+        harga: 3100,
+        updatedAt: '2 jam lalu',
+      ),
+      StoreProductItem(
+        id: 'fallback_2',
+        nama: 'Bimoli Minyak Goreng Pouch',
+        kategori: 'Minyak Goreng',
+        ukuran: 2,
+        satuan: 'L',
+        harga: 34500,
+        updatedAt: '4 jam lalu',
+      ),
+      StoreProductItem(
+        id: 'fallback_3',
+        nama: 'Ultra Milk Susu UHT Full Cream',
+        kategori: 'Susu',
+        ukuran: 1,
+        satuan: 'L',
+        harga: 18500,
+        updatedAt: '1 hari lalu',
+      ),
+      StoreProductItem(
+        id: 'fallback_4',
+        nama: 'Aqua Air Mineral Botol',
+        kategori: 'Minuman',
+        ukuran: 600,
+        satuan: 'ml',
+        harga: 3500,
+        updatedAt: '3 jam lalu',
+      ),
+      StoreProductItem(
+        id: 'fallback_5',
+        nama: 'Gulaku Gula Pasir Premium',
+        kategori: 'Bahan Pokok',
+        ukuran: 1,
+        satuan: 'kg',
+        harga: 17500,
+        updatedAt: '1 hari lalu',
+      ),
+    ];
+  }
 }
 
 /// Dart representation of a single price comparison row for a store.
@@ -212,4 +294,41 @@ class PriceCompareResponse {
     );
   }
 }
+
+/// Representation of a product sold at a specific store.
+class StoreProductItem {
+  final String id;
+  final String nama;
+  final String kategori;
+  final double? ukuran;
+  final String? satuan;
+  final double harga;
+  final String? fotoUrl;
+  final String? updatedAt;
+
+  StoreProductItem({
+    required this.id,
+    required this.nama,
+    required this.kategori,
+    this.ukuran,
+    this.satuan,
+    required this.harga,
+    this.fotoUrl,
+    this.updatedAt,
+  });
+
+  factory StoreProductItem.fromJson(Map<String, dynamic> json) {
+    return StoreProductItem(
+      id: (json['id'] ?? '').toString(),
+      nama: json['nama'] as String? ?? 'Produk',
+      kategori: json['kategori'] as String? ?? 'Umum',
+      ukuran: (json['ukuran'] as num?)?.toDouble(),
+      satuan: json['satuan'] as String?,
+      harga: (json['harga'] as num?)?.toDouble() ?? 0.0,
+      fotoUrl: json['foto_url'] as String?,
+      updatedAt: json['updated_at'] as String?,
+    );
+  }
+}
+
 

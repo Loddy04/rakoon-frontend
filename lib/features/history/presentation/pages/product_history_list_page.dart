@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rakoon_frontend/services/products_service.dart';
-import 'package:rakoon_frontend/theme/app_theme.dart';
 import '../../data/repositories/price_history_repository.dart';
 import '../providers/price_history_notifier.dart';
 import 'price_history_page.dart';
@@ -83,32 +82,50 @@ class _ProductHistoryListPageState extends State<ProductHistoryListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: const Text('Riwayat Produk Pindai'),
+        title: const Text(
+          'Riwayat Produk Pindai',
+          style: TextStyle(
+            color: Color(0xFF111827),
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+          ),
+        ),
+        centerTitle: true,
         elevation: 0,
-        backgroundColor: AppColors.paper,
-        foregroundColor: AppColors.ink,
+        scrolledUnderElevation: 0,
+        backgroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF111827)),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(color: const Color(0xFFF3F4F6), height: 1.0),
+        ),
       ),
       body: SafeArea(
         child: Column(
           children: [
             // Search Input Container
             Container(
-              color: AppColors.paper,
+              color: Colors.white,
               padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.l,
-                vertical: AppSpacing.m,
+                horizontal: 16,
+                vertical: 12,
               ),
               child: TextField(
                 controller: _searchController,
                 onChanged: _onSearchChanged,
+                style: const TextStyle(fontSize: 14, color: Color(0xFF111827)),
                 decoration: InputDecoration(
                   hintText: 'Cari produk yang pernah dipindai...',
-                  prefixIcon: const Icon(Icons.search, color: AppColors.muted),
+                  hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+                  prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF6B7280)),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear, color: AppColors.muted),
+                          icon: const Icon(Icons.clear_rounded, color: Color(0xFF9CA3AF)),
                           onPressed: () {
                             _searchController.clear();
                             _fetchProducts();
@@ -116,13 +133,22 @@ class _ProductHistoryListPageState extends State<ProductHistoryListPage> {
                         )
                       : null,
                   filled: true,
-                  fillColor: AppColors.background,
+                  fillColor: const Color(0xFFF3F4F6),
                   contentPadding: const EdgeInsets.symmetric(
-                    vertical: AppSpacing.s,
+                    horizontal: 16,
+                    vertical: 12,
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.l),
+                    borderRadius: BorderRadius.circular(24),
                     borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: const BorderSide(color: Color(0xFF059669), width: 1.5),
                   ),
                 ),
               ),
@@ -134,45 +160,48 @@ class _ProductHistoryListPageState extends State<ProductHistoryListPage> {
                 builder: (context) {
                   if (_isLoading) {
                     return const Center(
-                      child: CircularProgressIndicator(color: AppColors.accent),
+                      child: CircularProgressIndicator(color: Color(0xFF059669)),
                     );
                   }
 
                   if (_errorMessage != null) {
                     return Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.xxl),
+                        padding: const EdgeInsets.all(24.0),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Icon(
-                              Icons.error_outline,
+                              Icons.error_outline_rounded,
                               size: 48,
-                              color: AppColors.error,
+                              color: Color(0xFFDC2626),
                             ),
-                            const SizedBox(height: AppSpacing.l),
-                            Text(
+                            const SizedBox(height: 14),
+                            const Text(
                               'Gagal Memuat Produk',
-                              style: AppTextStyles.titleSmall,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                                color: Color(0xFF111827),
+                              ),
                             ),
-                            const SizedBox(height: AppSpacing.s),
+                            const SizedBox(height: 6),
                             Text(
                               _errorMessage!,
                               textAlign: TextAlign.center,
-                              style: AppTextStyles.bodySmall,
+                              style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
                             ),
-                            const SizedBox(height: AppSpacing.xl),
+                            const SizedBox(height: 18),
                             ElevatedButton(
                               onPressed: () => _fetchProducts(
                                 search: _searchController.text,
                               ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.accent,
-                                foregroundColor: AppColors.paper,
+                                backgroundColor: const Color(0xFF059669),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.full,
-                                  ),
+                                  borderRadius: BorderRadius.circular(20),
                                 ),
                               ),
                               child: const Text('Coba Lagi'),
@@ -188,34 +217,38 @@ class _ProductHistoryListPageState extends State<ProductHistoryListPage> {
                   if (products.isEmpty) {
                     return Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.xxl),
+                        padding: const EdgeInsets.all(24.0),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(AppSpacing.xl),
+                              padding: const EdgeInsets.all(20),
                               decoration: const BoxDecoration(
-                                color: AppColors.card,
+                                color: Color(0xFFECFDF5),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
-                                Icons.history_toggle_off,
+                                Icons.history_toggle_off_rounded,
                                 size: 48,
-                                color: AppColors.muted,
+                                color: Color(0xFF059669),
                               ),
                             ),
-                            const SizedBox(height: AppSpacing.l),
-                            Text(
+                            const SizedBox(height: 16),
+                            const Text(
                               'Belum Ada Riwayat Pindai',
-                              style: AppTextStyles.titleSmall,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                                color: Color(0xFF111827),
+                              ),
                             ),
-                            const SizedBox(height: AppSpacing.s),
+                            const SizedBox(height: 6),
                             Text(
                               _searchController.text.isNotEmpty
                                   ? 'Tidak ditemukan produk dengan kata pencarian tersebut.'
                                   : 'Produk yang Anda pindai dan konfirmasi akan terdaftar di sini.',
                               textAlign: TextAlign.center,
-                              style: AppTextStyles.bodySmall,
+                              style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
                             ),
                           ],
                         ),
@@ -226,24 +259,31 @@ class _ProductHistoryListPageState extends State<ProductHistoryListPage> {
                   return RefreshIndicator(
                     onRefresh: () =>
                         _fetchProducts(search: _searchController.text),
-                    color: AppColors.accent,
+                    color: const Color(0xFF059669),
                     child: ListView.separated(
-                      padding: const EdgeInsets.all(AppSpacing.l),
+                      padding: const EdgeInsets.all(16),
                       itemCount: products.length,
                       separatorBuilder: (context, index) =>
-                          const SizedBox(height: AppSpacing.m),
+                          const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final product = products[index];
 
                         return InkWell(
                           onTap: () => _navigateToPriceHistory(product),
-                          borderRadius: BorderRadius.circular(AppRadius.xl),
+                          borderRadius: BorderRadius.circular(20),
                           child: Container(
-                            padding: const EdgeInsets.all(AppSpacing.l),
+                            padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: AppColors.paper,
-                              borderRadius: BorderRadius.circular(AppRadius.xl),
-                              border: Border.all(color: AppColors.line),
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: const Color(0xFFE5E7EB)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.03),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: Row(
                               children: [
@@ -252,17 +292,15 @@ class _ProductHistoryListPageState extends State<ProductHistoryListPage> {
                                   width: 48,
                                   height: 48,
                                   decoration: BoxDecoration(
-                                    color: AppColors.background,
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.l,
-                                    ),
+                                    color: const Color(0xFFECFDF5),
+                                    borderRadius: BorderRadius.circular(14),
                                   ),
                                   child: const Icon(
                                     Icons.shopping_bag_outlined,
-                                    color: AppColors.muted,
+                                    color: Color(0xFF059669),
                                   ),
                                 ),
-                                const SizedBox(width: AppSpacing.l),
+                                const SizedBox(width: 14),
 
                                 // Product Info
                                 Expanded(
@@ -272,11 +310,15 @@ class _ProductHistoryListPageState extends State<ProductHistoryListPage> {
                                     children: [
                                       Text(
                                         product.nama,
-                                        style: AppTextStyles.bodyLarge,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 14,
+                                          color: Color(0xFF111827),
+                                        ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                      const SizedBox(height: 4),
+                                      const SizedBox(height: 5),
                                       Row(
                                         children: [
                                           // Category Badge
@@ -286,20 +328,16 @@ class _ProductHistoryListPageState extends State<ProductHistoryListPage> {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: AppColors.background,
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                    AppRadius.full,
-                                                  ),
+                                              color: const Color(0xFFF3F4F6),
+                                              borderRadius: BorderRadius.circular(8),
                                             ),
                                             child: Text(
                                               product.kategori,
-                                              style: AppTextStyles.bodySmall
-                                                  .copyWith(
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: AppColors.muted,
-                                                  ),
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF4B5563),
+                                              ),
                                             ),
                                           ),
                                           const SizedBox(width: 8),
@@ -307,17 +345,20 @@ class _ProductHistoryListPageState extends State<ProductHistoryListPage> {
                                           if (product.ukuran != null)
                                             Text(
                                               '${product.ukuran!.toStringAsFixed(product.ukuran! % 1 == 0 ? 0 : 1)} ${product.satuan ?? ""}',
-                                              style: AppTextStyles.bodySmall,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Color(0xFF6B7280),
+                                              ),
                                             ),
                                         ],
                                       ),
                                     ],
                                   ),
                                 ),
-                                const SizedBox(width: AppSpacing.s),
+                                const SizedBox(width: 8),
                                 const Icon(
-                                  Icons.chevron_right,
-                                  color: AppColors.muted,
+                                  Icons.chevron_right_rounded,
+                                  color: Color(0xFF9CA3AF),
                                 ),
                               ],
                             ),

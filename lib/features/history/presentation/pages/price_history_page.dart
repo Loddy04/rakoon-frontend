@@ -52,8 +52,16 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
         child: Column(
           children: [
             // Top App Bar Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                border: Border(
+                  bottom: BorderSide(
+                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE5E7EB),
+                  ),
+                ),
+              ),
               child: Row(
                 children: [
                   Semantics(
@@ -64,37 +72,38 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
                           widget.onBack ?? () => Navigator.of(context).maybePop(),
                       borderRadius: BorderRadius.circular(AppRadius.full),
                       child: Container(
-                        width: 48,
-                        height: 48,
+                        width: 44,
+                        height: 44,
                         alignment: Alignment.center,
                         child: Container(
-                          width: 36,
-                          height: 36,
+                          width: 38,
+                          height: 38,
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1E293B) : AppColors.paper,
+                            color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF9FAFB),
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isDark
                                   ? const Color(0xFF334155)
-                                  : AppColors.line,
+                                  : const Color(0xFFE5E7EB),
                             ),
                           ),
                           child: Icon(
-                            Icons.chevron_left,
-                            size: 20,
-                            color: isDark ? AppColors.paper : AppColors.ink,
+                            Icons.chevron_left_rounded,
+                            size: 24,
+                            color: isDark ? AppColors.paper : const Color(0xFF111827),
                           ),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Text(
                     'Riwayat Harga',
                     style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? AppColors.paper : AppColors.ink,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.3,
+                      color: isDark ? AppColors.paper : const Color(0xFF111827),
                     ),
                   ),
                 ],
@@ -534,16 +543,25 @@ class StoreFilterSelector extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: isSelected
-                ? (isDark ? AppColors.paper : AppColors.ink)
-                : (isDark ? const Color(0xFF1E293B) : AppColors.paper),
+                ? AppColors.primaryEmerald
+                : (isDark ? const Color(0xFF1E293B) : Colors.white),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isSelected
                   ? Colors.transparent
                   : (isDark
                         ? const Color(0xFF334155)
-                        : AppColors.line),
+                        : const Color(0xFFE5E7EB)),
             ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primaryEmerald.withValues(alpha: 0.25),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Text(
             label,
@@ -551,10 +569,10 @@ class StoreFilterSelector extends StatelessWidget {
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: isSelected
-                  ? (isDark ? AppColors.ink : AppColors.paper)
+                  ? Colors.white
                   : (isDark
                         ? const Color(0xFF94A3B8)
-                        : AppColors.muted),
+                        : const Color(0xFF4B5563)),
             ),
           ),
         ),

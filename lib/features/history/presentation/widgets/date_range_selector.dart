@@ -35,16 +35,25 @@ class DateRangeSelector extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? (isDark ? AppColors.paper : AppColors.ink)
-                    : (isDark ? const Color(0xFF1E293B) : AppColors.paper),
+                    ? AppColors.primaryEmerald
+                    : (isDark ? const Color(0xFF1E293B) : Colors.white),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isSelected
                       ? Colors.transparent
                       : (isDark
                             ? const Color(0xFF334155)
-                            : AppColors.line),
+                            : const Color(0xFFE5E7EB)),
                 ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primaryEmerald.withValues(alpha: 0.25),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
               ),
               child: Text(
                 r['label']!,
@@ -52,10 +61,10 @@ class DateRangeSelector extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: isSelected
-                      ? (isDark ? AppColors.ink : AppColors.paper)
+                      ? Colors.white
                       : (isDark
                             ? const Color(0xFF94A3B8)
-                            : AppColors.muted),
+                            : const Color(0xFF4B5563)),
                 ),
               ),
             ),

@@ -123,13 +123,28 @@ class _PriceComparisonScreenState extends State<PriceComparisonScreen> {
     final productName = _comparisonResponse?.namaProduk ?? widget.productName ?? 'Produk #${widget.productId}';
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: const Text('Perbandingan Harga'),
+        title: const Text(
+          'Perbandingan Harga',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.3,
+            color: Color(0xFF111827),
+          ),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF111827),
         centerTitle: true,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(color: const Color(0xFFF1F5F9), height: 1.0),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF059669)),
             onPressed: _fetchPriceComparison,
             tooltip: 'Segarkan Perbandingan',
           ),
@@ -247,18 +262,17 @@ class _PriceComparisonScreenState extends State<PriceComparisonScreen> {
       children: [
         // Product header card
         Container(
-          margin: const EdgeInsets.fromLTRB(
-            AppSpacing.l, AppSpacing.l, AppSpacing.l, AppSpacing.s),
-          padding: const EdgeInsets.all(AppSpacing.l),
+          margin: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: AppColors.paper,
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            border: Border.all(color: AppColors.line),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20.0),
+            border: Border.all(color: const Color(0xFFF1F5F9)),
             boxShadow: [
               BoxShadow(
-                color: AppColors.ink.withValues(alpha: 0.02),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
@@ -267,24 +281,27 @@ class _PriceComparisonScreenState extends State<PriceComparisonScreen> {
               Container(
                 height: 48,
                 width: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: BorderRadius.circular(AppRadius.l),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFECFDF5),
+                  shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.shopping_bag_outlined,
-                  color: AppColors.accent,
+                  Icons.shopping_bag_rounded,
+                  color: Color(0xFF059669),
+                  size: 24,
                 ),
               ),
-              const SizedBox(width: AppSpacing.m),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       productName,
-                      style: AppTextStyles.titleSmall.copyWith(
-                        fontWeight: FontWeight.bold,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15.0,
+                        color: Color(0xFF111827),
                       ),
                     ),
                   ],
@@ -310,15 +327,17 @@ class _PriceComparisonScreenState extends State<PriceComparisonScreen> {
           ),
 
         // Comparison list header
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl,
-            vertical: AppSpacing.xs,
+        const Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 10,
           ),
           child: Text(
             'Perbandingan di Toko Terdekat',
-            style: AppTextStyles.bodySmall.copyWith(
-              fontWeight: FontWeight.bold,
+            style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF111827),
             ),
           ),
         ),
@@ -329,8 +348,8 @@ class _PriceComparisonScreenState extends State<PriceComparisonScreen> {
               ? _buildEmptyState()
               : ListView.builder(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.l,
-                    vertical: AppSpacing.s,
+                    horizontal: 16,
+                    vertical: 6,
                   ),
                   itemCount: items.length,
                   itemBuilder: (context, index) {
@@ -350,20 +369,21 @@ class _PriceComparisonScreenState extends State<PriceComparisonScreen> {
                         }
                       },
                       child: Container(
-                        margin: const EdgeInsets.only(bottom: AppSpacing.m),
-                        padding: const EdgeInsets.all(AppSpacing.l),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.paper,
-                          borderRadius: BorderRadius.circular(AppRadius.xl),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20.0),
                           border: Border.all(
                             // cheapest always keeps accent border; selected also gets accent
-                            color: (isCheapest || isSelected) ? AppColors.accent : AppColors.line,
+                            color: (isCheapest || isSelected) ? AppColors.accent : const Color(0xFFF1F5F9),
                             width: (isCheapest || isSelected) ? 1.8 : 1.0,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.ink.withValues(
-                                alpha: isCheapest ? 0.05 : 0.02),
+                              color: isCheapest
+                                  ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                                  : Colors.black.withValues(alpha: 0.03),
                               blurRadius: isCheapest ? 10 : 6,
                               offset: const Offset(0, 3),
                             ),
@@ -380,19 +400,21 @@ class _PriceComparisonScreenState extends State<PriceComparisonScreen> {
                                 Expanded(
                                   child: Text(
                                     item.namaToko,
-                                    style: AppTextStyles.bodyLarge.copyWith(
-                                      fontWeight: FontWeight.bold,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 14.5,
+                                      color: Color(0xFF111827),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: AppSpacing.xs),
+                                const SizedBox(width: 8),
                                 if (isCheapest)
                                   const StatusBadge(status: 'Termurah')
                                 else if (!hasPrice)
                                   const StatusBadge(status: 'Belum ada data'),
                               ],
                             ),
-                            const SizedBox(height: AppSpacing.s),
+                            const SizedBox(height: 8),
 
                             // Divider line
                             const Divider(),

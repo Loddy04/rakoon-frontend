@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rakoon_frontend/services/products_service.dart';
 import 'package:rakoon_frontend/services/budget_shopping_service.dart';
+import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/features/budget_shopping/budget_result_screen.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/features/budget_shopping/utils/budget_parser.dart';
@@ -273,10 +274,28 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: const Color(0xFFF9FAFB),
         appBar: AppBar(
-          title: const Text('Smart Budget Shopping'),
+          title: const Text(
+            'Smart Budget Shopping',
+            style: TextStyle(
+              color: Color(0xFF111827),
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
+            ),
+          ),
           centerTitle: true,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF111827)),
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1.0),
+            child: Container(color: const Color(0xFFF3F4F6), height: 1.0),
+          ),
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -287,12 +306,12 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                 // 1. INPUT BUDGET
                 Container(
                   decoration: BoxDecoration(
-                    color: AppColors.paper,
-                    borderRadius: BorderRadius.circular(AppRadius.xl),
-                    border: Border.all(color: AppColors.line),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.ink.withValues(alpha: 0.03),
+                        color: Colors.black.withValues(alpha: 0.03),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -306,44 +325,67 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                         Row(
                           children: [
                             Container(
-                              width: 40,
-                              height: 40,
+                              width: 38,
+                              height: 38,
                               decoration: BoxDecoration(
-                                color: AppColors.background,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.l,
-                                ),
+                                color: const Color(0xFFECFDF5),
+                                borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Icon(
-                                Icons.payments_outlined,
-                                color: AppColors.ink,
+                                Icons.payments_rounded,
+                                color: Color(0xFF059669),
                                 size: 20,
                               ),
                             ),
                             const SizedBox(width: 12),
-                            Expanded(
+                            const Expanded(
                               child: Text(
                                 'Total Budget Belanja (Rupiah)',
-                                style: AppTextStyles.titleSmall,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                  color: Color(0xFF111827),
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 14),
                         Semantics(
                           label: 'Kolom input budget belanja',
                           container: true,
                           child: TextField(
                             controller: _budgetController,
                             keyboardType: TextInputType.number,
-                            style: AppTextStyles.bodyMedium,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF111827),
+                            ),
                             decoration: InputDecoration(
                               labelText: 'Masukkan nominal budget',
+                              labelStyle: const TextStyle(color: Color(0xFF6B7280), fontSize: 13),
                               prefixText: 'Rp ',
-                              prefixStyle: AppTextStyles.bodyMedium.copyWith(
-                                fontWeight: FontWeight.bold,
+                              prefixStyle: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                                color: Color(0xFF059669),
                               ),
-                              border: const OutlineInputBorder(),
+                              filled: true,
+                              fillColor: const Color(0xFFF9FAFB),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: const BorderSide(color: Color(0xFF059669), width: 1.8),
+                              ),
                             ),
                           ),
                         ),
@@ -358,23 +400,27 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                 Row(
                   children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(AppRadius.l),
+                        color: const Color(0xFFFFEDD5),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
-                        Icons.search_outlined,
-                        color: AppColors.ink,
+                        Icons.search_rounded,
+                        color: Color(0xFFEA580C),
                         size: 20,
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Expanded(
+                    const Expanded(
                       child: Text(
                         'Cari & Tambah Barang Kebutuhan',
-                        style: AppTextStyles.titleSmall,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: Color(0xFF111827),
+                        ),
                       ),
                     ),
                   ],
@@ -385,7 +431,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                   container: true,
                   child: TextField(
                     controller: _searchController,
-                    style: AppTextStyles.bodyMedium,
+                    style: const TextStyle(fontSize: 14, color: Color(0xFF111827)),
                     onChanged: (val) {
                       _searchDebounce?.cancel();
                       _searchDebounce = Timer(
@@ -397,10 +443,15 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                     },
                     decoration: InputDecoration(
                       labelText: 'Cari Nama Produk',
+                      labelStyle: const TextStyle(color: Color(0xFF6B7280), fontSize: 13),
                       hintText: 'Contoh: susu, roti',
+                      hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       prefixIcon: const Icon(
-                        Icons.search,
-                        color: AppColors.muted,
+                        Icons.search_rounded,
+                        color: Color(0xFF6B7280),
                       ),
                       suffixIcon: _isSearching
                           ? const Padding(
@@ -410,15 +461,15 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                                 height: 16,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: AppColors.accent,
+                                  color: Color(0xFF059669),
                                 ),
                               ),
                             )
                           : _searchController.text.isNotEmpty
                           ? IconButton(
                               icon: const Icon(
-                                Icons.clear,
-                                color: AppColors.muted,
+                                Icons.clear_rounded,
+                                color: Color(0xFF9CA3AF),
                               ),
                               onPressed: () {
                                 _searchController.clear();
@@ -426,7 +477,18 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                               },
                             )
                           : null,
-                      border: const OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: Color(0xFF059669), width: 1.8),
+                      ),
                     ),
                   ),
                 ),
@@ -434,43 +496,69 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                 // Search Results Dropdown List
                 if (_searchResults.isNotEmpty)
                   Container(
-                    margin: const EdgeInsets.only(top: 4),
-                    constraints: const BoxConstraints(maxHeight: 200),
+                    margin: const EdgeInsets.only(top: 6),
+                    constraints: const BoxConstraints(maxHeight: 220),
                     decoration: BoxDecoration(
-                      color: AppColors.paper,
-                      borderRadius: BorderRadius.circular(AppRadius.m),
-                      border: Border.all(color: AppColors.line),
-                      boxShadow: const [
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                      boxShadow: [
                         BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
                     child: Material(
-                      color: Colors.transparent,
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: _searchResults.length,
-                        itemBuilder: (context, index) {
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: _searchResults.length,
+                          separatorBuilder: (context, idx) => const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                          itemBuilder: (context, index) {
                           final item = _searchResults[index];
                           return ListTile(
                             dense: true,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            leading: Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFAF7F2),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFE8E4DC)),
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: BrandAssets.getProductAsset(item.nama) != null
+                                  ? Image.asset(BrandAssets.getProductAsset(item.nama)!, fit: BoxFit.contain)
+                                  : const Icon(Icons.inventory_2_outlined, color: Color(0xFF059669), size: 20),
+                            ),
                             title: Text(
                               item.nama,
-                              style: AppTextStyles.bodyLarge.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.ink,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                color: Color(0xFF111827),
                               ),
                             ),
                             subtitle: Text(
                               '${item.ukuran} ${item.satuan} • Kategori: ${item.kategori}',
-                              style: AppTextStyles.bodySmall,
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
                             ),
-                            trailing: const Icon(
-                              Icons.add_circle_outline,
-                              color: AppColors.accent,
+                            trailing: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFECFDF5),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.add_rounded,
+                                color: Color(0xFF059669),
+                                size: 20,
+                              ),
                             ),
                             onTap: () => _addSelectedProduct(item),
                           );
@@ -478,6 +566,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                       ),
                     ),
                   ),
+                ),
 
                 if (_searchController.text.isNotEmpty &&
                     _searchResults.isEmpty &&
@@ -486,45 +575,44 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                     padding: const EdgeInsets.only(top: 8.0, left: 4.0),
                     child: Text(
                       'Tidak ada produk yang ditemukan untuk "${_searchController.text}"',
-                      style: AppTextStyles.bodySmall.copyWith(
+                      style: const TextStyle(
                         fontStyle: FontStyle.italic,
+                        fontSize: 12,
+                        color: Color(0xFF6B7280),
                       ),
                     ),
                   ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
                 // ERROR DISPLAY
                 if (_errorMessage != null)
-                  Card(
-                    color: AppColors.errorSoft,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.m),
-                      side: const BorderSide(
-                        color: AppColors.error,
-                        width: 1.0,
-                      ),
-                    ),
+                  Container(
                     margin: const EdgeInsets.only(bottom: 16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            color: AppColors.error,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _errorMessage!,
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.error,
-                              ),
+                    padding: const EdgeInsets.all(12.0),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFFCA5A5)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          color: Color(0xFFDC2626),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: const TextStyle(
+                              color: Color(0xFFDC2626),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
 
@@ -532,65 +620,87 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                 Row(
                   children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(AppRadius.l),
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
-                        Icons.receipt_long_outlined,
-                        color: AppColors.ink,
+                        Icons.receipt_long_rounded,
+                        color: Color(0xFF2563EB),
                         size: 20,
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Expanded(
+                    const Expanded(
                       child: Text(
                         'Daftar Belanja Anda',
-                        style: AppTextStyles.titleSmall,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: Color(0xFF111827),
+                        ),
                       ),
                     ),
-                    Chip(
-                      label: Text('${_selectedItems.length} Produk'),
-                      backgroundColor: AppColors.accentSoft,
-                      side: BorderSide.none,
-                      labelStyle: AppTextStyles.labelSmall.copyWith(
-                        fontWeight: FontWeight.bold,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${_selectedItems.length} Produk',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                          color: Color(0xFF059669),
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
 
                 if (_selectedItems.isEmpty)
                   Container(
                     decoration: BoxDecoration(
-                      color: AppColors.paper,
-                      borderRadius: BorderRadius.circular(AppRadius.xl),
-                      border: Border.all(color: AppColors.line),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.ink.withValues(alpha: 0.03),
+                          color: Colors.black.withValues(alpha: 0.03),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
                       ],
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: const EdgeInsets.all(28.0),
                       child: Column(
                         children: [
-                          const Icon(
-                            Icons.shopping_basket_outlined,
-                            size: 40,
-                            color: AppColors.muted,
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF3F4F6),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.shopping_basket_outlined,
+                              size: 32,
+                              color: Color(0xFF9CA3AF),
+                            ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
+                          const SizedBox(height: 10),
+                          const Text(
                             'Belum ada produk terpilih.\nGunakan kolom di atas untuk mencari produk.',
                             textAlign: TextAlign.center,
-                            style: AppTextStyles.bodySmall,
+                            style: TextStyle(
+                              color: Color(0xFF6B7280),
+                              fontSize: 13,
+                              height: 1.4,
+                            ),
                           ),
                         ],
                       ),
@@ -604,27 +714,41 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                     itemBuilder: (context, index) {
                       final item = _selectedItems[index];
                       return Container(
-                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        margin: const EdgeInsets.symmetric(vertical: 5),
                         decoration: BoxDecoration(
-                          color: AppColors.paper,
-                          borderRadius: BorderRadius.circular(AppRadius.xl),
-                          border: Border.all(color: AppColors.line),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.ink.withValues(alpha: 0.03),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+                              color: Colors.black.withValues(alpha: 0.03),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.all(12.0),
+                          padding: const EdgeInsets.all(14.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  Container(
+                                    width: 44,
+                                    height: 44,
+                                    margin: const EdgeInsets.only(right: 12),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFAF7F2),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: const Color(0xFFE8E4DC)),
+                                    ),
+                                    padding: const EdgeInsets.all(4),
+                                    child: BrandAssets.getProductAsset(item.product.nama) != null
+                                        ? Image.asset(BrandAssets.getProductAsset(item.product.nama)!, fit: BoxFit.contain)
+                                        : const Icon(Icons.inventory_2_outlined, color: Color(0xFF059669), size: 22),
+                                  ),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -632,17 +756,19 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                                       children: [
                                         Text(
                                           item.product.nama,
-                                          style: AppTextStyles.bodyLarge
-                                              .copyWith(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 14,
-                                              ),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 14,
+                                            color: Color(0xFF111827),
+                                          ),
                                         ),
-                                        const SizedBox(height: 2),
+                                        const SizedBox(height: 3),
                                         Text(
                                           'Ukuran: ${item.product.ukuran} ${item.product.satuan}',
-                                          style: AppTextStyles.bodySmall
-                                              .copyWith(fontSize: 12),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Color(0xFF6B7280),
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -654,13 +780,13 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                                     container: true,
                                     child: IconButton(
                                       icon: const Icon(
-                                        Icons.delete_outline,
+                                        Icons.delete_outline_rounded,
                                         size: 20,
                                       ),
-                                      color: AppColors.error,
+                                      color: const Color(0xFFEF4444),
                                       constraints: const BoxConstraints(
-                                        minWidth: 48,
-                                        minHeight: 48,
+                                        minWidth: 44,
+                                        minHeight: 44,
                                       ),
                                       padding: EdgeInsets.zero,
                                       onPressed: () {
@@ -672,14 +798,16 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                                   ),
                                 ],
                               ),
-                              const Divider(height: 16),
+                              const Divider(height: 16, color: Color(0xFFF3F4F6)),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  Text(
+                                  const Text(
                                     'Jumlah:',
-                                    style: AppTextStyles.bodySmall.copyWith(
+                                    style: TextStyle(
                                       fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF6B7280),
                                     ),
                                   ),
                                   const Spacer(),
@@ -689,45 +817,48 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                                     container: true,
                                     child: IconButton(
                                       icon: const Icon(
-                                        Icons.remove_circle_outline,
-                                        size: 20,
+                                        Icons.remove_circle_outline_rounded,
+                                        size: 22,
                                       ),
-                                      color: AppColors.muted,
+                                      color: const Color(0xFF9CA3AF),
                                       constraints: const BoxConstraints(
-                                        minWidth: 48,
-                                        minHeight: 48,
+                                        minWidth: 44,
+                                        minHeight: 44,
                                       ),
                                       padding: EdgeInsets.zero,
                                       onPressed: () =>
                                           _updateQuantity(index, -1),
                                     ),
                                   ),
-                                  const SizedBox(width: 4),
-                                  SizedBox(
-                                    width: 32,
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF9FAFB),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
                                     child: Text(
                                       '${item.qty}',
                                       textAlign: TextAlign.center,
-                                      style: AppTextStyles.bodyLarge.copyWith(
-                                        fontWeight: FontWeight.bold,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
                                         fontSize: 15,
+                                        color: Color(0xFF111827),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 4),
                                   Semantics(
                                     label:
                                         'Tambah kuantitas ${item.product.nama}',
                                     container: true,
                                     child: IconButton(
                                       icon: const Icon(
-                                        Icons.add_circle_outline,
-                                        size: 20,
+                                        Icons.add_circle_rounded,
+                                        size: 22,
                                       ),
-                                      color: AppColors.accent,
+                                      color: const Color(0xFF059669),
                                       constraints: const BoxConstraints(
-                                        minWidth: 48,
-                                        minHeight: 48,
+                                        minWidth: 44,
+                                        minHeight: 44,
                                       ),
                                       padding: EdgeInsets.zero,
                                       onPressed: () =>
@@ -757,29 +888,31 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: AppColors.paper,
+                              color: Colors.white,
                             ),
                           )
-                        : const Icon(Icons.calculate_outlined, size: 22),
+                        : const Icon(Icons.calculate_rounded, size: 22),
                     label: Text(
                       _isEvaluating
                           ? 'Menghitung Rekomendasi...'
                           : 'Hitung Rekomendasi Belanja',
                     ),
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      backgroundColor: AppColors.accent,
-                      foregroundColor: AppColors.paper,
-                      disabledBackgroundColor: AppColors.accent.withValues(
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      backgroundColor: const Color(0xFF059669),
+                      foregroundColor: Colors.white,
+                      elevation: 2,
+                      shadowColor: const Color(0xFF059669).withValues(alpha: 0.3),
+                      disabledBackgroundColor: const Color(0xFF059669).withValues(
                         alpha: 0.6,
                       ),
-                      disabledForegroundColor: AppColors.paper,
+                      disabledForegroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.l),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      textStyle: AppTextStyles.bodyLarge.copyWith(
+                      textStyle: const TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
