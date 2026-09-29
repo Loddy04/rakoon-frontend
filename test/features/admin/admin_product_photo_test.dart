@@ -221,6 +221,46 @@ void main() {
       expect(find.byKey(const Key('profile_admin_badge')), findsNothing);
       expect(find.byKey(const Key('admin_panel_tile')), findsNothing);
     });
+
+    testWidgets('ProfilePage automatically discovers admin role from backend /auth/me when local metadata is empty', (tester) async {
+      AuthService.mockIsAdmin = null;
+      AuthService.resetAdminCache();
+
+      // User has no role in metadata (typical freshly registered user)
+      AuthService.mockSession = Session(
+        accessToken: 'mock-token',
+        tokenType: 'bearer',
+        user: const User(
+          id: 'mock-admin-user',
+          email: 'eufratayyash870@gmail.com',
+          appMetadata: {},
+          userMetadata: {'name': 'Eufrat Ayyash'},
+          aud: 'authenticated',
+          createdAt: '2026-01-01',
+        ),
+      );
+
+      // Pre-check: Initially local metadata has no role
+      expect(AuthService.isAdmin, isFalse);
+
+      final client = createMockClient();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ProfilePage(
+            baseUrl: 'http://localhost:8000',
+            httpClient: client,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(AuthService.isAdmin, isTrue);
+      expect(find.byKey(const Key('profile_admin_badge')), findsOneWidget);
+      expect(find.text('Admin Rakoon'), findsOneWidget);
+      expect(find.byKey(const Key('admin_panel_tile')), findsOneWidget);
+      expect(find.text('Kelola Foto Produk'), findsOneWidget);
+    });
   });
 
   group('AdminProductPhotoPage Widget Tests', () {

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/features/auth/presentation/widgets/login_bottom_sheet.dart';
@@ -8,7 +10,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// Profile / Account screen showing user identity, sync status, app metadata,
 /// and authentication controls.
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final String? baseUrl;
+  final http.Client? httpClient;
+
+  const ProfilePage({
+    super.key,
+    this.baseUrl,
+    this.httpClient,
+  });
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -16,6 +25,46 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   bool _isLoggingOut = false;
+  bool _isCheckingAdmin = false;
+  StreamSubscription<AuthState>? _authSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAdminStatus();
+    _authSubscription = AuthService.authStateChanges.listen((_) {
+      _checkAdminStatus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _checkAdminStatus() async {
+    if (AuthService.currentSession == null) return;
+    if (_isCheckingAdmin) return;
+    _isCheckingAdmin = true;
+
+    try {
+      final wasAdmin = AuthService.isAdmin;
+      final isAdmin = await AuthService.checkAdminStatus(
+        baseUrl: widget.baseUrl,
+        client: widget.httpClient,
+      );
+      if (mounted && (wasAdmin != isAdmin || isAdmin)) {
+        setState(() {});
+      }
+    } catch (_) {
+      // Abaikan jika offline / koneksi backend belum terjangkau
+    } finally {
+      if (mounted) {
+        _isCheckingAdmin = false;
+      }
+    }
+  }
 
   void _showLoginSheet(BuildContext context) {
     showModalBottomSheet(
@@ -232,6 +281,14 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildProfileInfo(BuildContext context, Session session) {
+    if (!AuthService.isAdmin && !_isCheckingAdmin) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !AuthService.isAdmin && !_isCheckingAdmin) {
+          _checkAdminStatus();
+        }
+      });
+    }
+
     final email = (session.user.email != null && session.user.email!.trim().isNotEmpty)
         ? session.user.email!.trim()
         : 'Email belum terdaftar';
@@ -420,7 +477,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const AdminProductPhotoPage(),
+                    builder: (context) => AdminProductPhotoPage(
+                      baseUrl: widget.baseUrl,
+                      httpClient: widget.httpClient,
+                    ),
                   ),
                 );
               },

@@ -50,17 +50,24 @@ class AuthService {
   static Future<void> signOut() async {
     _mockSession = null;
     _mockIsAdmin = null;
+    _cachedIsAdmin = null;
     await _client?.auth.signOut();
   }
 
   static Session? _mockSession;
   static bool? _mockIsAdmin;
+  static bool? _cachedIsAdmin;
 
   /// Set a mock session for unit/widget testing purposes
   static set mockSession(Session? session) => _mockSession = session;
 
   /// Set mock admin status for unit/widget testing purposes
   static set mockIsAdmin(bool? isAdmin) => _mockIsAdmin = isAdmin;
+
+  /// Reset internal admin cache (useful for testing or session refresh)
+  static void resetAdminCache() {
+    _cachedIsAdmin = null;
+  }
 
   /// Current Session
   static Session? get currentSession {
@@ -74,9 +81,10 @@ class AuthService {
     return _client?.auth.currentUser;
   }
 
-  /// Cek apakah pengguna aktif memiliki peran Admin (berdasarkan metadata lokal)
+  /// Cek apakah pengguna aktif memiliki peran Admin (berdasarkan metadata lokal atau cache verifikasi backend)
   static bool get isAdmin {
     if (_mockIsAdmin != null) return _mockIsAdmin!;
+    if (_cachedIsAdmin != null) return _cachedIsAdmin!;
     final user = currentUser;
     if (user == null) return false;
 
@@ -103,10 +111,31 @@ class AuthService {
     http.Client? client,
   }) async {
     if (_mockIsAdmin != null) return _mockIsAdmin!;
-    if (isAdmin) return true;
+
+    final user = currentUser;
+    if (user == null) {
+      _cachedIsAdmin = false;
+      return false;
+    }
+
+    // Cek metadata lokal terlebih dahulu
+    final userMeta = user.userMetadata;
+    if (userMeta != null && (userMeta['role'] == 'admin' || userMeta['is_admin'] == true)) {
+      _cachedIsAdmin = true;
+      return true;
+    }
+
+    final appMeta = user.appMetadata;
+    if (appMeta['role'] == 'admin' || appMeta['is_admin'] == true) {
+      _cachedIsAdmin = true;
+      return true;
+    }
 
     final token = currentSession?.accessToken;
-    if (token == null) return false;
+    if (token == null) {
+      _cachedIsAdmin = false;
+      return false;
+    }
 
     final effectiveBaseUrl = baseUrl ?? AppConfig.apiBaseUrl;
     final httpClient = client ?? http.Client();
@@ -123,7 +152,11 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final role = data['role'] as String?;
-        return role == 'admin';
+        final isServerAdmin = role == 'admin';
+        _cachedIsAdmin = isServerAdmin;
+        return isServerAdmin;
+      } else {
+        _cachedIsAdmin = false;
       }
     } catch (_) {
       // Fallback ke metadata lokal
@@ -133,7 +166,7 @@ class AuthService {
       }
     }
 
-    return false;
+    return _cachedIsAdmin ?? false;
   }
 
   /// Auth State Stream
