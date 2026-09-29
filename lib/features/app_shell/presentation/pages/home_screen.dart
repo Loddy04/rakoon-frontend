@@ -205,7 +205,8 @@ class HomeScreenState extends State<HomeScreen> {
     }
     return kIsWeb ? 'http://localhost:8000' : 'https://rakoon-backend.onrender.com';
   }
-  @override
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFAF7F2),
@@ -861,11 +862,6 @@ class HomeScreenState extends State<HomeScreen> {
                                 trailingWidget: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    BrandAssets.buildStoreLogo('Alfamart', size: 14, borderRadius: 3),
-                                    const SizedBox(width: 3),
-                                    BrandAssets.buildStoreLogo('Indomaret', size: 14, borderRadius: 3),
-                                  ],
                                 ),
                                 onTap: _navigateToNearbyStores,
                               ),

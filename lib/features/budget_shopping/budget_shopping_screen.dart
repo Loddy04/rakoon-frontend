@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rakoon_frontend/services/products_service.dart';
 import 'package:rakoon_frontend/services/budget_shopping_service.dart';
+import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/features/budget_shopping/budget_result_screen.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/features/budget_shopping/utils/budget_parser.dart';
@@ -522,6 +523,19 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                           return ListTile(
                             dense: true,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            leading: Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFAF7F2),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFE8E4DC)),
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: BrandAssets.getProductAsset(item.nama) != null
+                                  ? Image.asset(BrandAssets.getProductAsset(item.nama)!, fit: BoxFit.contain)
+                                  : const Icon(Icons.inventory_2_outlined, color: Color(0xFF059669), size: 20),
+                            ),
                             title: Text(
                               item.nama,
                               style: const TextStyle(
@@ -721,6 +735,20 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  Container(
+                                    width: 44,
+                                    height: 44,
+                                    margin: const EdgeInsets.only(right: 12),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFAF7F2),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: const Color(0xFFE8E4DC)),
+                                    ),
+                                    padding: const EdgeInsets.all(4),
+                                    child: BrandAssets.getProductAsset(item.product.nama) != null
+                                        ? Image.asset(BrandAssets.getProductAsset(item.product.nama)!, fit: BoxFit.contain)
+                                        : const Icon(Icons.inventory_2_outlined, color: Color(0xFF059669), size: 22),
+                                  ),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:

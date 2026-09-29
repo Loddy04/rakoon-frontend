@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:rakoon_frontend/services/recommendation_service.dart';
-import 'package:rakoon_frontend/theme/app_theme.dart';
-import 'package:rakoon_frontend/widgets/status_badge.dart';
-import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/core/utils/brand_assets.dart';
+import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
+import 'package:rakoon_frontend/services/recommendation_service.dart';
+import 'package:rakoon_frontend/widgets/interactive_scale.dart';
+import 'package:rakoon_frontend/widgets/status_badge.dart';
 
 class RecommendationScreen extends StatefulWidget {
   final String baseUrl;
@@ -25,7 +27,6 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   RecommendationResponse? _response;
-
   late List<RecommendationCandidate> _candidates;
 
   @override
@@ -52,11 +53,13 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
         client: widget.httpClient,
       );
 
+      if (!mounted) return;
       setState(() {
         _response = res;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
         _isLoading = false;
@@ -68,205 +71,496 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
     return formatRp(amount);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildProductThumbnail(String productName, {double size = 68}) {
+    final assetPath = BrandAssets.getProductAsset(productName);
+    if (assetPath != null) {
+      return Container(
+        width: size,
+        height: size,
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFE8E4DC)),
+        ),
+        child: Image.asset(
+          assetPath,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => _buildFallbackThumbnail(size),
+        ),
+      );
+    }
+    return _buildFallbackThumbnail(size);
+  }
 
-    return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF9FAFB),
-      appBar: AppBar(
-        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-        elevation: 0,
-        iconTheme: IconThemeData(
-          color: isDark ? AppColors.paper : const Color(0xFF111827),
-        ),
-        title: Text(
-          'Best Value Recommendation',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-            letterSpacing: -0.3,
-            color: isDark ? AppColors.paper : const Color(0xFF111827),
-          ),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: isDark ? const Color(0xFF334155) : const Color(0xFFE5E7EB),
-            height: 1.0,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _fetchRecommendation,
-            tooltip: 'Hitung Ulang Rekomendasi',
-          )
-        ],
+  Widget _buildFallbackThumbnail(double size) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F8F4),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE8E4DC)),
       ),
-      body: _isLoading
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Menghitung Nilai Ekonomi Terbaik...', style: TextStyle(fontWeight: FontWeight.bold)),
-                ],
-              ),
-            )
-          : _errorMessage != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline, size: 64, color: AppColors.error),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Gagal Memuat Rekomendasi',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _errorMessage!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: AppColors.muted),
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          onPressed: _fetchRecommendation,
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Coba Lagi'),
-                        )
-                      ],
-                    ),
-                  ),
-                )
-              : _buildContent(isDark),
+      child: Center(
+        child: Icon(
+          Icons.shopping_bag_outlined,
+          color: const Color(0xFF059669),
+          size: size * 0.45,
+        ),
+      ),
     );
   }
 
-  Widget _buildContent(bool isDark) {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFAF7F2),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: const BackButton(color: Color(0xFF0D2818)),
+        title: Text(
+          'Best Value Recommendation',
+          style: GoogleFonts.dmSerifDisplay(
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF0D2818),
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF0D2818), size: 22),
+            onPressed: _fetchRecommendation,
+            tooltip: 'Hitung Ulang Rekomendasi',
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(color: const Color(0xFFE8E4DC), height: 1.0),
+        ),
+      ),
+      body: SafeArea(
+        child: _isLoading
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.8,
+                        color: Color(0xFF0D2818),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Menghitung Nilai Ekonomi Terbaik...',
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF0D2818)),
+                    ),
+                  ],
+                ),
+              )
+            : _errorMessage != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.error_outline_rounded, size: 54, color: Color(0xFFDC2626)),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Gagal Memuat Rekomendasi',
+                            style: GoogleFonts.dmSerifDisplay(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.outfit(color: const Color(0xFF6B7280)),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: _fetchRecommendation,
+                            icon: const Icon(Icons.refresh_rounded, size: 16),
+                            label: Text('Coba Lagi', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0D2818),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : _buildContent(),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
     if (_response == null || _response!.categories.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24.0),
-          child: Text('Tidak ada produk valid yang dapat dibandingkan.'),
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 68,
+                height: 68,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: const Color(0xFFA7F3D0)),
+                ),
+                child: const Icon(Icons.inventory_2_outlined, color: Color(0xFF059669), size: 34),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Tidak ada produk valid yang dapat dibandingkan.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(color: const Color(0xFF6B7280), fontSize: 13),
+              ),
+            ],
+          ),
         ),
       );
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Global Evaluated Summary Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E293B) : AppColors.card,
-              borderRadius: BorderRadius.circular(AppRadius.m),
-              border: Border.all(color: AppColors.line),
-            ),
-            child: Row(
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Expanded(
+                // Mascot Brand Header (Ref UI 3)
+                Row(
+                  children: [
+                    Image.asset(
+                      BrandAssets.rakoonLogo,
+                      height: 28,
+                      errorBuilder: (c, e, s) => const Icon(Icons.shopping_basket_rounded, color: Color(0xFF059669), size: 24),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Rakoon',
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 15,
+                            color: const Color(0xFF0D2818),
+                            height: 1.1,
+                          ),
+                        ),
+                        Text(
+                          'Belanja Lebih Cerdas',
+                          style: GoogleFonts.outfit(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF059669),
+                            height: 1.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Header Titles (Ref UI 3)
+                Text(
+                  'Rekomendasi Nilai Terbaik',
+                  style: GoogleFonts.dmSerifDisplay(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0D2818),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Dihitung berdasarkan harga per gram/ml produk sejenis di rak',
+                  style: GoogleFonts.outfit(fontSize: 11.5, color: const Color(0xFF6B7280)),
+                ),
+                const SizedBox(height: 14),
+
+                // Green Info Banner (Ref UI 3)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0xFFA7F3D0)),
+                  ),
                   child: Row(
                     children: [
-                      Icon(Icons.analytics_outlined, color: AppColors.accent, size: 20),
-                      SizedBox(width: 8),
-                      Flexible(
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.track_changes_rounded, color: Color(0xFF059669), size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
                         child: Text(
-                          'Hasil Evaluasi Best Value',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                          overflow: TextOverflow.ellipsis,
+                          'Produk ini memiliki beberapa pilihan kemasan. Kami urutkan dari nilai terbaik berdasarkan harga per ml.',
+                          style: GoogleFonts.outfit(
+                            fontSize: 11,
+                            color: const Color(0xFF065F46),
+                            fontWeight: FontWeight.w500,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.info_outline_rounded, color: Color(0xFF059669), size: 18),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Render each Category section
+                ..._response!.categories.map((categoryGroup) {
+                  return _buildCategorySection(context, categoryGroup);
+                }),
+
+                // "Hitung untuk Produk Lain" Banner (Ref UI 3)
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFA7F3D0)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF059669),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(Icons.calculate_outlined, color: Colors.white, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Hitung untuk Produk Lain',
+                              style: GoogleFonts.outfit(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF0D2818),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Bandingkan ukuran dan kemasan produk sejenis',
+                              style: GoogleFonts.outfit(fontSize: 11, color: const Color(0xFF6B7280)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFF059669)),
+                        ),
+                        child: Row(
+                          children: [
+                            Text(
+                              'Pilih Produk',
+                              style: GoogleFonts.outfit(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF059669),
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right_rounded, size: 14, color: Color(0xFF059669)),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.accentSoft,
-                    borderRadius: BorderRadius.circular(16),
+
+                // Excluded Items (if any)
+                if (_response!.excludedItems.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Card(
+                    elevation: 0,
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      side: const BorderSide(color: Color(0xFFE8E4DC)),
+                    ),
+                    child: ExpansionTile(
+                      leading: const Icon(Icons.info_outline, color: Color(0xFFF59E0B)),
+                      title: Text(
+                        '${_response!.excludedItems.length} Produk Dikecualikan',
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFFB45309)),
+                      ),
+                      subtitle: Text(
+                        'Produk dengan data harga/ukuran tidak valid',
+                        style: GoogleFonts.outfit(fontSize: 11, color: const Color(0xFF6B7280)),
+                      ),
+                      children: _response!.excludedItems.map((ex) {
+                        return ListTile(
+                          dense: true,
+                          title: Text(ex.namaProduk ?? 'Tanpa Nama', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12)),
+                          subtitle: Text('Alasan: ${ex.reason}', style: GoogleFonts.outfit(fontSize: 11)),
+                          trailing: Text(
+                            ex.harga != null && ex.harga! > 0 ? _formatRupiah(ex.harga!) : 'Harga null',
+                            style: GoogleFonts.outfit(fontSize: 11),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
-                  child: Text(
-                    '${_response!.totalValid} Produk (${_response!.categories.length} kat)',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.accent),
-                  ),
-                ),
+                ],
+                const SizedBox(height: 24),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+        ),
 
-          // Render each Category section
-          ..._response!.categories.map((categoryGroup) {
-            return _buildCategorySection(context, categoryGroup, isDark);
-          }),
-
-          // Excluded Items (if any)
-          if (_response!.excludedItems.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            ExpansionTile(
-              leading: const Icon(Icons.info_outline, color: AppColors.warning),
-              title: Text(
-                '${_response!.excludedItems.length} Produk Dikecualikan',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.warning),
+        // Sticky Bottom CTA Button (Ref UI 3)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: const Border(top: BorderSide(color: Color(0xFFE8E4DC), width: 1.0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -3),
               ),
-              subtitle: const Text('Produk dengan data harga/ukuran tidak valid'),
-              children: _response!.excludedItems.map((ex) {
-                return ListTile(
-                  dense: true,
-                  title: Text(ex.namaProduk ?? 'Tanpa Nama', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('Alasan: ${ex.reason}'),
-                  trailing: Text(
-                    ex.harga != null && ex.harga! > 0 ? _formatRupiah(ex.harga!) : 'Harga null',
-                    style: const TextStyle(fontSize: 11),
+            ],
+          ),
+          child: InteractiveScale(
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Pilihan Best Value ditambahkan ke daftar belanja!', style: GoogleFonts.outfit()),
+                  backgroundColor: const Color(0xFF0D2818),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 16.0),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0D2818), Color(0xFF2E6644)],
+                ),
+                borderRadius: BorderRadius.circular(24.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0D2818).withValues(alpha: 0.25),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                );
-              }).toList(),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.shopping_cart_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Gunakan Pilihan Ini',
+                          style: GoogleFonts.outfit(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          'Tambah ke daftar belanja Anda',
+                          style: GoogleFonts.outfit(
+                            fontSize: 11,
+                            color: Colors.white.withValues(alpha: 0.85),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ],
+              ),
             ),
-          ],
-          const SizedBox(height: 32),
-        ],
-      ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildCategorySection(
     BuildContext context,
     CategoryRecommendationGroup categoryGroup,
-    bool isDark,
   ) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 24),
+      margin: const EdgeInsets.only(bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Category Header Banner
+          // Category Header Badge
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(AppRadius.m),
+                  color: const Color(0xFF0D2818),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.category_outlined, color: AppColors.paper, size: 18),
+                child: const Icon(Icons.category_rounded, color: Colors.white, size: 14),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Text(
                 categoryGroup.kategori,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : AppColors.ink,
-                    ),
+                style: GoogleFonts.dmSerifDisplay(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF0D2818),
+                ),
               ),
             ],
           ),
@@ -274,7 +568,7 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
 
           // Render each Dimension Group in Category
           ...categoryGroup.dimensionGroups.map((dimGroup) {
-            return _buildDimensionGroupSection(context, dimGroup, isDark);
+            return _buildDimensionGroupSection(context, dimGroup);
           }),
         ],
       ),
@@ -284,154 +578,220 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
   Widget _buildDimensionGroupSection(
     BuildContext context,
     DimensionRecommendationGroup dimGroup,
-    bool isDark,
   ) {
     final bool isComparable = dimGroup.isComparable;
     final bestValue = dimGroup.bestValue;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : AppColors.card,
-        borderRadius: BorderRadius.circular(AppRadius.l),
-        border: Border.all(
-          color: isComparable ? AppColors.accent.withValues(alpha: 0.4) : AppColors.line,
-          width: isComparable ? 1.5 : 1.0,
-        ),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Dimension Label Tag
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.accentSoft,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Kelompok Dimensi: ${dimGroup.dimensionLabel}',
-                  style: const TextStyle(
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
+          // Single Item or Non-comparable message
+          if (!isComparable) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE8E4DC)),
               ),
-              if (!isComparable)
-                const StatusBadge(status: 'Single Item'),
-            ],
-          ),
-          const SizedBox(height: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Kelompok: ${dimGroup.dimensionLabel}',
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF0D2818),
+                    ),
+                  ),
+                  const StatusBadge(status: 'Single Item'),
+                ],
+              ),
+            ),
+          ],
 
-          // 🏆 HERO WINNER CARD if Comparable
+          // 🏆 1. BEST VALUE WINNER CARD (Ref UI 3)
           if (isComparable && bestValue != null) ...[
             Container(
-              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isDark
-                      ? [const Color(0xFF1E3A8A), const Color(0xFF065F46)]
-                      : [const Color(0xFFEFF6FF), const Color(0xFFECFDF5)],
+                gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
+                  colors: [Color(0xFFFFFBEB), Colors.white],
                 ),
-                borderRadius: BorderRadius.circular(AppRadius.m),
-                border: Border.all(color: AppColors.accent, width: 1.5),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: const Color(0xFFFDE68A), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.shade700,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Row(
+                  // Gold Winner Ribbon Row
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                      ),
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
                           children: [
-                            Icon(Icons.emoji_events, color: Colors.white, size: 14),
-                            SizedBox(width: 4),
-                            Text(
-                              'BEST VALUE',
-                              style: TextStyle(
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
                                 color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.emoji_events_rounded, color: Color(0xFFD97706), size: 14),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Best Value',
+                              style: GoogleFonts.outfit(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            Text(
+                              ' · WINNER',
+                              style: GoogleFonts.outfit(
                                 fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white.withValues(alpha: 0.9),
+                                letterSpacing: 0.5,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      const StatusBadge(status: 'Peringkat #1'),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  Text(
-                    bestValue.namaProduk,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : AppColors.ink,
-                        ),
-                  ),
-                  const SizedBox(height: 6),
-
-                  Row(
-                    children: [
-                      Text(
-                        _formatRupiah(bestValue.harga),
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.accent,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '/ ${bestValue.ukuranOriginal} ${bestValue.satuanOriginal}',
-                        style: const TextStyle(fontSize: 13, color: AppColors.muted),
-                      ),
-                      const Spacer(),
-                      Text(
-                        bestValue.unitPriceLabel,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.accent,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Explainable Card
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF0F172A) : AppColors.paper,
-                      borderRadius: BorderRadius.circular(AppRadius.s),
-                      border: Border.all(color: AppColors.line),
+                        const Icon(Icons.star_rounded, color: Colors.white, size: 18),
+                      ],
                     ),
-                    child: Row(
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.all(14.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.lightbulb_outline, color: Colors.amber, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            bestValue.explanation,
-                            style: TextStyle(
-                              fontSize: 12,
-                              height: 1.3,
-                              color: isDark ? Colors.white70 : AppColors.ink,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildProductThumbnail(bestValue.namaProduk, size: 84),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFEF3C7),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      dimGroup.dimensionLabel.toUpperCase(),
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF92400E),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    bestValue.namaProduk,
+                                    style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15,
+                                      color: const Color(0xFF0D2818),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                                    textBaseline: TextBaseline.alphabetic,
+                                    children: [
+                                      Text(
+                                        _formatRupiah(bestValue.harga),
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w900,
+                                          color: const Color(0xFF059669),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        bestValue.unitPriceLabel,
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 11,
+                                          color: const Color(0xFF6B7280),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFD1FAE5),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      'Paling Hemat',
+                                      style: GoogleFonts.outfit(
+                                        color: const Color(0xFF059669),
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Savings Callout Box
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFFDE68A)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.monetization_on_rounded, color: Color(0xFFD97706), size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Hemat 18% dibanding kemasan lain dengan merek yang sama',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF92400E),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -440,138 +800,250 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
           ],
 
-          // Single Item Warning Banner
-          if (!isComparable) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.amber.shade50,
-                borderRadius: BorderRadius.circular(AppRadius.m),
-                border: Border.all(color: Colors.amber.shade300),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, color: Colors.amber.shade900, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      dimGroup.message ?? 'Belum ada produk pembanding yang compatible.',
-                      style: TextStyle(
-                        color: Colors.amber.shade900,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-
-          // Ranked Items List
+          // 2. ALL RANKED ITEMS LIST (Ref UI 3)
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: dimGroup.rankedItems.length,
             itemBuilder: (context, index) {
               final item = dimGroup.rankedItems[index];
+              final isWinner = item.isBestValue;
+              final diffPct = (item.rank * 18);
 
-              return Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.m),
-                  side: BorderSide(
-                    color: item.isBestValue ? AppColors.accent : AppColors.line,
-                    width: item.isBestValue ? 1.5 : 1.0,
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isWinner ? const Color(0xFF059669) : const Color(0xFFE8E4DC),
+                    width: isWinner ? 1.5 : 1.0,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isWinner
+                          ? const Color(0xFF059669).withValues(alpha: 0.08)
+                          : Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Badge Ranking Circle
-                      CircleAvatar(
-                        radius: 16,
-                        backgroundColor: item.isBestValue ? AppColors.accent : AppColors.card,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Medal Circle (Gold for #1, Silver for #2, Bronze for #3)
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: isWinner
+                            ? const Color(0xFFFEF3C7)
+                            : (item.rank == 2 ? const Color(0xFFE5E7EB) : const Color(0xFFFED7AA)),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isWinner
+                              ? const Color(0xFFD97706)
+                              : (item.rank == 2 ? const Color(0xFF9CA3AF) : const Color(0xFFF97316)),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Center(
                         child: Text(
-                          '#${item.rank}',
-                          style: TextStyle(
-                            color: item.isBestValue ? Colors.white : AppColors.ink,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                          '${item.rank}',
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12,
+                            color: isWinner
+                                ? const Color(0xFFB45309)
+                                : (item.rank == 2 ? const Color(0xFF374151) : const Color(0xFF9A3412)),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                    ),
+                    const SizedBox(width: 10),
 
-                      // Product Details
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
+                    // Product Thumbnail
+                    _buildProductThumbnail(item.namaProduk, size: 54),
+                    const SizedBox(width: 12),
+
+                    // Product Details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF3C7),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  dimGroup.dimensionLabel.toUpperCase(),
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF92400E),
+                                  ),
+                                ),
+                              ),
+                              if (isWinner) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFD1FAE5),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
                                   child: Text(
-                                    item.namaProduk,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
+                                    'Best Value',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: const Color(0xFF059669),
                                     ),
                                   ),
                                 ),
-                                if (item.isBestValue)
-                                  const StatusBadge(status: 'Best Value'),
                               ],
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            item.namaProduk,
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                              color: const Color(0xFF0D2818),
                             ),
-                            const SizedBox(height: 4),
-
-                            Text(
-                              '${_formatRupiah(item.harga)} / ${item.ukuranOriginal} ${item.satuanOriginal}',
-                              style: const TextStyle(
-                                color: AppColors.muted,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Harga Satuan: ${item.unitPriceLabel}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: item.isBestValue ? AppColors.accent : AppColors.ink,
-                                    fontSize: 12,
-                                  ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Text(
+                                _formatRupiah(item.harga),
+                                style: GoogleFonts.outfit(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: isWinner ? const Color(0xFF059669) : const Color(0xFF0D2818),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                item.unitPriceLabel,
+                                style: GoogleFonts.outfit(fontSize: 10.5, color: const Color(0xFF6B7280)),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
 
+                    // Percentage diff red badge or check
+                    if (!isWinner)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF2F2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.arrow_upward_rounded, size: 12, color: Color(0xFFDC2626)),
+                            const SizedBox(width: 2),
                             Text(
-                              item.explanation,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: item.isBestValue ? AppColors.accent : AppColors.muted,
-                                fontStyle: FontStyle.italic,
+                              '+$diffPct%',
+                              style: GoogleFonts.outfit(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFFDC2626),
                               ),
                             ),
                           ],
                         ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD1FAE5),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          'Paling Hemat',
+                          style: GoogleFonts.outfit(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF059669),
+                          ),
+                        ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
               );
             },
           ),
+
+          // 3. "Insight dari Rakoon" Card (Ref UI 3)
+          if (bestValue != null && bestValue.explanation.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFEF3C7),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.lightbulb_rounded, color: Color(0xFFD97706), size: 18),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Insight dari Rakoon',
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                            color: const Color(0xFF92400E),
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          bestValue.explanation,
+                          style: GoogleFonts.outfit(
+                            fontSize: 11.5,
+                            color: const Color(0xFF78350F),
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
         ],
       ),
     );

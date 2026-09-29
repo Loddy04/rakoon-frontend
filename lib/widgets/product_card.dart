@@ -222,21 +222,21 @@ class ProductCard extends StatelessWidget {
                       gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [Color(0xFF0D2818), Color(0xFF2E6644)],
+                        colors: [Color(0xFF059669), Color(0xFF10B981)],
                       ),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF0D2818).withValues(alpha: 0.25),
+                          color: const Color(0xFF059669).withValues(alpha: 0.3),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
                       ],
                     ),
                     child: const Icon(
-                      Icons.shopping_cart_outlined,
+                      Icons.add_rounded,
                       color: Colors.white,
-                      size: 14,
+                      size: 18,
                     ),
                   ),
                 ],

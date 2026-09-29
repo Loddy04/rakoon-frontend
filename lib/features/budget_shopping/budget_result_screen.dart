@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:rakoon_frontend/core/utils/brand_assets.dart';
+import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 import 'package:rakoon_frontend/services/budget_shopping_service.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
-import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 
 class BudgetResultScreen extends StatelessWidget {
   final BudgetRecommendResponse result;
@@ -115,16 +116,27 @@ class BudgetResultScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 14),
-                      Semantics(
-                        label: 'Toko utama: ${hasStore ? store!.nama : "Tidak Ditemukan"}',
-                        child: Text(
-                          hasStore ? store!.nama : 'Toko Tidak Ditemukan',
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF111827),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          if (hasStore) ...[
+                            BrandAssets.buildStoreLogo(store!.nama, size: 44, borderRadius: 12),
+                            const SizedBox(width: 12),
+                          ],
+                          Expanded(
+                            child: Semantics(
+                              label: 'Toko utama: ${hasStore ? store!.nama : "Tidak Ditemukan"}',
+                              child: Text(
+                                hasStore ? store!.nama : 'Toko Tidak Ditemukan',
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFF111827),
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                       if (hasStore) ...[
                         const SizedBox(height: 14),
@@ -260,9 +272,17 @@ class BudgetResultScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          store!.nama,
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF111827)),
+                        Row(
+                          children: [
+                            BrandAssets.buildStoreLogo(store!.nama, size: 36, borderRadius: 10),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                store.nama,
+                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF111827)),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 6),
                         Row(
@@ -338,6 +358,20 @@ class BudgetResultScreen extends StatelessWidget {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              margin: const EdgeInsets.only(right: 12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFAF7F2),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFE8E4DC)),
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: BrandAssets.getProductAsset(item.namaProduk) != null
+                                  ? Image.asset(BrandAssets.getProductAsset(item.namaProduk)!, fit: BoxFit.contain)
+                                  : const Icon(Icons.inventory_2_outlined, color: Color(0xFF059669), size: 20),
+                            ),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -398,6 +432,20 @@ class BudgetResultScreen extends StatelessWidget {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Container(
+                              width: 38,
+                              height: 38,
+                              margin: const EdgeInsets.only(right: 10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFAF7F2),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFE8E4DC)),
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: BrandAssets.getProductAsset(avail.namaProduk) != null
+                                  ? Image.asset(BrandAssets.getProductAsset(avail.namaProduk)!, fit: BoxFit.contain)
+                                  : const Icon(Icons.inventory_2_outlined, color: Color(0xFF059669), size: 18),
+                            ),
                             Icon(
                               avail.isAvailable ? Icons.check_circle_outline_rounded : Icons.cancel_outlined,
                               color: avail.isAvailable ? const Color(0xFF059669) : const Color(0xFFDC2626),
@@ -484,6 +532,8 @@ class BudgetResultScreen extends StatelessWidget {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            BrandAssets.buildStoreLogo(alt.storeInfo.nama, size: 36, borderRadius: 10),
+                            const SizedBox(width: 10),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
