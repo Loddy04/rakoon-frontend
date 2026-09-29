@@ -1910,7 +1910,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                               backgroundColor: const Color(0xFF00875A),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
+                                horizontal: 12,
                                 vertical: 6,
                               ),
                               shape: RoundedRectangleBorder(
@@ -1930,21 +1930,6 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                                 : Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Container(
-                                        width: 28,
-                                        height: 28,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.2),
-                                          borderRadius:
-                                              BorderRadius.circular(6),
-                                        ),
-                                        child: const Icon(
-                                          Icons.shopping_bag_outlined,
-                                          color: Colors.white,
-                                          size: 16,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 6),
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment:
@@ -1955,18 +1940,18 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                                               'Simpan Hasil Scan',
                                               style: GoogleFonts.outfit(
                                                 color: Colors.white,
-                                                fontSize: 11.5,
+                                                fontSize: 12,
                                                 fontWeight: FontWeight.w700,
                                               ),
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                             Text(
-                                              '${_items.length} produk · Total ${_formatRupiah(_calculateTotal())}',
+                                              '${_items.length} produk',
                                               style: GoogleFonts.outfit(
                                                 color: Colors.white
                                                     .withValues(alpha: 0.9),
-                                                fontSize: 9.5,
+                                                fontSize: 10,
                                                 fontWeight: FontWeight.w500,
                                               ),
                                               maxLines: 1,
