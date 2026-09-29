@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 
 /// Lightweight data class representing a store pin on the map.
@@ -179,10 +180,11 @@ class RakoonLocationMap extends StatelessWidget {
   }
 
   // ---------------------------------------------------------------------------
-  // Store marker — minimal pin icon
+  // Store marker — store logo or minimal pin icon
   // ---------------------------------------------------------------------------
   Marker _buildStoreMarker(MapStoreMarker store) {
     final isSelected = selectedStoreId == store.storeId;
+    final storeAsset = BrandAssets.getStoreAsset(store.label);
 
     return Marker(
       point: LatLng(store.lat, store.lng),
@@ -207,18 +209,40 @@ class RakoonLocationMap extends StatelessWidget {
                 width: 32.0,
                 height: 32.0,
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.periwinkle : AppColors.paper,
+                  color: isSelected ? const Color(0xFF0D2818) : Colors.white,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: AppColors.graphite,
-                    width: 1.0,
+                    color: isSelected ? const Color(0xFF10B981) : const Color(0xFFE8E4DC),
+                    width: isSelected ? 2.0 : 1.2,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                child: Icon(
-                  Icons.storefront_outlined,
-                  color: isSelected ? AppColors.paper : AppColors.graphite,
-                  size: 18.0,
-                ),
+                child: storeAsset != null
+                    ? ClipOval(
+                        child: Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: Image.asset(
+                            storeAsset,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              Icons.storefront_outlined,
+                              color: isSelected ? Colors.white : const Color(0xFF0D2818),
+                              size: 16.0,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Icon(
+                        Icons.storefront_outlined,
+                        color: isSelected ? Colors.white : const Color(0xFF0D2818),
+                        size: 18.0,
+                      ),
               ),
             ],
           ),

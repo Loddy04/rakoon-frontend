@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/services/location_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
@@ -60,18 +61,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFFEDD5),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.storefront_rounded,
-                          color: Color(0xFFEA580C),
-                          size: 24,
-                        ),
-                      ),
+                      BrandAssets.buildStoreLogo(store.nama, size: 44, borderRadius: 12),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -503,18 +493,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFEDD5),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.storefront_rounded,
-                        color: Color(0xFFEA580C),
-                        size: 18.0,
-                      ),
-                    ),
+                    BrandAssets.buildStoreLogo(store.nama, size: 36, borderRadius: 10),
                   ],
                 ),
                 const SizedBox(height: 3),
