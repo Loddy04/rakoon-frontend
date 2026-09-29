@@ -3,22 +3,44 @@ import 'package:google_fonts/google_fonts.dart';
 
 /// Class containing all core design tokens for colors defined in DESIGN.md (Shupatto style).
 class AppColors {
+  /// Vibrant Smart-Grocery Design Tokens (Gemastik 2026 UI)
+  static const Color primaryGreen = Color(0xFF00A86B);
+  static const Color primaryEmerald = Color(0xFF059669);
+  static const Color mint = Color(0xFF10B981);
+  static const Color mintLight = Color(0xFFE8FAF2);
+  static const Color mintSoft = Color(0xFFD1FAE5);
+  static const Color mintBorder = Color(0xFFA7F3D0);
+
+  static const Color accentOrange = Color(0xFFFF7A00);
+  static const Color orangeLight = Color(0xFFFFEDD5);
+  static const Color orangeSoft = Color(0xFFFFF7ED);
+  static const Color orangeDark = Color(0xFFEA580C);
+
+  static const Color teal = Color(0xFF0D9488);
+  static const Color tealLight = Color(0xFFCCFBF1);
+
+  static const Color charcoal = Color(0xFF111827);
+  static const Color textMuted = Color(0xFF6B7280);
+  static const Color borderLight = Color(0xFFF1F5F9);
+  static const Color surfaceWhite = Color(0xFFFFFFFF);
+  static const Color scaffoldBg = Color(0xFFF9FBFA);
+
   /// Graphite (#2D2D2D) - Primary text, hairline borders, structural lines
   static const Color graphite = Color(0xFF2D2D2D);
 
   /// Ink (#000000) - Strongest text and most emphatic borders
-  static const Color ink = Color(0xFF000000);
+  static const Color ink = Color(0xFF111827);
 
   /// Paper (#FFFFFF) - Page canvas, card surfaces, nav background
   static const Color paper = Color(0xFFFFFFFF);
 
   /// Fog (#878887) - Muted helper text, secondary borders, dimmed metadata
-  static const Color fog = Color(0xFF878887);
+  static const Color fog = Color(0xFF6B7280);
 
   /// Periwinkle (#7380A5 / #738AE5) - Sole chromatic accent for badges, active states, pressure points
-  static const Color periwinkle = Color(0xFF7380A5);
+  static const Color periwinkle = Color(0xFF10B981);
 
-  static const Color softWhite = Color(0xFFF9F9F9);
+  static const Color softWhite = Color(0xFFF9FBFA);
 
   // --- Aliases for Shupatto Design Token Parity & Legacy Compatibility ---
 
@@ -27,26 +49,26 @@ class AppColors {
   static const Color boneWhite = paper;
   static const Color background = paper;
   static const Color card = paper;
-  static const Color line = graphite;
+  static const Color line = Color(0xFFE5E7EB);
   static const Color muted = fog;
-  static const Color accent = periwinkle;
-  static const Color accentSoft = Color(0xFFF0F2F7);
+  static const Color accent = Color(0xFF10B981);
+  static const Color accentSoft = Color(0xFFE8FAF2);
 
   static const Color duskViolet = paper;
-  static const Color hiVisYellow = graphite;
-  static const Color butteryYellow = paper;
+  static const Color hiVisYellow = accentOrange;
+  static const Color butteryYellow = Color(0xFFFFFBEB);
   static const Color lilacShadow = fog;
   static const Color bubblegumPink = paper;
-  static const Color matchaCream = paper;
-  static const Color magentaPunch = periwinkle;
-  static const Color firecrackerRed = graphite;
-  static const Color error = graphite;
-  static const Color errorSoft = paper;
-  static const Color warning = fog;
-  static const Color warningSoft = paper;
+  static const Color matchaCream = Color(0xFFECFDF5);
+  static const Color magentaPunch = accentOrange;
+  static const Color firecrackerRed = Color(0xFFEF4444);
+  static const Color error = Color(0xFFEF4444);
+  static const Color errorSoft = Color(0xFFFEE2E2);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color warningSoft = Color(0xFFFEF3C7);
 
-  static const Color onboardingAccent1 = periwinkle;
-  static const Color onboardingAccent2 = graphite;
+  static const Color onboardingAccent1 = Color(0xFF10B981);
+  static const Color onboardingAccent2 = Color(0xFFFF7A00);
 }
 
 /// Spacing scale and layout constants aligned with DESIGN.md (Shupatto style).

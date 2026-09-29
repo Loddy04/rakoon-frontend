@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
-import 'package:rakoon_frontend/widgets/playful_card.dart';
 
 /// Reusable ProductCard widget following Shupatto minimal editorial design system.
 /// Displays: foto produk, nama uppercase tebal, harga tebal berukuran besar, nama toko, jarak, dan waktu update.
@@ -92,161 +91,191 @@ class ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final String formattedPrice = formatRp(product.harga);
     final String sizeInfo = (product.ukuran != null && product.satuan != null)
-        ? '${product.ukuran!.toStringAsFixed(product.ukuran! % 1 == 0 ? 0 : 1)} ${product.satuan!.toUpperCase()}'
-        : product.kategori.toUpperCase();
+        ? '${product.ukuran!.toStringAsFixed(product.ukuran! % 1 == 0 ? 0 : 1)} ${product.satuan!.toLowerCase()}'
+        : product.kategori;
 
     final String distanceStr = formatDistance(product.jarakKm);
     final String timeAgoStr = formatTimeAgo(product.updatedAt);
 
     return Container(
       width: width,
-      margin: const EdgeInsets.only(right: AppSpacing.s12),
-      child: PlayfulCard(
-        backgroundColor: AppColors.paper,
-        border: Border.all(color: AppColors.graphite, width: 1.0),
-        padding: const EdgeInsets.all(12.0),
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1. Product Image / Photo
-            Center(
-              child: SizedBox(
-                height: 85,
-                child: product.fotoUrl != null && product.fotoUrl!.isNotEmpty
-                    ? Image.network(
-                        product.fotoUrl!,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => _buildFallbackImage(),
-                      )
-                    : _buildFallbackImage(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(height: 1.0, color: AppColors.graphite),
-            const SizedBox(height: 8),
-
-            // 2. Product Name (Uppercase & Bold)
-            Text(
-              product.nama.toUpperCase(),
-              style: AppTextStyles.bodyLarge.copyWith(
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.5,
-                color: AppColors.graphite,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 2),
-
-            // Size / Category Subtitle
-            Text(
-              sizeInfo,
-              style: AppTextStyles.caption.copyWith(
-                fontSize: 9,
-                color: AppColors.fog,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-
-            // 3. Price (Large & Bold)
-            Text(
-              formattedPrice,
-              style: AppTextStyles.headingLg.copyWith(
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                color: AppColors.graphite,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const Spacer(),
-
-            // 4. Store Name
-            Row(
+      margin: const EdgeInsets.only(right: 14.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18.0),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18.0),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18.0),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.storefront_outlined,
-                  size: 11,
-                  color: AppColors.graphite,
-                ),
-                const SizedBox(width: 3),
-                Expanded(
-                  child: Text(
-                    product.namaToko.toUpperCase(),
-                    style: AppTextStyles.caption.copyWith(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.graphite,
+                // 1. Top Badges Row (Best Value & Heart)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentOrange,
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                      child: const Text(
+                        'Best Value',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                    const Icon(
+                      Icons.favorite_border_rounded,
+                      size: 16,
+                      color: Color(0xFF9CA3AF),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 2),
+                const SizedBox(height: 6),
 
-            // 5. Distance & Update Time
-            Row(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.near_me_outlined,
-                        size: 10,
-                        color: AppColors.fog,
-                      ),
-                      const SizedBox(width: 2),
-                      Flexible(
-                        child: Text(
-                          distanceStr,
-                          style: AppTextStyles.caption.copyWith(
-                            fontSize: 8.5,
-                            color: AppColors.fog,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                // 2. Product Image / Photo
+                Center(
+                  child: SizedBox(
+                    height: 85,
+                    child: product.fotoUrl != null && product.fotoUrl!.isNotEmpty
+                        ? Image.network(
+                            product.fotoUrl!,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) => _buildFallbackImage(),
+                          )
+                        : _buildFallbackImage(),
                   ),
                 ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      const Icon(
-                        Icons.access_time_outlined,
-                        size: 10,
-                        color: AppColors.fog,
-                      ),
-                      const SizedBox(width: 2),
-                      Flexible(
-                        child: Text(
-                          timeAgoStr,
-                          style: AppTextStyles.caption.copyWith(
-                            fontSize: 8.5,
-                            color: AppColors.fog,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                const SizedBox(height: 8),
+
+                // 3. Product Name (Bold & Readable)
+                Text(
+                  product.nama,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF111827),
+                    height: 1.2,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+
+                // Size / Category Subtitle
+                Text(
+                  sizeInfo,
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    color: Color(0xFF6B7280),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const Spacer(),
+
+                // 4. Price and Cart Action Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        formattedPrice,
+                        style: const TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF059669),
+                          letterSpacing: -0.3,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF059669),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.shopping_cart_outlined,
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+
+                // 5. Store & Metadata (Distance & Time Ago for tests)
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.storefront_outlined,
+                      size: 10,
+                      color: Color(0xFF9CA3AF),
+                    ),
+                    const SizedBox(width: 2),
+                    Expanded(
+                      child: Text(
+                        product.namaToko,
+                        style: const TextStyle(
+                          fontSize: 8.5,
+                          color: Color(0xFF9CA3AF),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      distanceStr,
+                      style: const TextStyle(
+                        fontSize: 8.0,
+                        color: Color(0xFF9CA3AF),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Text(
+                      ' · ',
+                      style: TextStyle(fontSize: 8.0, color: Color(0xFF9CA3AF)),
+                    ),
+                    Text(
+                      timeAgoStr,
+                      style: const TextStyle(
+                        fontSize: 8.0,
+                        color: Color(0xFF9CA3AF),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );

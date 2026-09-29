@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -245,7 +244,7 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: _categories.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.s),
+                    separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.s),
                     itemBuilder: (context, index) {
                       final category = _categories[index];
                       final isSelected = category == _selectedCategory;
@@ -368,7 +367,7 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
       child: ListView.separated(
         padding: const EdgeInsets.all(AppSpacing.m),
         itemCount: _products.length,
-        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s12),
+        separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.s12),
         itemBuilder: (context, index) {
           final product = _products[index];
           final resolvedImage = _resolveImageUrl(product.fotoUrl);
@@ -394,7 +393,7 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
                         ? Image.network(
                             resolvedImage,
                             fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => _buildFallbackThumbnail(),
+                            errorBuilder: (_, _, _) => _buildFallbackThumbnail(),
                           )
                         : _buildFallbackThumbnail(),
                   ),
@@ -717,7 +716,7 @@ class _EditPhotoSheetState extends State<_EditPhotoSheet> with SingleTickerProvi
                           child: Image.memory(
                             _fileBytes!,
                             fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const Center(
+                            errorBuilder: (_, _, _) => const Center(
                               child: Icon(Icons.broken_image, color: AppColors.fog),
                             ),
                           ),

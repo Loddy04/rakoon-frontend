@@ -36,7 +36,7 @@ void main() {
     try {
       await Supabase.initialize(
         url: 'https://mock.supabase.co',
-        anonKey: 'mock-anon-key',
+        anonKey: 'mock-anon-key', // ignore: deprecated_member_use
         authOptions: const FlutterAuthClientOptions(
           localStorage: EmptyLocalStorage(),
         ),
