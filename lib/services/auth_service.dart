@@ -91,6 +91,11 @@ class AuthService {
     _mockSession = null;
     _mockIsAdmin = null;
     _cachedIsAdmin = null;
+    try {
+      await GoogleSignIn().signOut();
+    } catch (_) {
+      // Abaikan jika platform channel tidak tersedia / mock mode
+    }
     await _client?.auth.signOut();
   }
 
