@@ -1,0 +1,1096 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/core/config/app_config.dart';
+import 'package:rakoon_frontend/features/app_shell/presentation/pages/app_shell.dart';
+import 'package:rakoon_frontend/features/app_shell/presentation/pages/onboarding_screen.dart';
+import 'package:rakoon_frontend/features/app_shell/presentation/pages/splash_screen.dart';
+import 'package:rakoon_frontend/features/budget_shopping/budget_shopping_screen.dart';
+import 'package:rakoon_frontend/features/history/data/repositories/price_history_repository.dart';
+import 'package:rakoon_frontend/features/history/presentation/pages/price_history_page.dart';
+import 'package:rakoon_frontend/features/history/presentation/providers/price_history_notifier.dart';
+import 'package:rakoon_frontend/features/nearby/nearby_stores_screen.dart';
+import 'package:rakoon_frontend/features/recommendation/recommendation_screen.dart';
+import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
+import 'package:rakoon_frontend/services/auth_service.dart';
+import 'package:rakoon_frontend/theme/app_theme.dart';
+
+class IntegrationDashboardPage extends StatefulWidget {
+  final http.Client? httpClient;
+  const IntegrationDashboardPage({super.key, this.httpClient});
+
+  @override
+  State<IntegrationDashboardPage> createState() =>
+      _IntegrationDashboardPageState();
+}
+
+class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
+  // Input Controller untuk Base URL Backend FastAPI
+  final TextEditingController _urlController = TextEditingController(
+    text: AppConfig.apiBaseUrl,
+  );
+
+  // Input Controllers untuk POST /price
+  final TextEditingController _productIdPostController = TextEditingController(
+    text: 'product-123',
+  );
+  final TextEditingController _storeIdPostController = TextEditingController(
+    text: 'store-456',
+  );
+  final TextEditingController _hargaController = TextEditingController(
+    text: '15000',
+  );
+  final TextEditingController _userIdController = TextEditingController(
+    text: 'user-001',
+  );
+
+  // Input Controller untuk GET /price/product/{id}
+  final TextEditingController _productIdGetController = TextEditingController(
+    text: '1',
+  );
+
+  // State / status variabel
+  bool _isLoadingConnection = false;
+  bool _isLoadingPost = false;
+  bool _isLoadingGet = false;
+  String _connectionStatus = 'Belum diuji';
+  Color _statusColor = Colors.grey;
+
+  Map<String, dynamic>? _backendInfo;
+  String _postResult = '';
+  List<dynamic> _historyResult = [];
+  String _historyMessage = '';
+
+  // JWT test state variables
+  bool _isLoadingJwtTest = false;
+  String _jwtTestStatus = 'Belum diuji';
+  Color _jwtTestColor = Colors.grey;
+  String? _jwtUserId;
+  String? _jwtTestError;
+
+  @override
+  void dispose() {
+    _urlController.dispose();
+    _productIdPostController.dispose();
+    _storeIdPostController.dispose();
+    _hargaController.dispose();
+    _userIdController.dispose();
+    _productIdGetController.dispose();
+    super.dispose();
+  }
+
+  // Fungsi untuk menguji koneksi (GET /health)
+  Future<void> _testConnection() async {
+    setState(() {
+      _isLoadingConnection = true;
+      _connectionStatus = 'Menghubungkan...';
+      _statusColor = Colors.blue;
+      _backendInfo = null;
+    });
+
+    final String baseUrl = _urlController.text.trim();
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/health'))
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _connectionStatus = 'Terhubung!';
+          _statusColor = Colors.green;
+          _backendInfo = data;
+        });
+      } else {
+        setState(() {
+          _connectionStatus = 'Gagal (HTTP ${response.statusCode})';
+          _statusColor = Colors.orange;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _connectionStatus = 'Error Koneksi: $e';
+        _statusColor = Colors.red;
+      });
+    } finally {
+      setState(() {
+        _isLoadingConnection = false;
+      });
+    }
+  }
+
+  // Fungsi untuk menguji JWT authentication (GET /auth/test-protected)
+  Future<void> _testJwtAuthentication() async {
+    final String baseUrl = _urlController.text.trim();
+    final String targetUrl = baseUrl.isNotEmpty
+        ? baseUrl
+        : 'http://10.0.2.2:8000';
+
+    setState(() {
+      _isLoadingJwtTest = true;
+      _jwtTestStatus = 'Memproses...';
+      _jwtTestColor = Colors.orange;
+      _jwtUserId = null;
+      _jwtTestError = null;
+    });
+
+    final session = AuthService.currentSession;
+    if (session == null) {
+      setState(() {
+        _isLoadingJwtTest = false;
+        _jwtTestStatus = 'Gagal';
+        _jwtTestColor = Colors.red;
+        _jwtTestError = 'Silakan login terlebih dahulu.';
+      });
+      return;
+    }
+
+    final token = session.accessToken;
+    final client = widget.httpClient ?? http.Client();
+    try {
+      final response = await client
+          .get(
+            Uri.parse('$targetUrl/auth/test-protected'),
+            headers: {'Authorization': 'Bearer $token'},
+          )
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _jwtTestStatus = 'Sukses';
+          _jwtTestColor = Colors.green;
+          _jwtUserId = data['user_id'];
+        });
+      } else if (response.statusCode == 401) {
+        setState(() {
+          _jwtTestStatus = 'Gagal (401)';
+          _jwtTestColor = Colors.red;
+          _jwtTestError = 'Not authenticated: Token tidak valid atau expired.';
+        });
+      } else {
+        setState(() {
+          _jwtTestStatus = 'Gagal (${response.statusCode})';
+          _jwtTestColor = Colors.red;
+          _jwtTestError = 'Kesalahan server backend.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _jwtTestStatus = 'Gagal';
+        _jwtTestColor = Colors.red;
+        _jwtTestError = 'Koneksi bermasalah. Coba lagi.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingJwtTest = false;
+        });
+      }
+    }
+  }
+
+  // Fungsi untuk mengirim data (POST /price)
+  Future<void> _sendPriceEntry() async {
+    setState(() {
+      _isLoadingPost = true;
+      _postResult = 'Mengirim data...';
+    });
+
+    final String baseUrl = _urlController.text.trim();
+    final String productId = _productIdPostController.text.trim();
+    final String storeId = _storeIdPostController.text.trim();
+    final int? harga = int.tryParse(_hargaController.text.trim());
+    final String userId = _userIdController.text.trim();
+
+    if (harga == null) {
+      setState(() {
+        _isLoadingPost = false;
+        _postResult = 'Harga harus berupa angka!';
+      });
+      return;
+    }
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/price/'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'product_id': productId,
+              'store_id': storeId,
+              'harga': harga,
+              'sumber_user_id': userId,
+            }),
+          )
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _postResult =
+              'Sukses Dikirim!\nResponse:\n${const JsonEncoder.withIndent('  ').convert(data)}';
+        });
+      } else {
+        setState(() {
+          _postResult =
+              'Gagal (HTTP ${response.statusCode}):\n${response.body}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _postResult = 'Error: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoadingPost = false;
+      });
+    }
+  }
+
+  // Fungsi untuk mengambil riwayat harga (GET /price/product/{product_id})
+  Future<void> _fetchPriceHistory() async {
+    setState(() {
+      _isLoadingGet = true;
+      _historyResult = [];
+      _historyMessage = 'Mengambil data...';
+    });
+
+    final String baseUrl = _urlController.text.trim();
+    final String productId = _productIdGetController.text.trim();
+
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/price/product/$productId'))
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final dynamic decoded = jsonDecode(response.body);
+        if (decoded is Map && decoded.containsKey('message')) {
+          // Jika backend mengembalikan status pesan kosong / "Belum ada data historis"
+          setState(() {
+            _historyMessage = decoded['message'];
+          });
+        } else if (decoded is List) {
+          setState(() {
+            _historyResult = decoded;
+            _historyMessage = _historyResult.isEmpty
+                ? 'Data kosong'
+                : 'Berhasil memuat ${_historyResult.length} riwayat';
+          });
+        } else {
+          setState(() {
+            _historyMessage = 'Format data tidak dikenali';
+          });
+        }
+      } else {
+        setState(() {
+          _historyMessage =
+              'Gagal (HTTP ${response.statusCode}): ${response.body}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _historyMessage = 'Error: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoadingGet = false;
+      });
+    }
+  }
+
+  void _openPriceHistoryUI() {
+    final String baseUrl = _urlController.text.trim();
+    final String input = _productIdGetController.text.trim();
+    final dynamic productId = input.isNotEmpty ? input : '1';
+
+    final repository = PriceHistoryRepository(baseUrl: baseUrl);
+    final notifier = PriceHistoryNotifier(repository: repository);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            PriceHistoryPage(notifier: notifier, productId: productId),
+      ),
+    );
+  }
+
+  void _openPriceHistoryUIForId(dynamic productId) {
+    final String baseUrl = _urlController.text.trim();
+    final repository = PriceHistoryRepository(baseUrl: baseUrl);
+    final notifier = PriceHistoryNotifier(repository: repository);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            PriceHistoryPage(notifier: notifier, productId: productId),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Rakoon Dev Integration',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        actions: [
+          IconButton(
+            key: const Key('logout_button'),
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await AuthService.signOut();
+            },
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // BANNER PRATINJAU APP SHELL (SPLASH, ONBOARDING, HOME)
+              Card(
+                color: const Color(0xFF0F172A),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.layers_outlined,
+                            size: 32,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              'Pratinjau App Shell',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Uji coba transisi antarmuka Splash, Onboarding secara lokal.',
+                        style: TextStyle(fontSize: 12, color: Colors.white70),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white24,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SplashScreen(
+                                    baseUrl: _urlController.text.trim(),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: const Text('Splash'),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white24,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => OnboardingScreen(
+                                    baseUrl: _urlController.text.trim(),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: const Text('Onboarding'),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white24,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => AppShell(
+                                    baseUrl: _urlController.text.trim(),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: const Text('Home'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // BANNER UTAMA UNTUK MENGUJI UI FEATURE 3 (PRICE HISTORY)
+              Card(
+                color: const Color(0xFF0D9488),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.analytics_outlined,
+                        size: 36,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'UI Price History (F3)',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Tampilan Grafis & Komparasi Harga Toko',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF0D9488),
+                        ),
+                        onPressed: _openPriceHistoryUI,
+                        icon: const Icon(Icons.open_in_new, size: 18),
+                        label: const Text(
+                          'Buka UI',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // BANNER UTAMA UNTUK MENGUJI FEATURE BARU (SMART BUDGET SHOPPING)
+              Card(
+                color: const Color(0xFF059669),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.account_balance_wallet_outlined,
+                        size: 36,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'Smart Budget Shopping',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Rekomendasi Toko & Alokasi Budget',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF059669),
+                        ),
+                        onPressed: () {
+                          final String baseUrl = _urlController.text.trim();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => BudgetShoppingScreen(
+                                baseUrl: baseUrl.isNotEmpty
+                                    ? baseUrl
+                                    : 'http://10.0.2.2:8000',
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(
+                          Icons.shopping_cart_checkout,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          'Uji Fitur',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Tips emulator info
+              Card(
+                color: isDark ? const Color(0xFF0F3733) : Colors.teal.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '💡 Petunjuk IP Address Backend:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? Colors.teal.shade200
+                              : Colors.teal.shade900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text('• Android Emulator: http://10.0.2.2:8000'),
+                      const Text(
+                        '• iOS Simulator/Web/Windows: http://localhost:8000',
+                      ),
+                      const Text(
+                        '• HP Fisik: http://<IP_KOMPUTER_ANDA>:8000 (Hubungkan Wi-Fi sama)',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // SECTION 1: KONEKSI SERVER
+              _buildSectionCard(
+                title: '🔌 Konfigurasi Koneksi Server',
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _urlController,
+                      decoration: const InputDecoration(
+                        labelText: 'Base URL Backend FastAPI',
+                        border: OutlineInputBorder(),
+                        hintText: 'http://10.0.2.2:8000',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _isLoadingConnection
+                                ? null
+                                : _testConnection,
+                            icon: _isLoadingConnection
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.sync),
+                            label: const Text('Cek Koneksi (GET /health)'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _statusColor.withValues(alpha: 0.15),
+                        border: Border.all(color: _statusColor),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.info_outline, color: _statusColor),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Status: $_connectionStatus',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: _statusColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (_backendInfo != null) ...[
+                            const SizedBox(height: 8),
+                            Text('App Name: ${_backendInfo!['app'] ?? '-'}'),
+                            Text('Version: ${_backendInfo!['version'] ?? '-'}'),
+                            Text('Status: ${_backendInfo!['status'] ?? '-'}'),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // SECTION 1.1: TEST AUTH JWT VALIDATION
+              _buildSectionCard(
+                title: '🔐 Uji Token JWT Auth (FastAPI /auth/test-protected)',
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            key: const Key('test_jwt_button'),
+                            onPressed: _isLoadingJwtTest
+                                ? null
+                                : _testJwtAuthentication,
+                            icon: _isLoadingJwtTest
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.security),
+                            label: const Text('Kirim Token Bearer JWT'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _jwtTestColor.withValues(alpha: 0.15),
+                        border: Border.all(color: _jwtTestColor),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.info_outline, color: _jwtTestColor),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Status Uji JWT: $_jwtTestStatus',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: _jwtTestColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (_jwtUserId != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Authenticated: YES',
+                              style: TextStyle(
+                                color: Colors.green.shade800,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text('Validated Subject (user_id):'),
+                            SelectableText(
+                              _jwtUserId!,
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                          if (_jwtTestError != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Error: $_jwtTestError',
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ScanCameraScreen(baseUrl: _urlController.text.trim()),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.camera_alt, size: 24),
+                label: const Text(
+                  '📷 Uji Fitur Smart Shelf Scan (Kamera/AI)',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  backgroundColor: AppColors.accentSoft,
+                  foregroundColor: AppColors.accent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.l),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => NearbyStoresScreen(
+                        baseUrl: _urlController.text.trim(),
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.location_on, size: 24),
+                label: const Text(
+                  '📍 Uji Fitur Toko Terdekat (Nearby Stores)',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  backgroundColor: AppColors.accentSoft,
+                  foregroundColor: AppColors.accent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.l),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RecommendationScreen(
+                        baseUrl: _urlController.text.trim(),
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.emoji_events, size: 24),
+                label: const Text(
+                  '🏆 Uji Fitur Best Value Recommendation',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  backgroundColor: AppColors.accentSoft,
+                  foregroundColor: AppColors.accent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.l),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // SECTION 2: TEST POST /price
+              _buildSectionCard(
+                title: '➕ Tambah Data (POST /price/)',
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _productIdPostController,
+                            decoration: const InputDecoration(
+                              labelText: 'Product ID',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _storeIdPostController,
+                            decoration: const InputDecoration(
+                              labelText: 'Store ID',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _hargaController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Harga (Rupiah)',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _userIdController,
+                            decoration: const InputDecoration(
+                              labelText: 'Sumber User ID',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _isLoadingPost ? null : _sendPriceEntry,
+                            icon: _isLoadingPost
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.send),
+                            label: const Text('Kirim Entri Harga'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_postResult.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.grey.shade900
+                              : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade400),
+                        ),
+                        child: Text(
+                          _postResult,
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // SECTION 3: TEST GET /price/product/{product_id}
+              _buildSectionCard(
+                title: '🔍 Riwayat Harga (GET /price/product/{id})',
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _productIdGetController,
+                            decoration: const InputDecoration(
+                              labelText: 'Cari Product ID',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton.filled(
+                          onPressed: _isLoadingGet ? null : _fetchPriceHistory,
+                          icon: _isLoadingGet
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.search),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (_historyMessage.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Text(
+                          _historyMessage,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    if (_historyResult.isNotEmpty)
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _historyResult.length,
+                        itemBuilder: (context, index) {
+                          final item = _historyResult[index];
+                          final harga = item['harga'] ?? 0;
+                          final storeId = item['store_id'] ?? '-';
+                          final timestamp = item['timestamp'] ?? '-';
+                          final verified = item['status_verifikasi'] ?? '-';
+
+                          final itemProductId =
+                              item['product_id'] ??
+                              _productIdGetController.text.trim();
+                          return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                              onTap: () =>
+                                  _openPriceHistoryUIForId(itemProductId),
+                              child: ListTile(
+                                leading: const Icon(
+                                  Icons.analytics_outlined,
+                                  color: Colors.teal,
+                                ),
+                                title: Text('Rp $harga'),
+                                subtitle: Text(
+                                  'Toko: $storeId\nWaktu: $timestamp',
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Chip(
+                                      label: Text(
+                                        verified,
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      backgroundColor: verified == 'pending'
+                                          ? Colors.amber.shade200
+                                          : Colors.green.shade200,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Icon(
+                                      Icons.chevron_right,
+                                      color: Colors.grey,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({required String title, required Widget child}) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const Divider(height: 20, thickness: 1.2),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}

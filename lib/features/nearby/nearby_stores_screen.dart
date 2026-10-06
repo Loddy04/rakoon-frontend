@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
@@ -879,7 +880,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                       ? _buildEmptyStoresState()
                       : ListView.builder(
                           controller: _listScrollController,
-                          cacheExtent: 10000.0,
+                          scrollCacheExtent: const ScrollCacheExtent.pixels(10000.0),
                           padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
                           itemCount: stores.length,
                           itemBuilder: (context, index) {

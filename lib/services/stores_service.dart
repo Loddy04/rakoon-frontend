@@ -168,64 +168,14 @@ class StoresService {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((e) => StoreProductItem.fromJson(e as Map<String, dynamic>)).toList();
       }
-      return _fallbackStoreProducts();
+      return [];
     } catch (_) {
-      return _fallbackStoreProducts();
+      return [];
     } finally {
       if (client == null) {
         httpClient.close();
       }
     }
-  }
-
-  static List<StoreProductItem> _fallbackStoreProducts() {
-    return [
-      StoreProductItem(
-        id: 'fallback_1',
-        nama: 'Indomie Mi Goreng Spesial',
-        kategori: 'Makanan Instan',
-        ukuran: 85,
-        satuan: 'gr',
-        harga: 3100,
-        updatedAt: '2 jam lalu',
-      ),
-      StoreProductItem(
-        id: 'fallback_2',
-        nama: 'Bimoli Minyak Goreng Pouch',
-        kategori: 'Minyak Goreng',
-        ukuran: 2,
-        satuan: 'L',
-        harga: 34500,
-        updatedAt: '4 jam lalu',
-      ),
-      StoreProductItem(
-        id: 'fallback_3',
-        nama: 'Ultra Milk Susu UHT Full Cream',
-        kategori: 'Susu',
-        ukuran: 1,
-        satuan: 'L',
-        harga: 18500,
-        updatedAt: '1 hari lalu',
-      ),
-      StoreProductItem(
-        id: 'fallback_4',
-        nama: 'Aqua Air Mineral Botol',
-        kategori: 'Minuman',
-        ukuran: 600,
-        satuan: 'ml',
-        harga: 3500,
-        updatedAt: '3 jam lalu',
-      ),
-      StoreProductItem(
-        id: 'fallback_5',
-        nama: 'Gulaku Gula Pasir Premium',
-        kategori: 'Bahan Pokok',
-        ukuran: 1,
-        satuan: 'kg',
-        harga: 17500,
-        updatedAt: '1 hari lalu',
-      ),
-    ];
   }
 }
 
