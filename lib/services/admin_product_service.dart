@@ -45,7 +45,7 @@ class AdminProductService {
     }
   }
 
-  /// Mengunggah berkas foto produk secara langsung (admin only)
+  /// Mengunggah berkas foto produk ke Supabase Storage (admin only)
   static Future<String> uploadProductPhotoFile({
     required String productId,
     String? filePath,
