@@ -4,13 +4,9 @@ import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 import 'package:rakoon_frontend/features/auth/presentation/widgets/login_bottom_sheet.dart';
-import 'package:rakoon_frontend/features/history/data/repositories/price_history_repository.dart';
-import 'package:rakoon_frontend/features/history/presentation/pages/price_history_page.dart';
-import 'package:rakoon_frontend/features/history/presentation/providers/price_history_notifier.dart';
 import 'package:rakoon_frontend/features/recommendation/recommendation_screen.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/services/location_service.dart';
-import 'package:rakoon_frontend/services/products_service.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
@@ -116,16 +112,6 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
   String _formatRupiah(double amount) {
     return formatRp(amount);
-  }
-
-  double _calculateTotal() {
-    double total = 0.0;
-    for (final item in _items) {
-      if (item.harga != null && item.harga! > 0) {
-        total += item.harga!;
-      }
-    }
-    return total;
   }
 
   double? _calculateUnitPrice(ScanResultItem item) {
@@ -1324,84 +1310,6 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     }
   }
 
-  Future<void> _checkAndNavigateToHistory(String productName) async {
-    if (productName.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Nama produk tidak boleh kosong.'),
-          backgroundColor: Color(0xFFEF4444),
-        ),
-      );
-      return;
-    }
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(color: Color(0xFF00875A)),
-      ),
-    );
-
-    try {
-      final products = await ProductsService.getProducts(
-        baseUrl: widget.baseUrl,
-        search: productName.trim(),
-      );
-
-      if (mounted) {
-        Navigator.pop(context);
-      }
-
-      Product? matchedProduct;
-      for (final p in products) {
-        if (p.nama.trim().toLowerCase() == productName.trim().toLowerCase()) {
-          matchedProduct = p;
-          break;
-        }
-      }
-
-      if (matchedProduct != null) {
-        final repository = PriceHistoryRepository(baseUrl: widget.baseUrl);
-        final notifier = PriceHistoryNotifier(repository: repository);
-        final productId = matchedProduct.id;
-
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PriceHistoryPage(
-                notifier: notifier,
-                productId: productId,
-              ),
-            ),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Produk "${productName.trim()}" belum terdaftar di database. Silakan simpan konfirmasi terlebih dahulu untuk merekam riwayat.',
-              ),
-              backgroundColor: const Color(0xFFF59E0B),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal memeriksa riwayat: $e'),
-            backgroundColor: const Color(0xFFEF4444),
-          ),
-        );
-      }
-    }
-  }
-
   bool _hasUnsavedChanges() {
     if (_items.length != widget.detectedItems.length) return true;
 
@@ -1498,7 +1406,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
             onPressed: () async {
               if (_hasUnsavedChanges()) {
                 final shouldPop = await _showExitConfirmationDialog(context);
-                if (shouldPop == true && mounted) {
+                if (shouldPop == true && context.mounted) {
                   Navigator.of(context).pop();
                 }
               } else {

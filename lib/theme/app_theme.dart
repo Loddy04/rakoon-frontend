@@ -25,6 +25,12 @@ class AppColors {
   static const Color surfaceWhite = Color(0xFFFFFFFF);
   static const Color scaffoldBg = Color(0xFFF9FBFA);
 
+  /// Auth UI Tokens (Design Parity)
+  static const Color authSageGreen = Color(0xFF688973);
+  static const Color authDarkBg = Color(0xFF131518);
+  static const Color authTabBg = Color(0xFFF3F4F6);
+  static const Color authFieldBorder = Color(0xFFE5E7EB);
+
   /// Graphite (#2D2D2D) - Primary text, hairline borders, structural lines
   static const Color graphite = Color(0xFF2D2D2D);
 

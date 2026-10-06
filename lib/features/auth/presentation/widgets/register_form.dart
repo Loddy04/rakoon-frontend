@@ -5,40 +5,50 @@ import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class LoginForm extends StatefulWidget {
+class RegisterForm extends StatefulWidget {
   final VoidCallback? onSuccess;
-  final bool showRegisterLink;
-  final VoidCallback? onRegisterTap;
+  final bool showLoginLink;
+  final VoidCallback? onLoginTap;
 
-  const LoginForm({
+  const RegisterForm({
     super.key,
     this.onSuccess,
-    this.showRegisterLink = true,
-    this.onRegisterTap,
+    this.showLoginLink = true,
+    this.onLoginTap,
   });
 
   @override
-  State<LoginForm> createState() => _LoginFormState();
+  State<RegisterForm> createState() => _RegisterFormState();
 }
 
-class _LoginFormState extends State<LoginForm> {
+class _RegisterFormState extends State<RegisterForm> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _rememberMe = false;
+  bool _obscureConfirmPassword = true;
   bool _isLoading = false;
   bool _isGoogleLoading = false;
+  bool _isSuccess = false;
   String? _errorMessage;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleGoogleLogin() async {
+  void _handleSuccess() {
+    if (!mounted) return;
+    if (widget.onSuccess != null) {
+      widget.onSuccess!();
+    }
+  }
+
+  Future<void> _handleGoogleRegister() async {
     setState(() {
       _isGoogleLoading = true;
       _errorMessage = null;
@@ -47,9 +57,7 @@ class _LoginFormState extends State<LoginForm> {
     try {
       final response = await AuthService.signInWithGoogle();
       if (response.session != null) {
-        if (widget.onSuccess != null) {
-          widget.onSuccess!();
-        }
+        _handleSuccess();
       }
     } on AuthException catch (e) {
       if (!e.message.toLowerCase().contains('batal') &&
@@ -60,7 +68,7 @@ class _LoginFormState extends State<LoginForm> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Gagal masuk dengan Google: $e';
+        _errorMessage = 'Gagal mendaftar dengan Google: $e';
       });
     } finally {
       if (mounted) {
@@ -71,7 +79,7 @@ class _LoginFormState extends State<LoginForm> {
     }
   }
 
-  Future<void> _handleLogin() async {
+  Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -83,38 +91,23 @@ class _LoginFormState extends State<LoginForm> {
       final email = _emailController.text.trim();
       final password = _passwordController.text;
 
-      final response = await AuthService.signIn(
-        email: email,
-        password: password,
-      );
+      final response =
+          await AuthService.signUp(email: email, password: password);
 
-      if (response.user != null && response.session == null) {
+      if (response.session != null) {
+        _handleSuccess();
+      } else if (response.user != null) {
         setState(() {
-          _errorMessage = 'Silakan verifikasi email terlebih dahulu.';
+          _isSuccess = true;
         });
-      } else if (response.session != null) {
-        if (widget.onSuccess != null) {
-          widget.onSuccess!();
-        }
       }
     } on AuthException catch (e) {
-      if (e.message.contains('Invalid login credentials') ||
-          e.message.contains('Invalid credentials')) {
-        setState(() {
-          _errorMessage = 'Email atau password salah.';
-        });
-      } else if (e.message.contains('Email not confirmed')) {
-        setState(() {
-          _errorMessage = 'Silakan verifikasi email terlebih dahulu.';
-        });
-      } else {
-        setState(() {
-          _errorMessage = e.message;
-        });
-      }
+      setState(() {
+        _errorMessage = e.message;
+      });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Koneksi bermasalah. Coba lagi.';
+        _errorMessage = 'Registrasi gagal. Periksa data dan coba lagi.';
       });
     } finally {
       if (mounted) {
@@ -125,8 +118,78 @@ class _LoginFormState extends State<LoginForm> {
     }
   }
 
+  Widget _buildSuccessView() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 12),
+        const Icon(
+          Icons.check_circle_outline_rounded,
+          size: 52,
+          color: AppColors.authSageGreen,
+        ),
+        const SizedBox(height: 14),
+        Text(
+          'Registrasi Berhasil!',
+          style: GoogleFonts.outfit(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF1F2937),
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Registrasi berhasil. Silakan periksa kotak masuk email Anda untuk melakukan verifikasi sebelum masuk ke akun Rakoon.',
+          style: GoogleFonts.outfit(
+            fontSize: 13,
+            color: const Color(0xFF4B5563),
+            height: 1.35,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          height: 48,
+          child: ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _isSuccess = false;
+              });
+              if (widget.onLoginTap != null) {
+                widget.onLoginTap!();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.authSageGreen,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+            ),
+            child: Text(
+              'Masuk Sekarang',
+              style: GoogleFonts.outfit(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isSuccess) {
+      return _buildSuccessView();
+    }
+
     return Form(
       key: _formKey,
       child: Column(
@@ -136,12 +199,12 @@ class _LoginFormState extends State<LoginForm> {
           // Error Banner
           if (_errorMessage != null) ...[
             Container(
-              key: const Key('error_banner'),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: AppColors.errorSoft,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.error.withValues(alpha: 0.5)),
+                border:
+                    Border.all(color: AppColors.error.withValues(alpha: 0.5)),
               ),
               child: Row(
                 children: [
@@ -201,10 +264,9 @@ class _LoginFormState extends State<LoginForm> {
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
-                      vertical: 6,
+                      vertical: 5,
                     ),
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Icon(
                           Icons.mail_outline_rounded,
@@ -249,9 +311,8 @@ class _LoginFormState extends State<LoginForm> {
                                   errorBorder: InputBorder.none,
                                   focusedErrorBorder: InputBorder.none,
                                   isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 2,
-                                  ),
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(vertical: 2),
                                   errorStyle: const TextStyle(
                                     height: 0,
                                     fontSize: 0,
@@ -286,7 +347,7 @@ class _LoginFormState extends State<LoginForm> {
               );
             },
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
           // Password Field
           FormField<String>(
@@ -295,6 +356,9 @@ class _LoginFormState extends State<LoginForm> {
               final val = _passwordController.text;
               if (val.isEmpty) {
                 return 'Password tidak boleh kosong.';
+              }
+              if (val.length < 6) {
+                return 'Password minimal 6 karakter.';
               }
               return null;
             },
@@ -317,10 +381,9 @@ class _LoginFormState extends State<LoginForm> {
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
-                      vertical: 6,
+                      vertical: 5,
                     ),
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Icon(
                           Icons.lock_outline_rounded,
@@ -365,9 +428,8 @@ class _LoginFormState extends State<LoginForm> {
                                   errorBorder: InputBorder.none,
                                   focusedErrorBorder: InputBorder.none,
                                   isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 2,
-                                  ),
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(vertical: 2),
                                   errorStyle: const TextStyle(
                                     height: 0,
                                     fontSize: 0,
@@ -419,67 +481,151 @@ class _LoginFormState extends State<LoginForm> {
               );
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
-          // Remember Me Row
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _rememberMe = !_rememberMe;
-                  });
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 17,
-                      height: 17,
-                      decoration: BoxDecoration(
-                        color: _rememberMe
-                            ? AppColors.authSageGreen
-                            : Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: _rememberMe
-                              ? AppColors.authSageGreen
-                              : const Color(0xFFD1D5DB),
-                          width: 1.5,
+          // Confirm Password Field
+          FormField<String>(
+            initialValue: _confirmPasswordController.text,
+            validator: (_) {
+              final val = _confirmPasswordController.text;
+              if (val.isEmpty) {
+                return 'Konfirmasi password tidak boleh kosong.';
+              }
+              if (val != _passwordController.text) {
+                return 'Konfirmasi password tidak cocok.';
+              }
+              return null;
+            },
+            builder: (FormFieldState<String> state) {
+              final hasError = state.hasError;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: hasError
+                            ? AppColors.error
+                            : AppColors.authFieldBorder,
+                        width: hasError ? 1.5 : 1.2,
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 5,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.lock_outline_rounded,
+                          color: hasError
+                              ? AppColors.error
+                              : const Color(0xFF5B8268),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Konfirmasi Password',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF9CA3AF),
+                                ),
+                              ),
+                              TextFormField(
+                                key: const Key('confirm_password_field'),
+                                controller: _confirmPasswordController,
+                                obscureText: _obscureConfirmPassword,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF1F2937),
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: '••••••••',
+                                  hintStyle: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w400,
+                                    color: const Color(0xFFD1D5DB),
+                                  ),
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  errorBorder: InputBorder.none,
+                                  focusedErrorBorder: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(vertical: 2),
+                                  errorStyle: const TextStyle(
+                                    height: 0,
+                                    fontSize: 0,
+                                  ),
+                                ),
+                                onChanged: (val) {
+                                  state.didChange(val);
+                                  if (state.hasError) {
+                                    state.validate();
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _obscureConfirmPassword =
+                                  !_obscureConfirmPassword;
+                            });
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 6),
+                            child: Icon(
+                              _obscureConfirmPassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              color: const Color(0xFF9CA3AF),
+                              size: 19,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (hasError)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 14, top: 3),
+                      child: Text(
+                        state.errorText ?? '',
+                        style: GoogleFonts.outfit(
+                          fontSize: 11,
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                      alignment: Alignment.center,
-                      child: _rememberMe
-                          ? const Icon(
-                              Icons.check,
-                              size: 13,
-                              color: Colors.white,
-                            )
-                          : null,
                     ),
-                    const SizedBox(width: 7),
-                    Text(
-                      'Remember me',
-                      style: GoogleFonts.outfit(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF4B5563),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+                ],
+              );
+            },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          // Main Login Button
+          // Register Button
           SizedBox(
             height: 48,
             child: ElevatedButton(
-              key: const Key('login_button'),
-              onPressed:
-                  (_isLoading || _isGoogleLoading) ? null : _handleLogin,
+              key: const Key('register_button'),
+              onPressed: (_isLoading || _isGoogleLoading)
+                  ? null
+                  : _handleRegister,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.authSageGreen,
                 foregroundColor: Colors.white,
@@ -499,7 +645,7 @@ class _LoginFormState extends State<LoginForm> {
                       ),
                     )
                   : Text(
-                      'Login',
+                      'Register',
                       style: GoogleFonts.outfit(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -509,9 +655,9 @@ class _LoginFormState extends State<LoginForm> {
                     ),
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
 
-          // Divider 'Or login with'
+          // Divider 'Or register with'
           Row(
             children: [
               const Expanded(
@@ -523,7 +669,7 @@ class _LoginFormState extends State<LoginForm> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Text(
-                  'Or login with',
+                  'Or register with',
                   style: GoogleFonts.outfit(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
@@ -539,16 +685,16 @@ class _LoginFormState extends State<LoginForm> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
-          // Google Sign-In Button (Full Width)
+          // Google Register Button (Full Width)
           SizedBox(
             height: 46,
             child: OutlinedButton(
-              key: const Key('google_login_button'),
+              key: const Key('google_register_button'),
               onPressed: (_isLoading || _isGoogleLoading)
                   ? null
-                  : _handleGoogleLogin,
+                  : _handleGoogleRegister,
               style: OutlinedButton.styleFrom(
                 backgroundColor: Colors.white,
                 side: const BorderSide(
@@ -575,7 +721,7 @@ class _LoginFormState extends State<LoginForm> {
                         const GoogleLogoWidget(size: 20),
                         const SizedBox(width: 10),
                         Text(
-                          'Masuk dengan Google',
+                          'Daftar dengan Google',
                           style: GoogleFonts.outfit(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -587,24 +733,24 @@ class _LoginFormState extends State<LoginForm> {
             ),
           ),
 
-          // Register Navigation Link (if enabled)
-          if (widget.showRegisterLink) ...[
-            const SizedBox(height: 16),
+          // Bottom Navigation Link (if enabled)
+          if (widget.showLoginLink) ...[
+            const SizedBox(height: 14),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'Belum punya akun? ',
+                  'Sudah punya akun? ',
                   style: GoogleFonts.outfit(
                     fontSize: 12,
                     color: const Color(0xFF6B7280),
                   ),
                 ),
                 GestureDetector(
-                  key: const Key('goto_register_button'),
-                  onTap: widget.onRegisterTap,
+                  key: const Key('goto_login_button'),
+                  onTap: widget.onLoginTap,
                   child: Text(
-                    'Daftar Sekarang',
+                    'Masuk',
                     style: GoogleFonts.outfit(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

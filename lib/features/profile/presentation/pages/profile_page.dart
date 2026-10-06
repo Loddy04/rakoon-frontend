@@ -73,7 +73,7 @@ class _ProfilePageState extends State<ProfilePage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
-      backgroundColor: AppColors.paper,
+      backgroundColor: Colors.transparent,
       builder: (context) {
         return Padding(
           padding: EdgeInsets.only(
