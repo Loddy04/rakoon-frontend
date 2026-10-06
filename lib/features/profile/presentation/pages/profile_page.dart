@@ -5,6 +5,7 @@ import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/features/auth/presentation/widgets/login_bottom_sheet.dart';
 import 'package:rakoon_frontend/features/admin/presentation/pages/admin_product_photo_page.dart';
+import 'package:rakoon_frontend/features/merchant/presentation/pages/merchant_dashboard_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Profile / Account screen showing user identity, sync status, app metadata,
@@ -588,6 +589,82 @@ class _ProfilePageState extends State<ProfilePage> {
           ],
 
           const SizedBox(height: 16),
+          InkWell(
+            key: const Key('merchant_hub_tile'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MerchantDashboardPage(
+                    baseUrl: widget.baseUrl,
+                    httpClient: widget.httpClient,
+                  ),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFECFDF5),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.storefront_rounded,
+                      color: Color(0xFF059669),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Mode Mitra Toko',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                            color: Color(0xFF111827),
+                          ),
+                        ),
+                        SizedBox(height: 3),
+                        Text(
+                          'Pasang flyer promo offline & kelola etalase toko',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 16,
+                    color: Color(0xFF9CA3AF),
+                  ),
+                ],
+              ),
+            ),
+          ),
 
           // Cloud Sync Info Card
           Container(

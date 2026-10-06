@@ -14,6 +14,7 @@ import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/services/location_service.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
+import 'package:rakoon_frontend/services/ads_service.dart';
 import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/features/recommendation/presentation/providers/recommendation_provider.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
@@ -43,6 +44,10 @@ class HomeScreenState extends State<HomeScreen> {
   String? _scansError;
 
   final RecommendationProvider _recommendationProvider = RecommendationProvider();
+  List<HomePromoBanner> _promoBanners = [];
+  bool _isLoadingBanners = false;
+  int _currentBannerIndex = 0;
+  final PageController _bannerPageController = PageController(viewportFraction: 0.92);
 
   @override
   void initState() {
@@ -50,12 +55,42 @@ class HomeScreenState extends State<HomeScreen> {
     _detectLocationAndStore();
     fetchRecentScans();
     fetchRecommendations();
+    fetchPromoBanners();
   }
 
   @override
   void dispose() {
     _recommendationProvider.dispose();
+    _bannerPageController.dispose();
     super.dispose();
+  }
+
+  Future<void> fetchPromoBanners() async {
+    if (mounted) {
+      setState(() {
+        _isLoadingBanners = true;
+      });
+    }
+    try {
+      final banners = await AdsService.getHomeBanners(
+        baseUrl: _getBaseUrl(),
+        client: widget.httpClient,
+        lat: _userLat,
+        lng: _userLng,
+      );
+      if (mounted) {
+        setState(() {
+          _promoBanners = banners;
+          _isLoadingBanners = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoadingBanners = false;
+        });
+      }
+    }
   }
 
   Future<void> fetchRecommendations({
@@ -159,6 +194,7 @@ class HomeScreenState extends State<HomeScreen> {
         lng: position.longitude,
         radiusKm: 1.0,
       );
+      fetchPromoBanners();
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -906,6 +942,9 @@ class HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 22.0),
 
+                    // Promo Toko Sekitarmu (Hyperlocal Flyer Ad Carousel)
+                    _buildPromoBannersSection(),
+
                     // 6. Section "Produk Pilihan" Horizontal Carousel
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1096,6 +1135,371 @@ class HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPromoBannersSection() {
+    if (_isLoadingBanners && _promoBanners.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    if (_promoBanners.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                'Promo Toko Sekitarmu',
+                style: GoogleFonts.dmSerifDisplay(
+                  fontSize: 21,
+                  fontWeight: FontWeight.normal,
+                  color: const Color(0xFF0D2818),
+                  letterSpacing: -0.2,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9.0, vertical: 4.0),
+              decoration: BoxDecoration(
+                color: const Color(0xFFECFDF5),
+                borderRadius: BorderRadius.circular(16.0),
+                border: Border.all(color: const Color(0xFFA7F3D0)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.storefront_rounded, size: 12, color: Color(0xFF059669)),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Mitra Ritel',
+                    style: GoogleFonts.outfit(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF059669),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 3.0),
+        Text(
+          'Flyer promo offline toko ritel terdekat di Yogyakarta',
+          style: GoogleFonts.outfit(
+            fontSize: 11.5,
+            color: const Color(0xFF6B6B6B),
+          ),
+        ),
+        const SizedBox(height: 12.0),
+
+        // Carousel Slider
+        SizedBox(
+          height: 195,
+          child: PageView.builder(
+            controller: _bannerPageController,
+            physics: const BouncingScrollPhysics(),
+            itemCount: _promoBanners.length,
+            onPageChanged: (idx) {
+              setState(() {
+                _currentBannerIndex = idx;
+              });
+            },
+            itemBuilder: (context, index) {
+              final banner = _promoBanners[index];
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: InteractiveScale(
+                  onTap: () => _showPromoDetailDialog(banner),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(22.0),
+                      border: Border.all(color: const Color(0xFFE8E4DC)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 10.0,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(22.0),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // Background Image Flyer
+                          Image.network(
+                            banner.bannerUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              color: const Color(0xFFE5E7EB),
+                              child: const Center(
+                                child: Icon(Icons.image_not_supported_outlined, color: Colors.grey, size: 36),
+                              ),
+                            ),
+                          ),
+
+                          // Top Badges
+                          Positioned(
+                            top: 12,
+                            left: 12,
+                            right: 12,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.65),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.location_on_rounded, color: Color(0xFF10B981), size: 12),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${banner.storeNama} • ${banner.distanceKm.toStringAsFixed(1)} km',
+                                        style: GoogleFonts.outfit(
+                                          color: Colors.white,
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF166534),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    'Sisa ${banner.daysLeft} Hari',
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.white,
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Bottom Gradient & Title
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withValues(alpha: 0.85),
+                                  ],
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    banner.title,
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.white,
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Ketuk untuk lihat brosur penuh',
+                                        style: GoogleFonts.outfit(
+                                          color: Colors.white.withValues(alpha: 0.8),
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 11),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+
+        // Indicator Dots
+        if (_promoBanners.length > 1) ...[
+          const SizedBox(height: 10.0),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(_promoBanners.length, (idx) {
+              final isCurrent = _currentBannerIndex == idx;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                margin: const EdgeInsets.symmetric(horizontal: 3.0),
+                height: 5,
+                width: isCurrent ? 18 : 6,
+                decoration: BoxDecoration(
+                  color: isCurrent ? const Color(0xFF0D2818) : const Color(0xFFD1D5DB),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              );
+            }),
+          ),
+        ],
+        const SizedBox(height: 22.0),
+      ],
+    );
+  }
+
+  void _showPromoDetailDialog(HomePromoBanner banner) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24.0),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            banner.storeNama,
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              color: const Color(0xFF0D2818),
+                            ),
+                          ),
+                          Text(
+                            banner.storeAlamat ?? 'Yogyakarta',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              color: const Color(0xFF6B7280),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+
+              // Interactive Image Viewer
+              Flexible(
+                child: Container(
+                  constraints: const BoxConstraints(maxHeight: 380),
+                  color: const Color(0xFFF3F4F6),
+                  child: InteractiveViewer(
+                    clipBehavior: Clip.none,
+                    minScale: 1.0,
+                    maxScale: 3.5,
+                    child: Image.network(
+                      banner.bannerUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, _, _) => const Center(
+                        child: Icon(Icons.image_not_supported_outlined, size: 48, color: Colors.grey),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Bottom Actions
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      banner.title,
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: const Color(0xFF111827),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Promo offline berlaku langsung di toko fisik • Sisa ${banner.daysLeft} hari',
+                      style: GoogleFonts.outfit(
+                        fontSize: 11.5,
+                        color: const Color(0xFF059669),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _navigateToNearbyStores();
+                      },
+                      icon: const Icon(Icons.directions_rounded, size: 18),
+                      label: const Text('Lihat Rute / Lokasi Toko'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0D2818),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
