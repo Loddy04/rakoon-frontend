@@ -159,7 +159,7 @@ class StoresService {
     final cleanBase = baseUrl.endsWith('/')
         ? baseUrl.substring(0, baseUrl.length - 1)
         : baseUrl;
-    final url = Uri.parse('$cleanBase/api/v1/stores/$storeId/products');
+    final url = Uri.parse('$cleanBase/stores/$storeId/products');
 
     final httpClient = client ?? http.Client();
     try {

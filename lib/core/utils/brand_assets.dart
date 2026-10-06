@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rakoon_frontend/core/config/app_config.dart';
 
 /// Helper utility for managing local brand and product assets.
 class BrandAssets {
@@ -229,5 +230,22 @@ class BrandAssets {
         ),
       ),
     );
+  }
+
+  /// Resolves an image URL (handling relative server upload paths like /static/uploads/...) to an absolute URL.
+  static String? resolveImageUrl(String? url, [String? baseUrl]) {
+    if (url == null || url.trim().isEmpty) return null;
+    final trimmed = url.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    final effectiveBase = (baseUrl != null && baseUrl.isNotEmpty)
+        ? baseUrl
+        : AppConfig.apiBaseUrl;
+    final cleanBase = effectiveBase.endsWith('/')
+        ? effectiveBase.substring(0, effectiveBase.length - 1)
+        : effectiveBase;
+    final cleanPath = trimmed.startsWith('/') ? trimmed : '/$trimmed';
+    return '$cleanBase$cleanPath';
   }
 }

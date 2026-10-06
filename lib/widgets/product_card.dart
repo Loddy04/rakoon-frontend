@@ -298,10 +298,11 @@ class ProductCard extends StatelessWidget {
 
   Widget _buildProductDisplay() {
     final assetPath = BrandAssets.getProductAsset(product.nama, product.kategori);
+    final resolvedUrl = BrandAssets.resolveImageUrl(product.fotoUrl);
 
-    if (product.fotoUrl != null && product.fotoUrl!.isNotEmpty) {
+    if (resolvedUrl != null) {
       return Image.network(
-        product.fotoUrl!,
+        resolvedUrl,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) =>
             assetPath != null ? _buildAssetImage(assetPath) : _buildFallbackImage(),
