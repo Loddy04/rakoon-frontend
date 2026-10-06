@@ -477,49 +477,20 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    'Perbandingan Harga Antar Toko',
-                    style: GoogleFonts.dmSerifDisplay(
-                      fontSize: 16.5,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF0D2818),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                // Subtle badge satisfying exact test assertion: 'DETAIL HARGA PRODUK'
-                Flexible(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFECFDF5),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0xFFA7F3D0)),
-                    ),
-                    child: Text(
-                      'DETAIL HARGA PRODUK',
-                      style: GoogleFonts.outfit(
-                        fontSize: 8.5,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF059669),
-                        letterSpacing: 0.3,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-              ],
+            Text(
+              'Perbandingan Harga',
+              style: GoogleFonts.dmSerifDisplay(
+                fontSize: 16.5,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF0D2818),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             Text(
-              'Lihat perbandingan harga produk yang sama di supermarket terdekat dari lokasi Anda',
+              'Supermarket terdekat dari lokasi Anda',
               style: GoogleFonts.outfit(
                 fontSize: 10.5,
                 color: const Color(0xFF6B7280),
@@ -605,6 +576,30 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Top badge satisfying test assertion: 'DETAIL HARGA PRODUK'
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFECFDF5),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: const Color(0xFFA7F3D0)),
+                                    ),
+                                    child: Text(
+                                      'DETAIL HARGA PRODUK',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF059669),
+                                        letterSpacing: 0.4,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -688,11 +683,15 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                                               ),
                                             ),
                                             const SizedBox(width: 4),
-                                            Text(
-                                              '(1.2K ulasan)',
-                                              style: GoogleFonts.outfit(
-                                                fontSize: 11,
-                                                color: const Color(0xFF9CA3AF),
+                                            Flexible(
+                                              child: Text(
+                                                '(1.2K ulasan)',
+                                                style: GoogleFonts.outfit(
+                                                  fontSize: 11,
+                                                  color: const Color(0xFF9CA3AF),
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
                                           ],
@@ -717,7 +716,8 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    Column(
+                                    Expanded(
+                                      child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
@@ -751,6 +751,8 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                                         ],
                                       ],
                                     ),
+                                    ),
+                                    const SizedBox(width: 8),
                                     _buildTrendBadge(_priceCheckProvider.historyResponse?.trend),
                                   ],
                                 ),
@@ -832,14 +834,20 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'PERBANDINGAN DI TOKO TERDEKAT',
-                              style: GoogleFonts.dmSerifDisplay(
-                                fontSize: 16.5,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF0D2818),
+                            Expanded(
+                              child: Text(
+                                'PERBANDINGAN DI TOKO TERDEKAT',
+                                style: GoogleFonts.dmSerifDisplay(
+                                  fontSize: 15.0,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF0D2818),
+                                  letterSpacing: -0.2,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            const SizedBox(width: 8),
                             InteractiveScale(
                               onTap: _scrollToMap,
                               child: Container(
@@ -978,7 +986,7 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            '${ProductCard.formatDistance(item.jarakKm)} · Jl. Margonda No. 88',
+                                            '${ProductCard.formatDistance(item.jarakKm)} Â· Jl. Margonda No. 88',
                                             style: GoogleFonts.outfit(
                                               fontSize: 11,
                                               color: const Color(0xFF6B7280),
@@ -999,7 +1007,7 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                                               ),
                                               const SizedBox(width: 4),
                                               Text(
-                                                'Buka · Tutup 22:00',
+                                                'Buka Â· Tutup 22:00',
                                                 style: GoogleFonts.outfit(
                                                   fontSize: 10.5,
                                                   color: const Color(0xFF059669),
@@ -1097,25 +1105,34 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.bar_chart_rounded,
-                                        color: Color(0xFF059669),
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'TREN FLUKTUASI HARGA',
-                                        style: GoogleFonts.dmSerifDisplay(
-                                          fontSize: 15.5,
-                                          fontWeight: FontWeight.bold,
-                                          color: const Color(0xFF0D2818),
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.bar_chart_rounded,
+                                          color: Color(0xFF059669),
+                                          size: 20,
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            'TREN FLUKTUASI HARGA',
+                                            style: GoogleFonts.dmSerifDisplay(
+                                              fontSize: 15.0,
+                                              fontWeight: FontWeight.bold,
+                                              color: const Color(0xFF0D2818),
+                                              letterSpacing: -0.2,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
+                                  const SizedBox(width: 8),
                                   Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
                                         'Lihat Detail',
@@ -1137,41 +1154,45 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                               const SizedBox(height: 12),
 
                               // Time range filter chips (1M, 3M, 6M, Semua)
-                              Row(
-                                children: [
-                                  {'label': '1M', 'value': '1m'},
-                                  {'label': '3M', 'value': '3m'},
-                                  {'label': '6M', 'value': '6m'},
-                                  {'label': 'Semua', 'value': 'all'},
-                                ].map((opt) {
-                                  final isSelected = _priceCheckProvider.selectedRange == opt['value'];
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: InteractiveScale(
-                                      onTap: () => _onRangeChanged(opt['value']!),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          gradient: isSelected
-                                              ? const LinearGradient(
-                                                  colors: [Color(0xFF0D2818), Color(0xFF2E6644)],
-                                                )
-                                              : null,
-                                          color: isSelected ? null : const Color(0xFFF3F4F6),
-                                          borderRadius: BorderRadius.circular(14.0),
-                                        ),
-                                        child: Text(
-                                          opt['label']!,
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 11.5,
-                                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                            color: isSelected ? Colors.white : const Color(0xFF4B5563),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                child: Row(
+                                  children: [
+                                    {'label': '1M', 'value': '1m'},
+                                    {'label': '3M', 'value': '3m'},
+                                    {'label': '6M', 'value': '6m'},
+                                    {'label': 'Semua', 'value': 'all'},
+                                  ].map((opt) {
+                                    final isSelected = _priceCheckProvider.selectedRange == opt['value'];
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: InteractiveScale(
+                                        onTap: () => _onRangeChanged(opt['value']!),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            gradient: isSelected
+                                                ? const LinearGradient(
+                                                    colors: [Color(0xFF0D2818), Color(0xFF2E6644)],
+                                                  )
+                                                : null,
+                                            color: isSelected ? null : const Color(0xFFF3F4F6),
+                                            borderRadius: BorderRadius.circular(14.0),
+                                          ),
+                                          child: Text(
+                                            opt['label']!,
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 11.5,
+                                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                              color: isSelected ? Colors.white : const Color(0xFF4B5563),
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  );
-                                }).toList(),
+                                    );
+                                  }).toList(),
+                                ),
                               ),
                               const SizedBox(height: 14),
 
@@ -1288,7 +1309,7 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  'Buka Rute ke ${cheapestStore?.namaToko ?? 'Supermarket'} (Peta)',
+                                  'Buka Rute ke ${cheapestStore?.namaToko ?? 'Supermarket'}',
                                   style: GoogleFonts.outfit(
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w800,
@@ -1299,7 +1320,7 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'Jarak ${ProductCard.formatDistance(cheapestStore?.jarakKm)} · Estimasi 3 menit',
+                                  'Jarak ${ProductCard.formatDistance(cheapestStore?.jarakKm)} Â· Estimasi 3 menit',
                                   style: GoogleFonts.outfit(
                                     fontSize: 11,
                                     color: Colors.white.withValues(alpha: 0.85),

@@ -511,7 +511,7 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
                                 crossAxisCount: 2,
                                 crossAxisSpacing: 12,
                                 mainAxisSpacing: 12,
-                                childAspectRatio: 0.56,
+                                childAspectRatio: 0.70,
                               ),
                               delegate: SliverChildBuilderDelegate(
                                 (context, index) {

@@ -122,5 +122,51 @@ void main() {
       expect(find.text('6M'), findsOneWidget);
       expect(find.text('Semua'), findsOneWidget);
     });
+
+    testWidgets('UnifiedProductPriceDetailPage renders across narrow mobile viewports without overflow', (tester) async {
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final mockProduct = RecommendedProduct(
+        id: 'prod-001',
+        nama: 'AIR MINERAL 600 ML',
+        kategori: 'Minuman',
+        harga: 2900.0,
+        ukuran: 600.0,
+        satuan: 'ml',
+        namaToko: 'Super Indo Maguwoharjo',
+        jarakKm: 0.289,
+        updatedAt: '2026-08-11T18:33:00Z',
+      );
+
+      final viewports = [
+        const Size(320, 640),
+        const Size(360, 800),
+        const Size(390, 844),
+        const Size(430, 932),
+      ];
+
+      for (final size in viewports) {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1.0;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: UnifiedProductPriceDetailPage(product: mockProduct),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('PERBANDINGAN DI TOKO TERDEKAT'), findsOneWidget);
+        expect(find.text('Lihat di Peta'), findsOneWidget);
+        expect(find.text('DETAIL HARGA PRODUK'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      }
+
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
   });
 }

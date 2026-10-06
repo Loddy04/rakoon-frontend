@@ -151,6 +151,49 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
     }
   }
 
+  static String _formatStoreProductTimestamp(String? raw) {
+    if (raw == null || raw.trim().isEmpty) {
+      return 'Tersedia di Rak';
+    }
+    final trimmed = raw.trim();
+    final parsed = DateTime.tryParse(trimmed);
+    if (parsed == null) {
+      return trimmed;
+    }
+
+    final now = DateTime.now();
+    final diff = now.difference(parsed.toLocal());
+
+    if (diff.isNegative || diff.inSeconds < 60) {
+      return 'Baru saja';
+    }
+    if (diff.inMinutes < 60) {
+      return '${diff.inMinutes} mnt lalu';
+    }
+    if (diff.inHours < 24) {
+      return '${diff.inHours} jam lalu';
+    }
+    if (diff.inDays == 1) {
+      return 'Kemarin';
+    }
+    if (diff.inDays < 7) {
+      return '${diff.inDays} hari lalu';
+    }
+    if (diff.inDays < 30) {
+      final weeks = diff.inDays ~/ 7;
+      return '$weeks minggu lalu';
+    }
+
+    const months = [
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+    ];
+    final monthStr = (parsed.month >= 1 && parsed.month <= 12)
+        ? months[parsed.month]
+        : '${parsed.month}';
+    return '${parsed.day} $monthStr';
+  }
+
   void _showStoreDetail(BuildContext context, StoreNearby store) {
     showModalBottomSheet(
       context: context,
@@ -359,12 +402,16 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                                                     ),
                                                   ),
                                                 ],
-                                                Text(
-                                                  item.kategori,
-                                                  style: GoogleFonts.outfit(
-                                                    fontSize: 10.5,
-                                                    color: const Color(0xFF059669),
-                                                    fontWeight: FontWeight.w600,
+                                                Expanded(
+                                                  child: Text(
+                                                    item.kategori,
+                                                    style: GoogleFonts.outfit(
+                                                      fontSize: 10.5,
+                                                      color: const Color(0xFF059669),
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
                                                   ),
                                                 ),
                                               ],
@@ -386,12 +433,14 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                                           ),
                                           const SizedBox(height: 1),
                                           Text(
-                                            item.updatedAt ?? 'Tersedia di Rak',
+                                            _formatStoreProductTimestamp(item.updatedAt),
                                             style: GoogleFonts.outfit(
                                               fontSize: 9.5,
                                               fontWeight: FontWeight.w500,
                                               color: const Color(0xFF9CA3AF),
                                             ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ],
                                       ),
@@ -879,6 +928,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                       ? _buildEmptyStoresState()
                       : ListView.builder(
                           controller: _listScrollController,
+                          // ignore: deprecated_member_use
                           cacheExtent: 10000.0,
                           padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
                           itemCount: stores.length,

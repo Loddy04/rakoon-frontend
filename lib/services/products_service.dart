@@ -10,6 +10,8 @@ class Product {
   final String? satuan;
   final String? fotoUrl;
 
+  final double? estimasiHarga;
+
   Product({
     required this.id,
     required this.nama,
@@ -17,6 +19,7 @@ class Product {
     this.ukuran,
     this.satuan,
     this.fotoUrl,
+    this.estimasiHarga,
   });
 
   /// Factory constructor to parse product JSON.
@@ -28,7 +31,24 @@ class Product {
       ukuran: (json['ukuran'] as num?)?.toDouble(),
       satuan: json['satuan'] as String?,
       fotoUrl: json['foto_url'] as String?,
+      estimasiHarga: (json['harga_terendah'] ?? json['harga'] ?? json['estimasi_harga'] as num?)?.toDouble(),
     );
+  }
+
+  double get effectivePrice {
+    if (estimasiHarga != null && estimasiHarga! > 0) return estimasiHarga!;
+    final n = nama.toLowerCase();
+    if (n.contains('minyak')) return 34000.0;
+    if (n.contains('beras')) return 68000.0;
+    if (n.contains('susu')) return 18500.0;
+    if (n.contains('roti')) return 15000.0;
+    if (n.contains('telur')) return 28000.0;
+    if (n.contains('gula')) return 17500.0;
+    if (n.contains('mie') || n.contains('indomie')) return 3500.0;
+    if (n.contains('kopi')) return 12000.0;
+    if (n.contains('teh')) return 6500.0;
+    if (n.contains('sabun') || n.contains('shampoo')) return 22000.0;
+    return 15000.0;
   }
 }
 

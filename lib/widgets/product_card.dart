@@ -117,7 +117,7 @@ class ProductCard extends StatelessWidget {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -159,16 +159,16 @@ class ProductCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 5),
 
               // 2. Product Image / Photo (With Local Assets & Fallback)
               Center(
                 child: SizedBox(
-                  height: 85,
+                  height: 60,
                   child: _buildProductDisplay(),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 5),
 
               // 3. Product Name (Outfit 12.5px Bold)
               Text(
@@ -319,11 +319,11 @@ class ProductCard extends StatelessWidget {
   Widget _buildAssetImage(String assetPath) {
     return Container(
       width: double.infinity,
-      height: 85,
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
       decoration: BoxDecoration(
         color: const Color(0xFFFAF7F2),
-        borderRadius: BorderRadius.circular(14.0),
+        borderRadius: BorderRadius.circular(12.0),
         border: Border.all(
           color: const Color(0xFFE8E4DC),
           width: 0.8,
@@ -342,14 +342,14 @@ class ProductCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      height: 85,
+      height: 60,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [style.bgStart, style.bgEnd],
         ),
-        borderRadius: BorderRadius.circular(14.0),
+        borderRadius: BorderRadius.circular(12.0),
         border: Border.all(
           color: style.borderColor,
           width: 1.0,
@@ -360,16 +360,16 @@ class ProductCard extends StatelessWidget {
         children: [
           // Background soft white circle glow
           Container(
-            width: 48,
-            height: 48,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.8),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
                   color: style.iconColor.withValues(alpha: 0.12),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  blurRadius: 6,
+                  offset: const Offset(0, 1),
                 ),
               ],
             ),
@@ -378,7 +378,7 @@ class ProductCard extends StatelessWidget {
           // Central Category Product Icon
           Icon(
             style.icon,
-            size: 34,
+            size: 24,
             color: style.iconColor,
           ),
 
