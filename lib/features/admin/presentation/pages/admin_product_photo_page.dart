@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/services/admin_product_service.dart';
 import 'package:rakoon_frontend/services/products_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
-import 'package:rakoon_frontend/widgets/bouncy_button.dart';
-import 'package:rakoon_frontend/widgets/playful_card.dart';
+import 'package:rakoon_frontend/widgets/interactive_scale.dart';
 
 class AdminProductPhotoPage extends StatefulWidget {
   final String? baseUrl;
@@ -164,64 +164,87 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFFAF7F2),
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'KELOLA FOTO PRODUK',
-              style: AppTextStyles.subheading.copyWith(
+              style: GoogleFonts.outfit(
                 fontSize: 16,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.2,
-                color: AppColors.graphite,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+                color: const Color(0xFF0D2818),
               ),
             ),
             Text(
               'Panel Administrator',
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.accent,
-                fontWeight: FontWeight.bold,
+              style: GoogleFonts.outfit(
+                fontSize: 11,
+                color: const Color(0xFF00A86B),
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
         ),
-        backgroundColor: AppColors.paper,
+        backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        iconTheme: const IconThemeData(color: Color(0xFF0D2818)),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
-          child: Container(color: AppColors.line, height: 1.0),
+          child: Container(color: const Color(0xFFE8E4DC), height: 1.0),
         ),
       ),
       body: Column(
         children: [
           // Search & Filter Header
           Container(
-            color: AppColors.paper,
-            padding: const EdgeInsets.all(AppSpacing.m),
+            color: const Color(0xFFFAF7F2),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
             child: Column(
               children: [
-                // Search Input
+                // 1. Search Bar Modern Rounded with Soft Shadow
                 Container(
                   height: 48,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF3F4F6),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                    border: Border.all(color: const Color(0xFFE8E4DC), width: 1.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
                   child: TextField(
                     key: const Key('admin_product_search_input'),
                     controller: _searchController,
                     onChanged: _onSearchChanged,
                     textInputAction: TextInputAction.search,
+                    style: GoogleFonts.outfit(
+                      fontSize: 13.5,
+                      color: const Color(0xFF0D2818),
+                      fontWeight: FontWeight.w500,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'Cari nama produk...',
-                      hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.fog),
-                      prefixIcon: const Icon(Icons.search, color: Color(0xFF059669)),
+                      hintStyle: GoogleFonts.outfit(
+                        fontSize: 13,
+                        color: const Color(0xFF9CA3AF),
+                        fontWeight: FontWeight.w400,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        color: Color(0xFF00A86B),
+                        size: 20,
+                      ),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear, size: 18),
+                              icon: const Icon(Icons.clear_rounded, size: 18, color: Color(0xFF6B7280)),
                               onPressed: () {
                                 _searchController.clear();
                                 _fetchProducts();
@@ -229,44 +252,70 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
                             )
                           : null,
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.m,
-                        vertical: AppSpacing.s12,
+                        horizontal: 16,
+                        vertical: 13,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.s12),
+                const SizedBox(height: 12),
 
-                // Category Chips
+                // 2. Horizontal Pill Tabs for Category Filter
                 SizedBox(
-                  height: 36,
+                  height: 38,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
                     itemCount: _categories.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.s),
+                    separatorBuilder: (_, _) => const SizedBox(width: 8),
                     itemBuilder: (context, index) {
                       final category = _categories[index];
                       final isSelected = category == _selectedCategory;
-                      return ChoiceChip(
-                        label: Text(
-                          category,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                            color: isSelected ? Colors.white : const Color(0xFF4B5563),
+                      return InteractiveScale(
+                        onTap: () => _onCategorySelected(category),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOutCubic,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFF00A86B) : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected
+                                  ? const Color(0xFF00A86B)
+                                  : const Color(0xFFE8E4DC),
+                              width: 1.0,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: const Color(0xFF00A86B).withValues(alpha: 0.25),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.02),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              category,
+                              style: GoogleFonts.outfit(
+                                fontSize: 12,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                                color: isSelected ? Colors.white : const Color(0xFF4B5563),
+                              ),
+                            ),
                           ),
                         ),
-                        selected: isSelected,
-                        selectedColor: AppColors.primaryEmerald,
-                        backgroundColor: AppColors.paper,
-                        side: BorderSide(
-                          color: isSelected ? Colors.transparent : const Color(0xFFE5E7EB),
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.full),
-                        ),
-                        onSelected: (_) => _onCategorySelected(category),
                       );
                     },
                   ),
@@ -274,7 +323,6 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
               ],
             ),
           ),
-          const Divider(height: 1, color: AppColors.line),
 
           // Main Product List
           Expanded(
@@ -288,40 +336,77 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: AppColors.accent),
+        child: CircularProgressIndicator(color: Color(0xFF00A86B)),
       );
     }
 
     if (_errorMessage != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.l),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, color: AppColors.error, size: 48),
-              const SizedBox(height: AppSpacing.m),
-              Text(
-                'Gagal memuat produk',
-                style: AppTextStyles.titleMedium,
-              ),
-              const SizedBox(height: AppSpacing.s),
-              Text(
-                _errorMessage!,
-                style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.l),
-              ElevatedButton.icon(
-                onPressed: _fetchProducts,
-                icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Coba Lagi'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.graphite,
-                  foregroundColor: AppColors.paper,
+          padding: const EdgeInsets.all(24),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
                 ),
-              ),
-            ],
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 44),
+                const SizedBox(height: 12),
+                Text(
+                  'Gagal memuat produk',
+                  style: GoogleFonts.outfit(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF0D2818),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _errorMessage!,
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    color: const Color(0xFF6B7280),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                InteractiveScale(
+                  onTap: _fetchProducts,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00A86B),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.refresh_rounded, size: 16, color: Colors.white),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Coba Lagi',
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -330,7 +415,7 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
     if (_products.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xxl),
+          padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -338,21 +423,35 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: AppColors.paper,
+                  color: Colors.white,
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.line),
+                  border: Border.all(color: const Color(0xFFE8E4DC)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                child: const Icon(Icons.inventory_2_outlined, color: AppColors.fog, size: 32),
+                child: const Icon(Icons.inventory_2_outlined, color: Color(0xFF94A3B8), size: 30),
               ),
-              const SizedBox(height: AppSpacing.l),
+              const SizedBox(height: 16),
               Text(
                 'Tidak ada produk ditemukan',
-                style: AppTextStyles.titleSmall,
+                style: GoogleFonts.outfit(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0D2818),
+                ),
               ),
-              const SizedBox(height: AppSpacing.xs),
+              const SizedBox(height: 4),
               Text(
                 'Coba ubah kata kunci pencarian atau pilih kategori lain.',
-                style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  color: const Color(0xFF6B7280),
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -363,80 +462,88 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
 
     return RefreshIndicator(
       onRefresh: _fetchProducts,
-      color: AppColors.accent,
+      color: const Color(0xFF00A86B),
       child: ListView.separated(
-        padding: const EdgeInsets.all(AppSpacing.m),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
         itemCount: _products.length,
-        separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.s12),
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
           final product = _products[index];
           final resolvedImage = _resolveImageUrl(product.fotoUrl);
 
-          return PlayfulCard(
-            backgroundColor: AppColors.paper,
-            border: Border.all(color: AppColors.line),
-            padding: const EdgeInsets.all(AppSpacing.s12),
+          return Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
             child: Row(
               children: [
-                // Product Thumbnail
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(AppRadius.m),
-                    border: Border.all(color: AppColors.line),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadius.m),
-                    child: resolvedImage.isNotEmpty
-                        ? Image.network(
-                            resolvedImage,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) => _buildFallbackThumbnail(),
-                          )
-                        : _buildFallbackThumbnail(),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.m),
+                // 1. Product Thumbnail or Dashed Placeholder
+                _buildProductThumbnail(product, resolvedImage),
+                const SizedBox(width: 12),
 
-                // Product Info
+                // 2. Product Info (Expanded with maxLines: 1 and TextOverflow.ellipsis)
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         product.nama,
-                        style: AppTextStyles.bodyLarge.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.graphite,
+                        style: GoogleFonts.outfit(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF0D2818),
+                          height: 1.2,
                         ),
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 5),
                       Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.accentSoft,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              product.kategori,
-                              style: AppTextStyles.caption.copyWith(
-                                color: AppColors.accent,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 10,
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFECFDF5),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: const Color(0xFFA7F3D0), width: 0.8),
+                              ),
+                              child: Text(
+                                product.kategori,
+                                style: GoogleFonts.outfit(
+                                  color: const Color(0xFF059669),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 10,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ),
                           if (product.ukuran != null && product.satuan != null) ...[
-                            const SizedBox(width: 6),
-                            Text(
-                              '${product.ukuran} ${product.satuan}',
-                              style: AppTextStyles.caption.copyWith(color: AppColors.fog),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                '${product.ukuran! % 1 == 0 ? product.ukuran!.toInt() : product.ukuran} ${product.satuan}',
+                                style: GoogleFonts.outfit(
+                                  color: const Color(0xFF6B7280),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ],
@@ -444,48 +551,40 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
                     ],
                   ),
                 ),
-                const SizedBox(width: AppSpacing.s),
+                const SizedBox(width: 10),
 
-                // Action Button
-                BouncyButton(
+                // 3. Standalone Rounded/Pill Upload Button (No double border)
+                InteractiveScale(
                   key: Key('edit_photo_btn_${product.id}'),
-                  onPressed: () => _openEditPhotoModal(product),
+                  onTap: () => _openEditPhotoModal(product),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: product.fotoUrl != null && product.fotoUrl!.isNotEmpty
-                          ? const Color(0xFFF3F4F6)
-                          : AppColors.primaryEmerald,
+                      color: const Color(0xFF00A86B),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: product.fotoUrl != null && product.fotoUrl!.isNotEmpty
-                            ? const Color(0xFFE5E7EB)
-                            : AppColors.primaryEmerald,
-                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00A86B).withValues(alpha: 0.25),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          product.fotoUrl != null && product.fotoUrl!.isNotEmpty
-                              ? Icons.edit_outlined
-                              : Icons.add_a_photo_outlined,
+                        const Icon(
+                          Icons.camera_alt_rounded,
                           size: 14,
-                          color: product.fotoUrl != null && product.fotoUrl!.isNotEmpty
-                              ? const Color(0xFF374151)
-                              : Colors.white,
+                          color: Colors.white,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 5),
                         Text(
-                          product.fotoUrl != null && product.fotoUrl!.isNotEmpty
-                              ? 'Ubah'
-                              : 'Upload',
-                          style: TextStyle(
+                          'Upload',
+                          style: GoogleFonts.outfit(
                             fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: product.fotoUrl != null && product.fotoUrl!.isNotEmpty
-                                ? const Color(0xFF374151)
-                                : Colors.white,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
                           ),
                         ),
                       ],
@@ -500,10 +599,126 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
     );
   }
 
-  Widget _buildFallbackThumbnail() {
-    return const Center(
-      child: Icon(Icons.image_not_supported_outlined, color: AppColors.fog, size: 24),
+  Widget _buildProductThumbnail(Product product, String resolvedImage) {
+    if (resolvedImage.isNotEmpty) {
+      return Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            resolvedImage,
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) => _buildDashedPlaceholder(),
+          ),
+        ),
+      );
+    }
+    return _buildDashedPlaceholder();
+  }
+
+  Widget _buildDashedPlaceholder() {
+    return CustomPaint(
+      painter: const DashedRoundedBorderPainter(
+        color: Color(0xFFCBD5E1),
+        strokeWidth: 1.2,
+        radius: 12.0,
+        dashWidth: 4.0,
+        dashSpace: 3.0,
+      ),
+      child: Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.camera_alt_outlined,
+              color: Color(0xFF94A3B8),
+              size: 20,
+            ),
+            const SizedBox(height: 3),
+            Text(
+              'Upload Foto',
+              style: GoogleFonts.outfit(
+                fontSize: 8.5,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF94A3B8),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
     );
+  }
+}
+
+class DashedRoundedBorderPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+  final double radius;
+  final double dashWidth;
+  final double dashSpace;
+
+  const DashedRoundedBorderPainter({
+    this.color = const Color(0xFFCBD5E1),
+    this.strokeWidth = 1.0,
+    this.radius = 12.0,
+    this.dashWidth = 4.0,
+    this.dashSpace = 3.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+
+    final rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        strokeWidth / 2,
+        strokeWidth / 2,
+        size.width - strokeWidth,
+        size.height - strokeWidth,
+      ),
+      Radius.circular(radius),
+    );
+
+    final path = Path()..addRRect(rrect);
+    final metrics = path.computeMetrics();
+
+    for (final metric in metrics) {
+      double distance = 0.0;
+      while (distance < metric.length) {
+        final double len = (distance + dashWidth < metric.length)
+            ? dashWidth
+            : metric.length - distance;
+        final extractPath = metric.extractPath(distance, distance + len);
+        canvas.drawPath(extractPath, paint);
+        distance += dashWidth + dashSpace;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant DashedRoundedBorderPainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.strokeWidth != strokeWidth ||
+        oldDelegate.radius != radius ||
+        oldDelegate.dashWidth != dashWidth ||
+        oldDelegate.dashSpace != dashSpace;
   }
 }
 
