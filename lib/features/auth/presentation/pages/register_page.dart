@@ -1,40 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/app_shell.dart';
+import 'package:rakoon_frontend/features/auth/presentation/pages/login_page.dart';
+import 'package:rakoon_frontend/features/auth/presentation/widgets/register_form.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
-import 'package:rakoon_frontend/services/auth_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-class RegisterPage extends StatefulWidget {
+class RegisterPage extends StatelessWidget {
   final VoidCallback? onSuccess;
 
   const RegisterPage({super.key, this.onSuccess});
 
-  @override
-  State<RegisterPage> createState() => _RegisterPageState();
-}
-
-class _RegisterPageState extends State<RegisterPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  bool _isLoading = false;
-  bool _isGoogleLoading = false;
-  bool _isSuccess = false;
-  String? _errorMessage;
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
-  }
-
-  void _handleSuccess() {
-    if (!mounted) return;
-    if (widget.onSuccess != null) {
-      widget.onSuccess!();
+  void _handleSuccess(BuildContext context) {
+    if (onSuccess != null) {
+      onSuccess!();
     } else if (Navigator.canPop(context)) {
       Navigator.pop(context, true);
     } else {
@@ -47,382 +25,241 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  Future<void> _handleGoogleRegister() async {
-    setState(() {
-      _isGoogleLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final response = await AuthService.signInWithGoogle();
-      if (response.session != null) {
-        _handleSuccess();
-      }
-    } on AuthException catch (e) {
-      if (!e.message.toLowerCase().contains('batal') &&
-          !e.message.toLowerCase().contains('cancel')) {
-        setState(() {
-          _errorMessage = e.message;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Gagal mendaftar dengan Google: $e';
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isGoogleLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _handleRegister() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final email = _emailController.text.trim();
-      final password = _passwordController.text;
-
-      final response = await AuthService.signUp(email: email, password: password);
-      
-      if (response.session != null) {
-        _handleSuccess();
-      } else if (response.user != null) {
-        setState(() {
-          _isSuccess = true;
-        });
-      }
-    } on AuthException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Registrasi gagal. Periksa data dan coba lagi.';
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+  void _navigateToLogin(BuildContext context) {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Rakoon Header
-              const Icon(
-                Icons.analytics_outlined,
-                size: 56,
-                color: AppColors.accent,
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                'Daftar Rakoon',
-                style: AppTextStyles.titleLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.l),
-
-              // Success View / Registration Form
-              Card(
-                color: AppColors.paper,
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
+      backgroundColor: AppColors.authDarkBg,
+      body: SafeArea(
+        bottom: false,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.xxl),
-                  child: _isSuccess
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Top Header Section with Dark Background
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
-                              Icons.check_circle_outline_rounded,
-                              size: 60,
-                              color: AppColors.accent,
-                            ),
-                            const SizedBox(height: AppSpacing.l),
-                            Text(
-                              'Registrasi Berhasil!',
-                              style: AppTextStyles.titleSmall,
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: AppSpacing.m),
-                            Text(
-                              'Registrasi berhasil. Silakan periksa kotak masuk email Anda untuk melakukan verifikasi sebelum masuk ke akun Rakoon.',
-                              style: AppTextStyles.bodyMedium,
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: AppSpacing.xxl),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.pop(context); // Go back to login
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.accent,
-                                foregroundColor: AppColors.paper,
-                                padding: const EdgeInsets.symmetric(vertical: AppSpacing.l),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppRadius.l),
+                            // Top Bar
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    if (Navigator.canPop(context)) {
+                                      Navigator.pop(context);
+                                    }
+                                  },
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color:
+                                          Colors.white.withValues(alpha: 0.08),
+                                      border: Border.all(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.12),
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.arrow_back_rounded,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              child: Text(
-                                'Masuk Sekarang',
-                                style: AppTextStyles.bodyLarge.copyWith(color: AppColors.paper),
-                              ),
-                            ),
-                          ],
-                        )
-                      : Form(
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                'Buat Akun Baru',
-                                style: AppTextStyles.titleSmall,
-                              ),
-                              const SizedBox(height: AppSpacing.xl),
-
-                              // Error Banner
-                              if (_errorMessage != null) ...[
+                                // Rakoon Identity Pill
                                 Container(
-                                  padding: const EdgeInsets.all(AppSpacing.m),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.errorSoft,
-                                    borderRadius: BorderRadius.circular(AppRadius.m),
-                                    border: Border.all(color: AppColors.error),
+                                    color: Colors.white.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.12),
+                                    ),
                                   ),
                                   child: Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.error_outline, color: AppColors.error, size: 20),
-                                      const SizedBox(width: AppSpacing.s),
-                                      Expanded(
-                                        child: Text(
-                                          _errorMessage!,
-                                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+                                      const Icon(
+                                        Icons.eco_rounded,
+                                        size: 14,
+                                        color: Color(0xFF86EFAC),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        'Daftar Rakoon',
+                                        style: GoogleFonts.outfit(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 0.4,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: AppSpacing.l),
                               ],
+                            ),
+                            const SizedBox(height: 10),
 
-                              // Email Field
-                              TextFormField(
-                                key: const Key('email_field'),
-                                controller: _emailController,
-                                keyboardType: TextInputType.emailAddress,
-                                style: AppTextStyles.bodyMedium,
-                                decoration: const InputDecoration(
-                                  labelText: 'Email',
-                                  prefixIcon: Icon(Icons.email_outlined),
-                                  border: OutlineInputBorder(),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Email tidak boleh kosong.';
-                                  }
-                                  final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                                  if (!emailRegex.hasMatch(value.trim())) {
-                                    return 'Format email tidak valid.';
-                                  }
-                                  return null;
-                                },
+                            // Eyebrow Tag
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
                               ),
-                              const SizedBox(height: AppSpacing.l),
-
-                              // Password Field
-                              TextFormField(
-                                key: const Key('password_field'),
-                                controller: _passwordController,
-                                obscureText: true,
-                                style: AppTextStyles.bodyMedium,
-                                decoration: const InputDecoration(
-                                  labelText: 'Password',
-                                  prefixIcon: Icon(Icons.lock_outline),
-                                  border: OutlineInputBorder(),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Password tidak boleh kosong.';
-                                  }
-                                  if (value.length < 6) {
-                                    return 'Password minimal 6 karakter.';
-                                  }
-                                  return null;
-                                },
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                              const SizedBox(height: AppSpacing.l),
-
-                              // Confirm Password Field
-                              TextFormField(
-                                key: const Key('confirm_password_field'),
-                                controller: _confirmPasswordController,
-                                obscureText: true,
-                                style: AppTextStyles.bodyMedium,
-                                decoration: const InputDecoration(
-                                  labelText: 'Konfirmasi Password',
-                                  prefixIcon: Icon(Icons.lock_outline),
-                                  border: OutlineInputBorder(),
+                              child: Text(
+                                'Buat Akun Baru',
+                                style: GoogleFonts.outfit(
+                                  color: const Color(0xFF86EFAC),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.3,
                                 ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Konfirmasi password tidak boleh kosong.';
-                                  }
-                                  if (value != _passwordController.text) {
-                                    return 'Konfirmasi password tidak cocok.';
-                                  }
-                                  return null;
-                                },
                               ),
-                              const SizedBox(height: AppSpacing.xxl),
+                            ),
+                            const SizedBox(height: 6),
 
-                              // Register Button
-                              ElevatedButton(
-                                key: const Key('register_button'),
-                                onPressed: (_isLoading || _isGoogleLoading) ? null : _handleRegister,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.accent,
-                                  foregroundColor: AppColors.paper,
-                                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.l),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(AppRadius.l),
-                                  ),
+                            // Headline
+                            Text(
+                              'Go ahead and set up\nyour account',
+                              style: GoogleFonts.outfit(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                height: 1.15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // White Bottom Card Container
+                      Expanded(
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(30),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 16,
+                                offset: Offset(0, -4),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Segmented Switcher (Login | Register)
+                              Container(
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: AppColors.authTabBg,
+                                  borderRadius: BorderRadius.circular(21),
                                 ),
-                                child: _isLoading
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.5,
-                                          color: AppColors.paper,
+                                padding: const EdgeInsets.all(3),
+                                child: Row(
+                                  children: [
+                                    // Inactive Login Tab
+                                    Expanded(
+                                      child: GestureDetector(
+                                        key: const Key('goto_login_tab'),
+                                        onTap: () => _navigateToLogin(context),
+                                        behavior: HitTestBehavior.opaque,
+                                        child: Container(
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            'Login',
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
+                                              color: const Color(0xFF9CA3AF),
+                                            ),
+                                          ),
                                         ),
-                                      )
-                                    : Text(
-                                        'Daftar',
-                                        style: AppTextStyles.bodyLarge.copyWith(color: AppColors.paper),
                                       ),
-                              ),
-                              const SizedBox(height: AppSpacing.l),
-
-                              // Divider 'atau'
-                              Row(
-                                children: [
-                                  const Expanded(child: Divider(color: AppColors.line)),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
-                                    child: Text(
-                                      'atau',
-                                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
                                     ),
-                                  ),
-                                  const Expanded(child: Divider(color: AppColors.line)),
-                                ],
-                              ),
-                              const SizedBox(height: AppSpacing.l),
-
-                              // Google Register Button
-                              OutlinedButton(
-                                key: const Key('google_register_button'),
-                                onPressed: (_isLoading || _isGoogleLoading) ? null : _handleGoogleRegister,
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.l),
-                                  side: const BorderSide(color: AppColors.line, width: 1.5),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(AppRadius.l),
-                                  ),
-                                  backgroundColor: AppColors.paper,
-                                ),
-                                child: _isGoogleLoading
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: AppColors.accent,
+                                    // Active Register Tab
+                                    Expanded(
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(18),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black
+                                                  .withValues(alpha: 0.05),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
                                         ),
-                                      )
-                                    : Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Container(
-                                            width: 22,
-                                            height: 22,
-                                            alignment: Alignment.center,
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFF4285F4),
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: const Text(
-                                              'G',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 14,
-                                              ),
-                                            ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          'Register',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: const Color(0xFF1F2937),
                                           ),
-                                          const SizedBox(width: AppSpacing.m),
-                                          Text(
-                                            'Daftar dengan Google',
-                                            style: AppTextStyles.bodyLarge.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                              color: AppColors.graphite,
-                                            ),
-                                          ),
-                                        ],
+                                        ),
                                       ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Register Form
+                              RegisterForm(
+                                onSuccess: () => _handleSuccess(context),
+                                showLoginLink: true,
+                                onLoginTap: () => _navigateToLogin(context),
                               ),
                             ],
                           ),
                         ),
-                    ),
-                  ),
-              const SizedBox(height: AppSpacing.l),
-
-              // Login Navigation
-              if (!_isSuccess)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Sudah punya akun? ',
-                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.muted),
-                    ),
-                    GestureDetector(
-                      key: const Key('goto_login_button'),
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
-                      child: Text(
-                        'Masuk',
-                        style: AppTextStyles.bodyLarge.copyWith(color: AppColors.accent),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-            ],
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
