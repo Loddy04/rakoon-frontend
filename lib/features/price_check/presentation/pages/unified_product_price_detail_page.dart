@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 import 'package:rakoon_frontend/features/history/data/models/price_history_item.dart';
 import 'package:rakoon_frontend/features/price_check/presentation/providers/price_check_provider.dart';
+import 'package:rakoon_frontend/services/products_service.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
 import 'package:rakoon_frontend/widgets/interactive_scale.dart';
 import 'package:rakoon_frontend/widgets/product_card.dart';
@@ -38,11 +40,15 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
   bool _isBookmarked = false;
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _mapKey = GlobalKey();
+  String? _currentFotoUrl;
 
   @override
   void initState() {
     super.initState();
+    _currentFotoUrl = widget.product.fotoUrl;
     _priceCheckProvider = PriceCheckProvider();
+    _priceCheckProvider.addListener(_onPriceCheckProviderUpdated);
+    _loadFreshProductDetails();
     _priceCheckProvider.fetchProductDetail(
       productId: widget.product.id,
       userLat: widget.userLat,
@@ -55,9 +61,38 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
 
   @override
   void dispose() {
+    _priceCheckProvider.removeListener(_onPriceCheckProviderUpdated);
     _scrollController.dispose();
     _priceCheckProvider.dispose();
     super.dispose();
+  }
+
+  void _onPriceCheckProviderUpdated() {
+    if (!mounted) return;
+    final compFoto = _priceCheckProvider.comparisonResponse?.fotoUrl;
+    if (compFoto != null && compFoto.isNotEmpty && _currentFotoUrl != compFoto) {
+      setState(() {
+        _currentFotoUrl = compFoto;
+      });
+    }
+  }
+
+  Future<void> _loadFreshProductDetails() async {
+    try {
+      final effectiveBase = widget.baseUrl ?? AppConfig.apiBaseUrl;
+      final product = await ProductsService.getProductById(
+        productId: widget.product.id,
+        baseUrl: effectiveBase,
+        client: widget.httpClient,
+      );
+      if (mounted && product?.fotoUrl != null && product!.fotoUrl!.isNotEmpty) {
+        if (_currentFotoUrl != product.fotoUrl) {
+          setState(() {
+            _currentFotoUrl = product.fotoUrl;
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   void _onRangeChanged(String range) {
@@ -185,9 +220,12 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
   }
 
   Widget _buildProductHeroVisual() {
+    final effectiveFoto = _currentFotoUrl ?? widget.product.fotoUrl;
+    final resolvedUrl = BrandAssets.resolveImageUrl(effectiveFoto, widget.baseUrl);
     final localAsset = BrandAssets.getProductAsset(widget.product.nama, widget.product.kategori);
 
-    if (localAsset != null) {
+    // 1. Prioritaskan foto produk asli (network/storage hasil upload atau URL)
+    if (resolvedUrl != null && resolvedUrl.isNotEmpty) {
       return Container(
         width: 115,
         height: 125,
@@ -204,33 +242,53 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
             ),
           ],
         ),
-        child: Image.asset(
-          localAsset,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => _buildFallbackVisual(),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            resolvedUrl,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) =>
+                localAsset != null ? _buildLocalAssetVisual(localAsset) : _buildFallbackVisual(),
+          ),
         ),
       );
     }
 
-    if (widget.product.fotoUrl != null && widget.product.fotoUrl!.isNotEmpty) {
-      return Container(
-        width: 115,
-        height: 125,
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE8E4DC), width: 1.0),
-        ),
-        child: Image.network(
-          widget.product.fotoUrl!,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => _buildFallbackVisual(),
-        ),
-      );
+    // 2. Fallback ke gambar lokal ilustrasi brand jika belum memiliki foto
+    if (localAsset != null) {
+      return _buildLocalAssetVisual(localAsset);
     }
 
+    // 3. Fallback ke placeholder icon
     return _buildFallbackVisual();
+  }
+
+  Widget _buildLocalAssetVisual(String assetPath) {
+    return Container(
+      width: 115,
+      height: 125,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE8E4DC), width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.asset(
+          assetPath,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => _buildFallbackVisual(),
+        ),
+      ),
+    );
   }
 
   Widget _buildFallbackVisual() {

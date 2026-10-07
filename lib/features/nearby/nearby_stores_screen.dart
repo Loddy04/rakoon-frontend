@@ -356,6 +356,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                               separatorBuilder: (context, idx) => const Divider(height: 12, color: Color(0xFFF3F4F6)),
                               itemBuilder: (context, idx) {
                                 final item = items[idx];
+                                final resolvedUrl = BrandAssets.resolveImageUrl(item.fotoUrl);
                                 final assetPath = BrandAssets.getProductAsset(item.nama);
 
                                 return Container(
@@ -371,9 +372,21 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                                           border: Border.all(color: const Color(0xFFE8E4DC)),
                                         ),
                                         padding: const EdgeInsets.all(4),
-                                        child: assetPath != null
-                                            ? Image.asset(assetPath, fit: BoxFit.contain)
-                                            : const Icon(Icons.inventory_2_outlined, color: Color(0xFF059669), size: 22),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: resolvedUrl != null
+                                              ? Image.network(
+                                                  resolvedUrl,
+                                                  fit: BoxFit.contain,
+                                                  errorBuilder: (context, error, stackTrace) =>
+                                                      assetPath != null
+                                                          ? Image.asset(assetPath, fit: BoxFit.contain)
+                                                          : const Icon(Icons.inventory_2_outlined, color: Color(0xFF059669), size: 22),
+                                                )
+                                              : (assetPath != null
+                                                  ? Image.asset(assetPath, fit: BoxFit.contain)
+                                                  : const Icon(Icons.inventory_2_outlined, color: Color(0xFF059669), size: 22)),
+                                        ),
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(

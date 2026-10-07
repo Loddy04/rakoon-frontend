@@ -168,5 +168,78 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
+
+    testWidgets('UnifiedProductPriceDetailPage prioritizes network photo over local asset when fotoUrl is provided', (tester) async {
+      final mockProductWithPhoto = RecommendedProduct(
+        id: 'prod-001',
+        nama: 'INDOMIE MI GORENG', // has local brand asset
+        kategori: 'Makanan Instan',
+        harga: 3100.0,
+        namaToko: 'Indomaret Babarsari 1',
+        updatedAt: '2026-08-11T18:33:00Z',
+        fotoUrl: 'https://pzymqamrmudqrvvysjly.supabase.co/storage/v1/object/public/product-photos/indomie.jpg',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: UnifiedProductPriceDetailPage(product: mockProductWithPhoto),
+        ),
+      );
+      await tester.pump();
+
+      // Should render Image.network for the photo, not the placeholder
+      expect(find.byType(Image), findsWidgets);
+      final images = tester.widgetList<Image>(find.byType(Image));
+      final networkImages = images.where((img) => img.image is NetworkImage).toList();
+      expect(networkImages.isNotEmpty, isTrue);
+      expect((networkImages.first.image as NetworkImage).url, contains('product-photos/indomie.jpg'));
+    });
+
+    testWidgets('UnifiedProductPriceDetailPage renders local asset when fotoUrl is empty but name matches brand', (tester) async {
+      final mockProductLocalOnly = RecommendedProduct(
+        id: 'prod-002',
+        nama: 'INDOMIE MI GORENG',
+        kategori: 'Makanan Instan',
+        harga: 3100.0,
+        namaToko: 'Indomaret Babarsari 1',
+        updatedAt: '2026-08-11T18:33:00Z',
+        fotoUrl: null,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: UnifiedProductPriceDetailPage(product: mockProductLocalOnly),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(Image), findsWidgets);
+      final images = tester.widgetList<Image>(find.byType(Image));
+      final assetImages = images.where((img) => img.image is AssetImage).toList();
+      expect(assetImages.isNotEmpty, isTrue);
+      expect((assetImages.first.image as AssetImage).assetName, contains('indomie.png'));
+    });
+
+    testWidgets('UnifiedProductPriceDetailPage renders fallback icon when neither fotoUrl nor brand asset is available', (tester) async {
+      final mockProductNoAssetNoPhoto = RecommendedProduct(
+        id: 'prod-003',
+        nama: 'PRODUK RANDOM TIDAK TERKENAL',
+        kategori: 'Lainnya',
+        harga: 15000.0,
+        namaToko: 'Toko Kelontong',
+        updatedAt: '2026-08-11T18:33:00Z',
+        fotoUrl: null,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: UnifiedProductPriceDetailPage(product: mockProductNoAssetNoPhoto),
+        ),
+      );
+      await tester.pump();
+
+      // Displays fallback shopping bag icon
+      expect(find.byIcon(Icons.shopping_bag_outlined), findsOneWidget);
+    });
   });
 }

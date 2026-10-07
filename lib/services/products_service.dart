@@ -103,4 +103,32 @@ class ProductsService {
       );
     }
   }
+
+  /// Mengambil informasi detail produk tunggal berdasarkan ID dari GET /products/{product_id}
+  static Future<Product?> getProductById({
+    required String productId,
+    required String baseUrl,
+    http.Client? client,
+  }) async {
+    final cleanBaseUrl = baseUrl.endsWith('/')
+        ? baseUrl.substring(0, baseUrl.length - 1)
+        : baseUrl;
+
+    final uri = Uri.parse('$cleanBaseUrl/products/$productId');
+
+    try {
+      final httpClient = client ?? http.Client();
+      final response = await httpClient.get(uri).timeout(
+        const Duration(seconds: 10),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decoded = jsonDecode(response.body);
+        return Product.fromJson(decoded);
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
 }

@@ -223,11 +223,13 @@ class PriceCompareItem {
 class PriceCompareResponse {
   final String productId;
   final String namaProduk;
+  final String? fotoUrl;
   final List<PriceCompareItem> comparison;
 
   PriceCompareResponse({
     required this.productId,
     required this.namaProduk,
+    this.fotoUrl,
     required this.comparison,
   });
 
@@ -240,6 +242,7 @@ class PriceCompareResponse {
     return PriceCompareResponse(
       productId: (json['product_id'] ?? '').toString(),
       namaProduk: json['nama_produk'] as String? ?? 'Produk',
+      fotoUrl: json['foto_url'] as String?,
       comparison: parsedComp,
     );
   }
