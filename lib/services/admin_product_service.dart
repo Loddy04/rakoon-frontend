@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 
@@ -45,12 +46,50 @@ class AdminProductService {
     }
   }
 
+  /// Helper untuk menentukan MediaType yang tepat berdasarkan mimeType atau ekstensi nama file
+  static MediaType resolveMediaType({String? mimeType, String? fileName, String? filePath}) {
+    if (mimeType != null && mimeType.isNotEmpty && mimeType.contains('/')) {
+      try {
+        return MediaType.parse(mimeType);
+      } catch (_) {}
+    }
+    final target = (fileName ?? filePath ?? '').toLowerCase();
+    if (target.endsWith('.png')) {
+      return MediaType('image', 'png');
+    } else if (target.endsWith('.webp')) {
+      return MediaType('image', 'webp');
+    } else {
+      return MediaType('image', 'jpeg');
+    }
+  }
+
+  /// Helper untuk memastikan nama file valid beserta ekstensinya
+  static String resolveFileName({String? fileName, String? filePath, required MediaType mediaType}) {
+    String name = (fileName != null && fileName.trim().isNotEmpty)
+        ? fileName.trim()
+        : (filePath != null && filePath.trim().isNotEmpty
+            ? filePath.split(RegExp(r'[/\\]')).last
+            : 'product_photo');
+
+    if (!name.contains('.')) {
+      if (mediaType.subtype == 'png') {
+        name = '$name.png';
+      } else if (mediaType.subtype == 'webp') {
+        name = '$name.webp';
+      } else {
+        name = '$name.jpg';
+      }
+    }
+    return name;
+  }
+
   /// Mengunggah berkas foto produk ke Supabase Storage (admin only)
   static Future<String> uploadProductPhotoFile({
     required String productId,
     String? filePath,
     Uint8List? fileBytes,
     String? fileName,
+    String? contentType,
     String? baseUrl,
     http.Client? client,
   }) async {
@@ -64,13 +103,24 @@ class AdminProductService {
       request.headers['Authorization'] = 'Bearer $token';
     }
 
+    final mediaType = resolveMediaType(
+      mimeType: contentType,
+      fileName: fileName,
+      filePath: filePath,
+    );
+    final resolvedName = resolveFileName(
+      fileName: fileName,
+      filePath: filePath,
+      mediaType: mediaType,
+    );
+
     if (fileBytes != null) {
-      final name = fileName ?? 'product_photo.jpg';
       request.files.add(
         http.MultipartFile.fromBytes(
           'file',
           fileBytes,
-          filename: name,
+          filename: resolvedName,
+          contentType: mediaType,
         ),
       );
     } else if (filePath != null) {
@@ -78,6 +128,8 @@ class AdminProductService {
         await http.MultipartFile.fromPath(
           'file',
           filePath,
+          filename: resolvedName,
+          contentType: mediaType,
         ),
       );
     } else {

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 
@@ -287,11 +288,22 @@ class AdsService {
     final request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $token';
 
+    final lowerName = filename.toLowerCase();
+    MediaType mediaType;
+    if (lowerName.endsWith('.png')) {
+      mediaType = MediaType('image', 'png');
+    } else if (lowerName.endsWith('.webp')) {
+      mediaType = MediaType('image', 'webp');
+    } else {
+      mediaType = MediaType('image', 'jpeg');
+    }
+
     request.files.add(
       http.MultipartFile.fromBytes(
         'file',
         bytes,
         filename: filename,
+        contentType: mediaType,
       ),
     );
 

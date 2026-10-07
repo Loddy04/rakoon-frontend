@@ -392,5 +392,21 @@ void main() {
       );
       expect(url, '/static/uploads/products/mock_uploaded.png');
     });
+
+    test('resolveMediaType correctly resolves media types for JPG, PNG, and WebP', () {
+      expect(AdminProductService.resolveMediaType(fileName: 'photo.jpg').mimeType, 'image/jpeg');
+      expect(AdminProductService.resolveMediaType(fileName: 'photo.jpeg').mimeType, 'image/jpeg');
+      expect(AdminProductService.resolveMediaType(fileName: 'photo.png').mimeType, 'image/png');
+      expect(AdminProductService.resolveMediaType(fileName: 'photo.webp').mimeType, 'image/webp');
+      expect(AdminProductService.resolveMediaType(mimeType: 'image/png', fileName: 'photo.jpg').mimeType, 'image/png');
+      expect(AdminProductService.resolveMediaType(fileName: 'no_extension').mimeType, 'image/jpeg');
+    });
+
+    test('resolveFileName ensures valid filename with appropriate extension', () {
+      final jpegType = AdminProductService.resolveMediaType(fileName: 'photo.jpg');
+      expect(AdminProductService.resolveFileName(fileName: 'test', mediaType: jpegType), 'test.jpg');
+      expect(AdminProductService.resolveFileName(fileName: 'test.jpg', mediaType: jpegType), 'test.jpg');
+      expect(AdminProductService.resolveFileName(fileName: null, filePath: '/tmp/image', mediaType: jpegType), 'image.jpg');
+    });
   });
 }

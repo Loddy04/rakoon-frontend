@@ -784,6 +784,12 @@ class _EditPhotoSheetState extends State<_EditPhotoSheet> with SingleTickerProvi
 
       if (picked != null) {
         final bytes = await picked.readAsBytes();
+        if (bytes.lengthInBytes > 5 * 1024 * 1024) {
+          setState(() {
+            _errorMessage = 'Ukuran berkas foto terlalu besar (${(bytes.lengthInBytes / (1024 * 1024)).toStringAsFixed(1)} MB). Maksimal 5 MB.';
+          });
+          return;
+        }
         setState(() {
           _selectedFile = picked;
           _fileBytes = bytes;
@@ -815,6 +821,7 @@ class _EditPhotoSheetState extends State<_EditPhotoSheet> with SingleTickerProvi
           filePath: _selectedFile?.path,
           fileBytes: _fileBytes,
           fileName: _selectedFile?.name,
+          contentType: _selectedFile?.mimeType,
           baseUrl: widget.baseUrl,
           client: widget.httpClient,
         );
