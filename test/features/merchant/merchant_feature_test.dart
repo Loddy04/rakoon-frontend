@@ -219,6 +219,34 @@ void main() {
       });
     });
 
+    testWidgets('MerchantDashboardPage keeps pending claims out of the ad dashboard', (tester) async {
+      final pendingClient = MockClient((request) async {
+        if (request.url.path.endsWith('/ads/my-store')) {
+          return http.Response(jsonEncode({
+            'is_claimed': false,
+            'claim_status': 'pending',
+            'store_id': 'store-pamela-6',
+            'store_nama': 'Pamela 6 Supermarket',
+            'campaigns': [],
+          }), 200);
+        }
+        return http.Response(jsonEncode({}), 404);
+      });
+
+      await tester.pumpWidget(MaterialApp(
+        home: MerchantDashboardPage(
+          baseUrl: 'https://api.test',
+          httpClient: pendingClient,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Klaim toko menunggu verifikasi'), findsOneWidget);
+      expect(find.text('Periksa Status'), findsOneWidget);
+      expect(find.text('Toko Terverifikasi'), findsNothing);
+      expect(find.text('Klaim & Kelola Toko Ini'), findsNothing);
+    });
+
     testWidgets('CreateAdCampaignPage renders duration options and payment summary', (tester) async {
       await mockNetworkImagesFor(() async {
         await tester.pumpWidget(

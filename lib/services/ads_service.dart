@@ -89,6 +89,7 @@ class AdPricingPackage {
 
 class MyStoreData {
   final bool isClaimed;
+  final String? claimStatus;
   final String? storeId;
   final String? storeNama;
   final String? storeAlamat;
@@ -98,6 +99,7 @@ class MyStoreData {
 
   const MyStoreData({
     required this.isClaimed,
+    this.claimStatus,
     this.storeId,
     this.storeNama,
     this.storeAlamat,
@@ -110,6 +112,7 @@ class MyStoreData {
     final list = json['campaigns'] as List<dynamic>? ?? [];
     return MyStoreData(
       isClaimed: json['is_claimed'] as bool? ?? false,
+      claimStatus: json['claim_status'] as String?,
       storeId: json['store_id'] as String?,
       storeNama: json['store_nama'] as String?,
       storeAlamat: json['store_alamat'] as String?,

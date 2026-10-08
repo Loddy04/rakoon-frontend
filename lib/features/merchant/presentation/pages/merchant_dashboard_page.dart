@@ -49,7 +49,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
       );
 
       List<StoreNearby> stores = [];
-      if (!storeData.isClaimed) {
+      if (!storeData.isClaimed && storeData.claimStatus != 'pending') {
         final resp = await StoresService.getNearbyStores(
           baseUrl: widget.baseUrl ?? AppConfig.apiBaseUrl,
           client: widget.httpClient,
@@ -101,7 +101,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Toko berhasil diklaim! Selamat datang di Merchant Hub.'),
+            content: Text('Permintaan klaim toko dikirim. Tunggu verifikasi admin sebelum memasang iklan.'),
             backgroundColor: Color(0xFF166534),
           ),
         );
@@ -184,7 +184,41 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
                 )
               : _myStoreData?.isClaimed == true
                   ? _buildClaimedDashboard()
-                  : _buildUnclaimedState(),
+                  : _myStoreData?.claimStatus == 'pending'
+                      ? _buildPendingState()
+                      : _buildUnclaimedState(),
+    );
+  }
+
+  Widget _buildPendingState() {
+    final store = _myStoreData!;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.pending_actions_rounded, size: 56, color: Color(0xFFB45309)),
+            const SizedBox(height: 16),
+            Text(
+              'Klaim toko menunggu verifikasi',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Permintaan untuk ${store.storeNama ?? 'toko ini'} sudah dikirim. Admin akan memeriksa kepemilikan toko sebelum fitur iklan tersedia.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(color: const Color(0xFF6B7280)),
+            ),
+            const SizedBox(height: 20),
+            OutlinedButton(
+              onPressed: _loadData,
+              child: const Text('Periksa Status'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
