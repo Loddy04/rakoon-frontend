@@ -657,21 +657,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: c.daysLeft > 0 ? const Color(0xFFECFDF5) : const Color(0xFFFEE2E2),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    c.daysLeft > 0 ? 'Sisa ${c.daysLeft} Hari' : 'Kedaluwarsa',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: c.daysLeft > 0 ? const Color(0xFF059669) : const Color(0xFFDC2626),
-                                    ),
-                                  ),
-                                ),
+                                _buildCampaignStatusBadge(c),
                                 Text(
                                   'Paket ${c.durationDays} Hari',
                                   style: GoogleFonts.outfit(
@@ -701,6 +687,17 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
                                 color: const Color(0xFF166534),
                               ),
                             ),
+                            if (c.status == 'pending_payment' || c.paymentStatus == 'unpaid') ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Belum tayang di beranda • Menunggu verifikasi pembayaran',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFFB45309),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -713,4 +710,69 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
       ),
     );
   }
+
+  Widget _buildCampaignStatusBadge(HomePromoBanner c) {
+    if (c.status == 'pending_payment' || c.paymentStatus == 'unpaid') {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEF3C7),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFFDE68A)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.schedule_rounded, size: 11, color: Color(0xFFB45309)),
+            const SizedBox(width: 4),
+            Text(
+              'Menunggu Pembayaran',
+              style: GoogleFonts.outfit(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFFB45309),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (c.daysLeft <= 0 || c.status == 'expired') {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEE2E2),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFFECACA)),
+        ),
+        child: Text(
+          'Kedaluwarsa',
+          style: GoogleFonts.outfit(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFFDC2626),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0xFFECFDF5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFA7F3D0)),
+      ),
+      child: Text(
+        'Aktif • Sisa ${c.daysLeft} Hari',
+        style: GoogleFonts.outfit(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF059669),
+        ),
+      ),
+    );
+  }
+
 }

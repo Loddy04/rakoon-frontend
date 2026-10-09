@@ -19,6 +19,7 @@ class HomePromoBanner {
   final double distanceKm;
   final String expiresAt;
   final int daysLeft;
+  final String status;
   final String paymentMethod;
   final String? paymentRef;
   final String paymentStatus;
@@ -37,9 +38,10 @@ class HomePromoBanner {
     required this.distanceKm,
     required this.expiresAt,
     required this.daysLeft,
+    this.status = 'active',
     this.paymentMethod = 'QRIS',
     this.paymentRef,
-    this.paymentStatus = 'paid',
+    this.paymentStatus = 'unpaid',
   });
 
   factory HomePromoBanner.fromJson(Map<String, dynamic> json) {
@@ -57,9 +59,10 @@ class HomePromoBanner {
       distanceKm: (json['distance_km'] as num?)?.toDouble() ?? 0.0,
       expiresAt: json['expires_at'] as String? ?? '',
       daysLeft: json['days_left'] as int? ?? 1,
+      status: json['status'] as String? ?? 'active',
       paymentMethod: json['payment_method'] as String? ?? 'QRIS',
       paymentRef: json['payment_ref'] as String?,
-      paymentStatus: json['payment_status'] as String? ?? 'paid',
+      paymentStatus: json['payment_status'] as String? ?? 'unpaid',
     );
   }
 }
@@ -355,7 +358,6 @@ class AdsService {
           'banner_url': bannerUrl,
           'duration_days': durationDays,
           'payment_method': paymentMethod,
-          'payment_ref':? paymentRef,
         }),
       );
 

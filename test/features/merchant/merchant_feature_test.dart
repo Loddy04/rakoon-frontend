@@ -141,7 +141,10 @@ void main() {
               "price_paid": 30000,
               "distance_km": 0.0,
               "expires_at": "2026-10-15T00:00:00Z",
-              "days_left": 7
+              "days_left": 7,
+              "status": "pending_payment",
+              "payment_status": "unpaid",
+              "payment_ref": "INV-20261010-ABCD1234"
             }),
             201,
           );
@@ -270,7 +273,7 @@ void main() {
       });
     });
 
-    testWidgets('CreateAdCampaignPage opens QRIS payment modal and completes payment simulation', (tester) async {
+    testWidgets('CreateAdCampaignPage opens confirmation modal and creates pending payment campaign', (tester) async {
       await mockNetworkImagesFor(() async {
         await tester.pumpWidget(
           MaterialApp(
@@ -293,27 +296,28 @@ void main() {
         await tester.tap(lanjutBtn);
         await tester.pumpAndSettle();
 
-        // Verify QRIS modal content
-        expect(find.text('Pembayaran Iklan Promo'), findsOneWidget);
-        expect(find.text('STANDAR PEMBAYARAN NASIONAL'), findsOneWidget);
-        expect(find.text('PAMELA 6 SUPERMARKET'), findsOneWidget);
-        expect(find.text('NMID: ID102026RAKOON01  •  YOGYAKARTA'), findsOneWidget);
+        // Verify modal content shows honest pending status notice
+        expect(find.text('Konfirmasi Kampanye Iklan'), findsOneWidget);
+        expect(find.text('Mekanisme Penayangan Iklan'), findsOneWidget);
+        expect(find.text('Menunggu Pembayaran'), findsWidgets);
+        expect(find.text('STANDAR PEMBAYARAN NASIONAL'), findsNothing);
 
-        // Scroll and tap Selesaikan Pembayaran
-        final payBtn = find.widgetWithText(ElevatedButton, 'Selesaikan Pembayaran (Rp 30.000)');
-        expect(payBtn, findsOneWidget);
-        await tester.ensureVisible(payBtn);
+        // Scroll and tap Buat Kampanye & Terbitkan Invoice
+        final submitBtn = find.widgetWithText(ElevatedButton, 'Buat Kampanye & Terbitkan Invoice (Rp 30.000)');
+        expect(submitBtn, findsOneWidget);
+        await tester.ensureVisible(submitBtn);
         await tester.pumpAndSettle();
-        await tester.tap(payBtn);
+        await tester.tap(submitBtn);
         await tester.pumpAndSettle();
 
-        // Verify Success Receipt View
-        expect(find.text('Pembayaran Berhasil!'), findsOneWidget);
-        expect(find.text('QRIS Dinamis (Verified)'), findsOneWidget);
-        expect(find.text('Selesai & Lihat Iklan'), findsOneWidget);
+        // Verify Success Invoice View shows pending status honestly
+        expect(find.text('Kampanye Iklan Dibuat'), findsOneWidget);
+        expect(find.text('Menunggu Pembayaran'), findsWidgets);
+        expect(find.text('QRIS Dinamis (Verified)'), findsNothing);
+        expect(find.text('Selesai & Lihat Dasbor Merchant'), findsOneWidget);
 
         // Finish
-        await tester.tap(find.text('Selesai & Lihat Iklan'));
+        await tester.tap(find.text('Selesai & Lihat Dasbor Merchant'));
         await tester.pumpAndSettle();
       });
     });

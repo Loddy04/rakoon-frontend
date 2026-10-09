@@ -120,7 +120,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
               child: SingleChildScrollView(
                 child: isSuccess
                     ? _buildPaymentSuccessView(
-                        paymentRef: paymentRef ?? 'QRIS-2026-OK',
+                        paymentRef: paymentRef ?? 'INV-PENDING',
                         onFinish: () {
                           Navigator.pop(ctx);
                           Navigator.pop(context, true);
@@ -134,7 +134,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Pembayaran Iklan Promo',
+                                'Konfirmasi Kampanye Iklan',
                                 style: GoogleFonts.outfit(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
@@ -218,7 +218,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                           const SizedBox(height: 16),
 
                           // Kartu QRIS Resmi
-                          _buildOfficialQrisCard(),
+                          _buildPaymentNoticeCard(),
 
                           if (errorMessage != null) ...[
                             const SizedBox(height: 12),
@@ -270,14 +270,14 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                                         setModalState(() {
                                           isProcessing = false;
                                           isSuccess = true;
-                                          paymentRef = genRef;
+                                          paymentRef = created.paymentRef ?? created.id;
                                         });
                                       }
                                     } catch (e) {
                                       if (mounted) {
                                         setModalState(() {
                                           isProcessing = false;
-                                          errorMessage = 'Pembayaran gagal diproses: $e';
+                                          errorMessage = 'Gagal membuat kampanye iklan: $e';
                                         });
                                       }
                                     }
@@ -304,7 +304,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                                       ),
                                       const SizedBox(width: 10),
                                       Text(
-                                        'Memproses Verifikasi QRIS...',
+                                        'Menerbitkan Invoice...',
                                         style: GoogleFonts.outfit(
                                           fontWeight: FontWeight.w700,
                                           fontSize: 14,
@@ -313,7 +313,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                                     ],
                                   )
                                 : Text(
-                                    'Selesaikan Pembayaran (${_formatRupiah(_selectedPrice)})',
+                                    'Buat Kampanye & Terbitkan Invoice (${_formatRupiah(_selectedPrice)})',
                                     style: GoogleFonts.outfit(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 14,
@@ -330,146 +330,38 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
     );
   }
 
-  Widget _buildOfficialQrisCard() {
+  Widget _buildPaymentNoticeCard() {
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFFF0FDF4),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD1D5DB)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: const Color(0xFFBBF7D0)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header merah QRIS
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: const BoxDecoration(
-              color: Color(0xFFDC2626),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        'QRIS',
-                        style: GoogleFonts.outfit(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xFFDC2626),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'STANDAR PEMBAYARAN NASIONAL',
-                      style: GoogleFonts.outfit(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.4,
-                      ),
-                    ),
-                  ],
+          Row(
+            children: [
+              const Icon(Icons.info_outline_rounded, size: 18, color: Color(0xFF166534)),
+              const SizedBox(width: 8),
+              Text(
+                'Mekanisme Penayangan Iklan',
+                style: GoogleFonts.outfit(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF166534),
                 ),
-                Text(
-                  'ASPI / BI',
-                  style: GoogleFonts.outfit(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white.withValues(alpha: 0.85),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                Text(
-                  widget.storeName.toUpperCase(),
-                  style: GoogleFonts.outfit(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF111827),
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  'NMID: ID102026RAKOON01  •  YOGYAKARTA',
-                  style: GoogleFonts.outfit(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF6B7280),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // QR Canvas
-                Container(
-                  width: 140,
-                  height: 140,
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
-                  ),
-                  child: CustomPaint(
-                    painter: _QrisPatternPainter(),
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.timer_outlined, size: 13, color: Color(0xFF92400E)),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Selesaikan pembayaran dalam 15:00',
-                        style: GoogleFonts.outfit(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF92400E),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'BCA • Mandiri • GoPay • OVO • ShopeePay • DANA',
-                  style: GoogleFonts.outfit(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF9CA3AF),
-                  ),
-                ),
-              ],
+          const SizedBox(height: 8),
+          Text(
+            'Setelah kampanye didaftarkan, sistem akan menerbitkan invoice dengan status Menunggu Pembayaran. Iklan promo flyer toko Anda akan otomatis aktif dan tayang di Beranda Rakoon segera setelah pembayaran diselesaikan dan diverifikasi oleh payment gateway resmi.',
+            style: GoogleFonts.outfit(
+              fontSize: 12,
+              color: const Color(0xFF374151),
+              height: 1.45,
             ),
           ),
         ],
@@ -491,20 +383,20 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: const Color(0xFFDCFCE7),
+              color: const Color(0xFFFEF3C7),
               shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFF86EFAC), width: 2),
+              border: Border.all(color: const Color(0xFFFDE68A), width: 2),
             ),
             child: const Icon(
-              Icons.check_circle_rounded,
-              color: Color(0xFF166534),
-              size: 40,
+              Icons.receipt_long_rounded,
+              color: Color(0xFFB45309),
+              size: 36,
             ),
           ),
         ),
         const SizedBox(height: 14),
         Text(
-          'Pembayaran Berhasil!',
+          'Kampanye Iklan Dibuat',
           style: GoogleFonts.outfit(
             fontSize: 20,
             fontWeight: FontWeight.w800,
@@ -513,8 +405,27 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 6),
+        Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF3C7),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFFDE68A)),
+            ),
+            child: Text(
+              'Menunggu Pembayaran',
+              style: GoogleFonts.outfit(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFFB45309),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
         Text(
-          'Iklan brosur promo toko Anda telah aktif dan otomatis tayang di Beranda Rakoon selama $_selectedDurationDays hari.',
+          'Invoice kampanye iklan berhasil diterbitkan. Iklan promo Anda akan otomatis aktif dan tayang di Beranda setelah pembayaran diverifikasi oleh sistem.',
           style: GoogleFonts.outfit(
             fontSize: 13,
             color: const Color(0xFF4B5563),
@@ -522,9 +433,9 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 18),
 
-        // Bukti Transaksi
+        // Rincian Invoice
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -534,19 +445,41 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
           ),
           child: Column(
             children: [
-              _buildReceiptRow('Nomor Referensi', paymentRef),
+              _buildReceiptRow('Nomor Invoice Kampanye', paymentRef),
               const Divider(height: 16),
-              _buildReceiptRow('Metode', 'QRIS Dinamis (Verified)'),
+              _buildReceiptRow('Status Pembayaran', 'Menunggu Pembayaran'),
               const Divider(height: 16),
               _buildReceiptRow('Toko Pengiklan', widget.storeName),
               const Divider(height: 16),
               _buildReceiptRow('Masa Tayang', '$_selectedDurationDays Hari Promo'),
               const Divider(height: 16),
-              _buildReceiptRow('Total Dibayar', _formatRupiah(_selectedPrice), isBold: true),
+              _buildReceiptRow('Total Tagihan', _formatRupiah(_selectedPrice), isBold: true),
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 14),
+
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFFBEB),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFFDE68A)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.schedule_rounded, size: 18, color: Color(0xFFB45309)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Integrasi pembayaran resmi (Xendit) sedang disiapkan. Anda dapat memantau status aktivasi iklan pada Dasbor Merchant.',
+                  style: GoogleFonts.outfit(fontSize: 11.5, color: const Color(0xFF92400E)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
 
         ElevatedButton(
           onPressed: onFinish,
@@ -559,7 +492,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
             ),
           ),
           child: Text(
-            'Selesai & Lihat Iklan',
+            'Selesai & Lihat Dasbor Merchant',
             style: GoogleFonts.outfit(
               fontWeight: FontWeight.w700,
               fontSize: 14,
@@ -912,65 +845,3 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
     );
   }
 }
-
-class _QrisPatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF111827)
-      ..style = PaintingStyle.fill;
-
-    final double cellSize = size.width / 21.0;
-
-    void drawFinder(double startX, double startY) {
-      // 7x7 outer square
-      canvas.drawRect(Rect.fromLTWH(startX, startY, 7 * cellSize, 7 * cellSize), paint);
-      // 5x5 white inner
-      final whitePaint = Paint()..color = Colors.white;
-      canvas.drawRect(Rect.fromLTWH(startX + cellSize, startY + cellSize, 5 * cellSize, 5 * cellSize), whitePaint);
-      // 3x3 center square
-      canvas.drawRect(Rect.fromLTWH(startX + 2 * cellSize, startY + 2 * cellSize, 3 * cellSize, 3 * cellSize), paint);
-    }
-
-    // Top-left finder
-    drawFinder(0, 0);
-    // Top-right finder
-    drawFinder(14 * cellSize, 0);
-    // Bottom-left finder
-    drawFinder(0, 14 * cellSize);
-
-    // Timing patterns & data cells
-    const List<int> pattern = [
-      0x5A, 0xA5, 0x3C, 0xC3, 0x66, 0x99, 0xF0, 0x0F,
-      0xAA, 0x55, 0xCC, 0x33, 0x96, 0x69, 0x5A, 0xA5,
-    ];
-
-    for (int r = 0; r < 21; r++) {
-      for (int c = 0; c < 21; c++) {
-        // Skip finder areas
-        if ((r < 8 && c < 8) || (r < 8 && c >= 13) || (r >= 13 && c < 8)) {
-          continue;
-        }
-        // Timing pattern
-        if (r == 6 || c == 6) {
-          if ((r + c) % 2 == 0) {
-            canvas.drawRect(Rect.fromLTWH(c * cellSize, r * cellSize, cellSize, cellSize), paint);
-          }
-          continue;
-        }
-        // Data bits
-        int val = pattern[(r * 3 + c) % pattern.length];
-        if (((val >> (c % 8)) & 1) == 1) {
-          canvas.drawRect(
-            Rect.fromLTWH(c * cellSize + 0.5, r * cellSize + 0.5, cellSize - 1, cellSize - 1),
-            paint,
-          );
-        }
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
