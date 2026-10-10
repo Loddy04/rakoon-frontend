@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/services/ads_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
+import 'package:rakoon_frontend/services/auth_service.dart';
+import 'package:rakoon_frontend/features/admin/presentation/pages/admin_store_claims_page.dart';
 import 'package:rakoon_frontend/features/admin/presentation/pages/admin_product_photo_page.dart';
 import 'package:rakoon_frontend/features/merchant/presentation/pages/create_ad_campaign_page.dart';
 import 'package:rakoon_frontend/widgets/interactive_scale.dart';
@@ -258,6 +260,23 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
           ),
         ),
         actions: [
+          if (AuthService.isAdmin)
+            IconButton(
+              key: const Key('merchant_admin_claims_button'),
+              icon: const Icon(Icons.verified_user_rounded, color: Color(0xFF166534)),
+              tooltip: 'Verifikasi Klaim Toko',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AdminStoreClaimsPage(
+                      baseUrl: widget.baseUrl,
+                      httpClient: widget.httpClient,
+                    ),
+                  ),
+                );
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Color(0xFF0D2818)),
             onPressed: _loadData,
@@ -345,6 +364,91 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (AuthService.isAdmin)
+            Container(
+              key: const Key('admin_unclaimed_claims_banner'),
+              margin: const EdgeInsets.only(bottom: 16.0),
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFF86EFAC)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDCFCE7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF166534), size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Panel Admin Rakoon',
+                          style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 13.5, color: const Color(0xFF166534)),
+                        ),
+                        Text(
+                          'Tinjau permohonan klaim toko yang masuk dari para mitra merchant.',
+                          style: GoogleFonts.outfit(fontSize: 11.5, color: const Color(0xFF374151)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    key: const Key('admin_unclaimed_claims_button'),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AdminStoreClaimsPage(
+                            baseUrl: widget.baseUrl,
+                            httpClient: widget.httpClient,
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF166534),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      textStyle: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.w700),
+                    ),
+                    child: const Text('Tinjau Klaim'),
+                  ),
+                ],
+              ),
+            ),
+          if (_myStoreData?.claimStatus == 'rejected')
+            Container(
+              margin: const EdgeInsets.only(bottom: 16.0),
+              padding: const EdgeInsets.all(14.0),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFFECACA)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, color: Color(0xFFDC2626), size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Permohonan klaim toko Anda sebelumnya ditolak oleh admin. Anda dapat mengajukan klaim toko kembali di bawah ini.',
+                      style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF991B1B), fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           // Banner intro
           Container(
             padding: const EdgeInsets.all(20.0),

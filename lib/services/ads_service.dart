@@ -169,6 +169,41 @@ class AdPricingPackage {
   }
 }
 
+class PendingStoreClaimData {
+  final String userId;
+  final String storeId;
+  final String storeNama;
+  final String? storeAlamat;
+  final String? userNama;
+  final String? userEmail;
+  final String status;
+  final String createdAt;
+
+  const PendingStoreClaimData({
+    required this.userId,
+    required this.storeId,
+    required this.storeNama,
+    this.storeAlamat,
+    this.userNama,
+    this.userEmail,
+    required this.status,
+    required this.createdAt,
+  });
+
+  factory PendingStoreClaimData.fromJson(Map<String, dynamic> json) {
+    return PendingStoreClaimData(
+      userId: json['user_id'] as String? ?? '',
+      storeId: json['store_id'] as String? ?? '',
+      storeNama: json['store_nama'] as String? ?? '',
+      storeAlamat: json['store_alamat'] as String?,
+      userNama: json['user_nama'] as String?,
+      userEmail: json['user_email'] as String?,
+      status: json['status'] as String? ?? 'pending',
+      createdAt: json['created_at'] as String? ?? '',
+    );
+  }
+}
+
 class MyStoreData {
   final bool isClaimed;
   final String? claimStatus;
@@ -517,6 +552,129 @@ class AdsService {
       } else {
         final err = jsonDecode(response.body);
         throw Exception(err['detail'] ?? 'Gagal mengambil status pembayaran.');
+      }
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
+  }
+  /// Mengambil daftar klaim toko pending yang membutuhkan verifikasi admin
+  static Future<List<PendingStoreClaimData>> getPendingClaims({
+    String? baseUrl,
+    http.Client? client,
+  }) async {
+    final token = AuthService.currentSession?.accessToken;
+    if (token == null) {
+      throw Exception('Silakan masuk akun terlebih dahulu.');
+    }
+
+    final effectiveBase = _resolveBaseUrl(baseUrl);
+    final httpClient = client ?? http.Client();
+
+    try {
+      final response = await httpClient.get(
+        Uri.parse('$effectiveBase/ads/pending-claims'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final list = jsonDecode(response.body) as List<dynamic>? ?? [];
+        return list
+            .map((e) => PendingStoreClaimData.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } else {
+        final err = jsonDecode(response.body);
+        throw Exception(err['detail'] ?? 'Gagal mengambil daftar klaim pending.');
+      }
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
+  }
+
+  /// Menyetujui klaim toko merchant (Admin only)
+  static Future<MyStoreData> verifyStoreClaim({
+    required String userId,
+    required String storeId,
+    String? baseUrl,
+    http.Client? client,
+  }) async {
+    final token = AuthService.currentSession?.accessToken;
+    if (token == null) {
+      throw Exception('Silakan masuk akun terlebih dahulu.');
+    }
+
+    final effectiveBase = _resolveBaseUrl(baseUrl);
+    final httpClient = client ?? http.Client();
+
+    try {
+      final response = await httpClient.post(
+        Uri.parse('$effectiveBase/ads/verify-claim'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'user_id': userId,
+          'store_id': storeId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return MyStoreData.fromJson(jsonDecode(response.body));
+      } else {
+        final err = jsonDecode(response.body);
+        throw Exception(err['detail'] ?? 'Gagal menyetujui klaim toko.');
+      }
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
+  }
+
+  /// Menolak klaim toko merchant (Admin only)
+  static Future<MyStoreData> rejectStoreClaim({
+    required String userId,
+    required String storeId,
+    String? reason,
+    String? baseUrl,
+    http.Client? client,
+  }) async {
+    final token = AuthService.currentSession?.accessToken;
+    if (token == null) {
+      throw Exception('Silakan masuk akun terlebih dahulu.');
+    }
+
+    final effectiveBase = _resolveBaseUrl(baseUrl);
+    final httpClient = client ?? http.Client();
+
+    try {
+      final response = await httpClient.post(
+        Uri.parse('$effectiveBase/ads/reject-claim'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'user_id': userId,
+          'store_id': storeId,
+          if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return MyStoreData.fromJson(jsonDecode(response.body));
+      } else {
+        final err = jsonDecode(response.body);
+        throw Exception(err['detail'] ?? 'Gagal menolak klaim toko.');
       }
     } finally {
       if (client == null) {
