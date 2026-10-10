@@ -1007,22 +1007,35 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: const Color(0xFFECFDF5),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFA7F3D0)),
+   return Container(
+     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+     decoration: BoxDecoration(
+       color: const Color(0xFFECFDF5),
+       borderRadius: BorderRadius.circular(12),
+       border: Border.all(color: const Color(0xFFA7F3D0)),
+     ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Aktif • ',
+            style: GoogleFonts.outfit(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF059669),
+            ),
+          ),
+          Text(
+            'Sisa ${c.daysLeft} Hari',
+            style: GoogleFonts.outfit(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF059669),
+            ),
+          ),
+        ],
       ),
-      child: Text(
-        'Aktif • Sisa ${c.daysLeft} Hari',
-        style: GoogleFonts.outfit(
-          fontSize: 10.5,
-          fontWeight: FontWeight.w700,
-          color: const Color(0xFF059669),
-        ),
-      ),
-    );
-  }
+   );
+ }
 
 }

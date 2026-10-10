@@ -110,8 +110,9 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
         String? paymentRef;
         String? errorMessage;
 
-        return StatefulBuilder(
-          builder: (context, setModalState) {
+       return StatefulBuilder(
+         builder: (context, setModalState) {
+            final maxHeight = MediaQuery.of(context).size.height * 0.9;
             return Padding(
               padding: EdgeInsets.only(
                 left: 24.0,
@@ -119,7 +120,10 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                 top: 24.0,
                 bottom: MediaQuery.of(context).viewInsets.bottom + 24.0,
               ),
-              child: SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: maxHeight),
+                child: SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
                 child: isSuccess
                     ? _buildPaymentSuccessView(
                         paymentRef: paymentRef ?? 'INV-PENDING',
@@ -173,10 +177,13 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      'Paket Durasi $_selectedDurationDays Hari',
-                                      style: GoogleFonts.outfit(fontWeight: FontWeight.w500, fontSize: 13),
+                                    Flexible(
+                                      child: Text(
+                                        'Paket Durasi $_selectedDurationDays Hari',
+                                        style: GoogleFonts.outfit(fontWeight: FontWeight.w500, fontSize: 13),
+                                      ),
                                     ),
+                                    const SizedBox(width: 8),
                                     Text(
                                       _formatRupiah(_selectedPrice),
                                       style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 14),
@@ -187,10 +194,13 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      'Biaya Layanan Platform',
-                                      style: GoogleFonts.outfit(color: const Color(0xFF6B7280), fontSize: 12),
+                                    Flexible(
+                                      child: Text(
+                                        'Biaya Layanan Platform',
+                                        style: GoogleFonts.outfit(color: const Color(0xFF6B7280), fontSize: 12),
+                                      ),
                                     ),
+                                    const SizedBox(width: 8),
                                     Text(
                                       'Rp 0 (Gratis)',
                                       style: GoogleFonts.outfit(color: const Color(0xFF059669), fontSize: 12, fontWeight: FontWeight.w600),
@@ -201,10 +211,13 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      'Total Biaya:',
-                                      style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 15),
+                                    Flexible(
+                                      child: Text(
+                                        'Total Biaya:',
+                                        style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 15),
+                                      ),
                                     ),
+                                    const SizedBox(width: 8),
                                     Text(
                                       _formatRupiah(_selectedPrice),
                                       style: GoogleFonts.outfit(
@@ -220,7 +233,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                           ),
                           const SizedBox(height: 16),
 
-                          // Kartu QRIS Resmi
+                          // Kartu Pemberitahuan Pembayaran
                           _buildPaymentNoticeCard(),
 
                           if (errorMessage != null) ...[
@@ -326,6 +339,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                           ),
                         ],
                       ),
+                ),
               ),
             );
           },
@@ -345,16 +359,41 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              const Icon(Icons.info_outline_rounded, size: 18, color: Color(0xFF166534)),
-              const SizedBox(width: 8),
-              Text(
-                'Mekanisme Penayangan Iklan',
-                style: GoogleFonts.outfit(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF166534),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.info_outline_rounded, size: 18, color: Color(0xFF166534)),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Mekanisme Penayangan Iklan',
+                    style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF166534),
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                ),
+                child: Text(
+                  'Menunggu Pembayaran',
+                  style: GoogleFonts.outfit(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFB45309),
+                  ),
                 ),
               ),
             ],
@@ -613,20 +652,29 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
   Widget _buildReceiptRow(String label, String value, {bool isBold = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.outfit(
-            fontSize: 12.5,
-            color: const Color(0xFF6B7280),
+        Flexible(
+          flex: 4,
+          child: Text(
+            label,
+            style: GoogleFonts.outfit(
+              fontSize: 12.5,
+              color: const Color(0xFF6B7280),
+            ),
           ),
         ),
-        Text(
-          value,
-          style: GoogleFonts.outfit(
-            fontSize: 13,
-            fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
-            color: isBold ? const Color(0xFF0D2818) : const Color(0xFF111827),
+        const SizedBox(width: 8),
+        Flexible(
+          flex: 5,
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: GoogleFonts.outfit(
+              fontSize: 13,
+              fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
+              color: isBold ? const Color(0xFF0D2818) : const Color(0xFF111827),
+            ),
           ),
         ),
       ],

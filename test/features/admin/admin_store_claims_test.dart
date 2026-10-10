@@ -75,6 +75,7 @@ void main() {
   http.Client createMockClient({
     List<Map<String, dynamic>>? claims,
     bool shouldFailFetch = false,
+    bool Function()? shouldFailFetchFn,
     bool shouldFailAction = false,
   }) {
     var currentClaims = List<Map<String, dynamic>>.from(claims ?? mockPendingClaims);
@@ -83,8 +84,13 @@ void main() {
       final path = request.url.path;
 
       if (path.endsWith('/ads/pending-claims') && request.method == 'GET') {
-        if (shouldFailFetch) {
-          return http.Response(jsonEncode({'detail': 'Gagal mengambil klaim'}), 500);
+        final fail = shouldFailFetchFn != null ? shouldFailFetchFn() : shouldFailFetch;
+        if (fail) {
+          return http.Response(
+            jsonEncode({'detail': 'Gagal mengambil daftar klaim pending.'}),
+            500,
+            headers: {'content-type': 'application/json'},
+          );
         }
         return http.Response(
           jsonEncode(currentClaims),
@@ -146,7 +152,23 @@ void main() {
       }
 
       if (path.endsWith('/stores/nearby')) {
-        return http.Response(jsonEncode([]), 200);
+        return http.Response(
+          jsonEncode({
+            'source': 'osm',
+            'stores': [
+              {
+                'store_id': 'store-456',
+                'nama': 'Toko Berkah Mandiri',
+                'lat': -7.7829,
+                'lng': 110.4083,
+                'jarak_km': 0.5,
+                'alamat': 'Jl. Kaliurang KM 5 No. 10, Sleman',
+              }
+            ],
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
       }
 
       return http.Response('Not Found', 404);
@@ -209,7 +231,8 @@ void main() {
     });
 
     testWidgets('Displays error state and allows retry on fetch failure', (tester) async {
-      final client = createMockClient(shouldFailFetch: true);
+      bool fail = true;
+      final client = createMockClient(shouldFailFetchFn: () => fail);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -224,6 +247,14 @@ void main() {
 
       expect(find.text('Gagal mengambil daftar klaim pending.'), findsOneWidget);
       expect(find.text('Coba Lagi'), findsOneWidget);
+
+      // Verify retry button re-fetches and updates UI state to success
+      fail = false;
+      await tester.tap(find.text('Coba Lagi'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Gagal mengambil daftar klaim pending.'), findsNothing);
+      expect(find.text('Toko Berkah Mandiri'), findsOneWidget);
     });
 
     testWidgets('Approving a claim shows confirmation dialog and updates list on success', (tester) async {

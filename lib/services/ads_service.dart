@@ -44,6 +44,19 @@ class HomePromoBanner {
     this.paymentStatus = 'unpaid',
   });
 
+  static int _computeDaysLeft(dynamic daysLeftJson, String? expiresAtStr) {
+    if (daysLeftJson is int) return daysLeftJson;
+    if (expiresAtStr != null && expiresAtStr.isNotEmpty) {
+      try {
+        final exp = DateTime.parse(expiresAtStr).toUtc();
+        final now = DateTime.now().toUtc();
+        final diff = exp.difference(now);
+        return diff.isNegative ? 0 : (diff.inDays + (diff.inSeconds % 86400 > 0 ? 1 : 0));
+      } catch (_) {}
+    }
+    return 1;
+  }
+
   factory HomePromoBanner.fromJson(Map<String, dynamic> json) {
     return HomePromoBanner(
       id: json['id'] as String? ?? '',
@@ -58,7 +71,7 @@ class HomePromoBanner {
       pricePaid: json['price_paid'] as int? ?? 0,
       distanceKm: (json['distance_km'] as num?)?.toDouble() ?? 0.0,
       expiresAt: json['expires_at'] as String? ?? '',
-      daysLeft: json['days_left'] as int? ?? 1,
+      daysLeft: _computeDaysLeft(json['days_left'], json['expires_at'] as String?),
       status: json['status'] as String? ?? 'active',
       paymentMethod: json['payment_method'] as String? ?? 'QRIS',
       paymentRef: json['payment_ref'] as String?,

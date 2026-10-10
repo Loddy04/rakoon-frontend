@@ -118,11 +118,13 @@ void main() {
                   "store_alamat": "Jl. Raya Condongcatur No. 12, Sleman",
                   "title": "Promo JSM Minyak Goreng & Beras Hemat",
                   "banner_url": "https://example.com/flyer1.jpg",
-                  "duration_days": 7,
-                  "price_paid": 30000,
-                  "distance_km": 0.0,
-                  "expires_at": "2026-10-15T00:00:00Z",
-                  "days_left": 5
+                 "duration_days": 7,
+                 "price_paid": 30000,
+                 "distance_km": 0.0,
+                 "expires_at": "2026-10-15T00:00:00Z",
+                  "days_left": 5,
+                  "status": "active",
+                  "payment_status": "paid"
                 }
               ]
             }),
@@ -194,14 +196,23 @@ void main() {
             }),
             200,
           );
-        } else if (path.endsWith('/recommendation/products')) {
+        } else if (path.endsWith('/scan/recent')) {
           return http.Response(
-            jsonEncode({
-              "category": "General",
-              "category_title": "Rekomendasi",
-              "products": []
-            }),
+            jsonEncode([]),
             200,
+            headers: {'content-type': 'application/json'},
+          );
+        } else if (path.endsWith('/recommendation/recommended-products') || path.endsWith('/recommendation/products')) {
+          return http.Response(
+            jsonEncode([]),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        } else if (request.url.host.contains('openstreetmap.org') || request.url.path.endsWith('.png')) {
+          return http.Response.bytes(
+            [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82],
+            200,
+            headers: {'content-type': 'image/png'},
           );
         }
 
@@ -342,30 +353,35 @@ void main() {
         expect(find.text('Kampanye Iklan Dibuat'), findsOneWidget);
         expect(find.text('Menunggu Pembayaran'), findsWidgets);
         expect(find.text('QRIS Dinamis (Verified)'), findsNothing);
-        expect(find.text('Selesai & Lihat Dasbor Merchant'), findsOneWidget);
+        final finishBtn = find.widgetWithText(ElevatedButton, 'Selesai & Lihat Dasbor Merchant');
+        expect(finishBtn, findsOneWidget);
 
         // Finish
-        await tester.tap(find.text('Selesai & Lihat Dasbor Merchant'));
+        await tester.ensureVisible(finishBtn);
+        await tester.pumpAndSettle();
+        await tester.tap(finishBtn);
         await tester.pumpAndSettle();
       });
     });
 
     testWidgets('HomeScreen renders Promo Toko Sekitarmu carousel banner', (tester) async {
       await mockNetworkImagesFor(() async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: HomeScreen(
-              baseUrl: 'https://api.test',
-              httpClient: mockClient,
+        await http.runWithClient(() async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: HomeScreen(
+                baseUrl: 'https://api.test',
+                httpClient: mockClient,
+              ),
             ),
-          ),
-        );
+          );
 
-        await tester.pumpAndSettle();
+          await tester.pumpAndSettle();
 
-        expect(find.text('Promo Toko Sekitarmu'), findsOneWidget);
-        expect(find.text('Mitra Ritel'), findsOneWidget);
-        expect(find.text('Promo JSM Minyak Goreng & Beras Hemat'), findsOneWidget);
+          expect(find.text('Promo Toko Sekitarmu'), findsOneWidget);
+          expect(find.text('Mitra Ritel'), findsOneWidget);
+          expect(find.text('Promo JSM Minyak Goreng & Beras Hemat'), findsOneWidget);
+        }, () => mockClient);
       });
     });
 
