@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -105,6 +106,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
       builder: (ctx) {
         bool isProcessing = false;
         bool isSuccess = false;
+        String? createdCampaignId;
         String? paymentRef;
         String? errorMessage;
 
@@ -121,6 +123,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                 child: isSuccess
                     ? _buildPaymentSuccessView(
                         paymentRef: paymentRef ?? 'INV-PENDING',
+                        campaignId: createdCampaignId,
                         onFinish: () {
                           Navigator.pop(ctx);
                           Navigator.pop(context, true);
@@ -256,7 +259,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                                     });
                                     final genRef = 'QRIS-2026-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
                                     try {
-                                      await AdsService.createCampaign(
+                                      final created = await AdsService.createCampaign(
                                         storeId: widget.storeId,
                                         title: _titleController.text.trim(),
                                         bannerUrl: _imageUrlController.text.trim(),
@@ -270,6 +273,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                                         setModalState(() {
                                           isProcessing = false;
                                           isSuccess = true;
+                                          createdCampaignId = created.id;
                                           paymentRef = created.paymentRef ?? created.id;
                                         });
                                       }
@@ -369,8 +373,69 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
     );
   }
 
+  void _showCheckoutDialog(BuildContext context, PaymentCheckoutData checkout) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.shopping_cart_checkout_rounded, color: Color(0xFF166534)),
+            const SizedBox(width: 8),
+            Text('Checkout Xendit', style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 16)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Tagihan: Rp ${checkout.amount}', style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 14)),
+            const SizedBox(height: 8),
+            Text(
+              'Silakan selesaikan pembayaran Sandbox di browser dengan link berikut:',
+              style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF4B5563)),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: SelectableText(
+                checkout.invoiceUrl ?? '-',
+                style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF1D4ED8)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          if (checkout.invoiceUrl != null)
+            TextButton.icon(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: checkout.invoiceUrl!));
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(
+                    content: Text('Link checkout berhasil disalin ke clipboard!'),
+                    backgroundColor: Color(0xFF166534),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.copy_rounded, size: 16),
+              label: const Text('Salin Link'),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Tutup'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPaymentSuccessView({
     required String paymentRef,
+    String? campaignId,
     required VoidCallback onFinish,
   }) {
     return Column(
@@ -481,6 +546,48 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
         ),
         const SizedBox(height: 20),
 
+        if (campaignId != null && campaignId.isNotEmpty) ...[
+          OutlinedButton.icon(
+            onPressed: () async {
+              try {
+                final checkout = await AdsService.initiatePayment(
+                  campaignId: campaignId,
+                  baseUrl: widget.baseUrl,
+                  client: widget.httpClient,
+                );
+                if (mounted) {
+                  _showCheckoutDialog(context, checkout);
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Gagal memulai checkout: $e'),
+                      backgroundColor: const Color(0xFFDC2626),
+                    ),
+                  );
+                }
+              }
+            },
+            icon: const Icon(Icons.open_in_new_rounded, color: Color(0xFF166534), size: 18),
+            label: Text(
+              'Buka Checkout Xendit Sandbox',
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+                color: const Color(0xFF166534),
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              side: const BorderSide(color: Color(0xFF166534)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
         ElevatedButton(
           onPressed: onFinish,
           style: ElevatedButton.styleFrom(

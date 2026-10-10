@@ -148,7 +148,35 @@ void main() {
             }),
             201,
           );
-        } else if (path.endsWith('/stores/nearby')) {
+                } else if (path.endsWith('/pay')) {
+          return http.Response(
+            jsonEncode({
+              "campaign_id": "ad-new-123",
+              "external_id": "INV-20261010-ABCD1234",
+              "xendit_invoice_id": "xinv-mock-999",
+              "amount": 30000,
+              "currency": "IDR",
+              "status": "PENDING",
+              "invoice_url": "https://checkout.xendit.co/inv-mock-999",
+            }),
+            200,
+          );
+        } else if (path.endsWith('/payment-status')) {
+          return http.Response(
+            jsonEncode({
+              "campaign_id": "ad-new-123",
+              "campaign_status": "pending_payment",
+              "payment_status": "unpaid",
+              "transaction_status": "PENDING",
+              "external_id": "INV-20261010-ABCD1234",
+              "xendit_invoice_id": "xinv-mock-999",
+              "invoice_url": "https://checkout.xendit.co/inv-mock-999",
+              "amount": 30000,
+              "currency": "IDR",
+            }),
+            200,
+          );
+} else if (path.endsWith('/stores/nearby')) {
           return http.Response(
             jsonEncode({
               "source": "live",
@@ -339,6 +367,34 @@ void main() {
         expect(find.text('Mitra Ritel'), findsOneWidget);
         expect(find.text('Promo JSM Minyak Goreng & Beras Hemat'), findsOneWidget);
       });
+    });
+
+    test('AdsService.initiatePayment requests official checkout URL', () async {
+      final checkout = await AdsService.initiatePayment(
+        campaignId: 'ad-new-123',
+        baseUrl: 'https://api.test',
+        client: mockClient,
+      );
+
+      expect(checkout.campaignId, 'ad-new-123');
+      expect(checkout.externalId, 'INV-20261010-ABCD1234');
+      expect(checkout.status, 'PENDING');
+      expect(checkout.amount, 30000);
+      expect(checkout.invoiceUrl, 'https://checkout.xendit.co/inv-mock-999');
+    });
+
+    test('AdsService.getPaymentStatus retrieves latest status from server', () async {
+      final status = await AdsService.getPaymentStatus(
+        campaignId: 'ad-new-123',
+        baseUrl: 'https://api.test',
+        client: mockClient,
+      );
+
+      expect(status.campaignId, 'ad-new-123');
+      expect(status.campaignStatus, 'pending_payment');
+      expect(status.paymentStatus, 'unpaid');
+      expect(status.transactionStatus, 'PENDING');
+      expect(status.amount, 30000);
     });
   });
 }

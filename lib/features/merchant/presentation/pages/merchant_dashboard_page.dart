@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -114,6 +115,121 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal mengklaim toko: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handlePayCampaign(HomePromoBanner c) async {
+    try {
+      final checkout = await AdsService.initiatePayment(
+        campaignId: c.id,
+        baseUrl: widget.baseUrl,
+        client: widget.httpClient,
+      );
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                const Icon(Icons.shopping_cart_checkout_rounded, color: Color(0xFF166534)),
+                const SizedBox(width: 8),
+                Text('Checkout Xendit Sandbox', style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 16)),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Kampanye: ${c.title}', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 4),
+                Text('Tagihan: Rp ${checkout.amount}', style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 14, color: const Color(0xFF166534))),
+                const SizedBox(height: 10),
+                Text(
+                  'Silakan buka link berikut di browser untuk simulasi pembayaran Xendit:',
+                  style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF4B5563)),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SelectableText(
+                    checkout.invoiceUrl ?? '-',
+                    style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF1D4ED8)),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              if (checkout.invoiceUrl != null)
+                TextButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: checkout.invoiceUrl!));
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(
+                        content: Text('Link checkout berhasil disalin!'),
+                        backgroundColor: Color(0xFF166534),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.copy_rounded, size: 16),
+                  label: const Text('Salin Link'),
+                ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Tutup'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memulai checkout: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleCheckPaymentStatus(HomePromoBanner c) async {
+    try {
+      final statusData = await AdsService.getPaymentStatus(
+        campaignId: c.id,
+        baseUrl: widget.baseUrl,
+        client: widget.httpClient,
+      );
+      if (mounted) {
+        final isPaid = statusData.paymentStatus == 'paid' || statusData.transactionStatus == 'PAID';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isPaid
+                  ? 'Pembayaran berhasil diverifikasi! Iklan telah aktif.'
+                  : 'Status: Menunggu Pembayaran (${statusData.transactionStatus ?? "PENDING"})',
+            ),
+            backgroundColor: isPaid ? const Color(0xFF166534) : const Color(0xFFB45309),
+          ),
+        );
+        if (isPaid) {
+          _loadData();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memeriksa status: $e'),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
@@ -697,7 +813,37 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
                                   color: const Color(0xFFB45309),
                                 ),
                               ),
-                            ],
+                            ,
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  OutlinedButton.icon(
+                                    onPressed: () => _handlePayCampaign(c),
+                                    icon: const Icon(Icons.payment_rounded, size: 14),
+                                    label: const Text('Bayar Xendit'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFF166534),
+                                      side: const BorderSide(color: Color(0xFF166534)),
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      textStyle: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w700),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  OutlinedButton.icon(
+                                    onPressed: () => _handleCheckPaymentStatus(c),
+                                    icon: const Icon(Icons.refresh_rounded, size: 14),
+                                    label: const Text('Cek Status'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFF0D2818),
+                                      side: const BorderSide(color: Color(0xFFD1D5DB)),
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      textStyle: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w600),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
+                                  ),
+                                ],
+                              )],
                           ],
                         ),
                       ),

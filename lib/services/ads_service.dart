@@ -67,6 +67,85 @@ class HomePromoBanner {
   }
 }
 
+class PaymentCheckoutData {
+  final String campaignId;
+  final String externalId;
+  final String? xenditInvoiceId;
+  final int amount;
+  final String currency;
+  final String status;
+  final String? invoiceUrl;
+  final String? expiryDate;
+
+  const PaymentCheckoutData({
+    required this.campaignId,
+    required this.externalId,
+    this.xenditInvoiceId,
+    required this.amount,
+    this.currency = 'IDR',
+    required this.status,
+    this.invoiceUrl,
+    this.expiryDate,
+  });
+
+  factory PaymentCheckoutData.fromJson(Map<String, dynamic> json) {
+    return PaymentCheckoutData(
+      campaignId: json['campaign_id'] as String? ?? '',
+      externalId: json['external_id'] as String? ?? '',
+      xenditInvoiceId: json['xendit_invoice_id'] as String?,
+      amount: json['amount'] as int? ?? 0,
+      currency: json['currency'] as String? ?? 'IDR',
+      status: json['status'] as String? ?? 'PENDING',
+      invoiceUrl: json['invoice_url'] as String?,
+      expiryDate: json['expiry_date'] as String?,
+    );
+  }
+}
+
+class PaymentStatusData {
+  final String campaignId;
+  final String campaignStatus;
+  final String paymentStatus;
+  final String? transactionStatus;
+  final String? externalId;
+  final String? xenditInvoiceId;
+  final String? invoiceUrl;
+  final int? amount;
+  final String? currency;
+  final String? paidAt;
+  final String? expiresAt;
+
+  const PaymentStatusData({
+    required this.campaignId,
+    required this.campaignStatus,
+    required this.paymentStatus,
+    this.transactionStatus,
+    this.externalId,
+    this.xenditInvoiceId,
+    this.invoiceUrl,
+    this.amount,
+    this.currency,
+    this.paidAt,
+    this.expiresAt,
+  });
+
+  factory PaymentStatusData.fromJson(Map<String, dynamic> json) {
+    return PaymentStatusData(
+      campaignId: json['campaign_id'] as String? ?? '',
+      campaignStatus: json['campaign_status'] as String? ?? 'pending_payment',
+      paymentStatus: json['payment_status'] as String? ?? 'unpaid',
+      transactionStatus: json['transaction_status'] as String?,
+      externalId: json['external_id'] as String?,
+      xenditInvoiceId: json['xendit_invoice_id'] as String?,
+      invoiceUrl: json['invoice_url'] as String?,
+      amount: json['amount'] as int?,
+      currency: json['currency'] as String? ?? 'IDR',
+      paidAt: json['paid_at'] as String?,
+      expiresAt: json['expires_at'] as String?,
+    );
+  }
+}
+
 class AdPricingPackage {
   final int durationDays;
   final String name;
@@ -366,6 +445,78 @@ class AdsService {
       } else {
         final err = jsonDecode(response.body);
         throw Exception(err['detail'] ?? 'Gagal membuat kampanye iklan.');
+      }
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
+  }
+
+  /// Memulai proses pembayaran kampanye iklan via Xendit Sandbox
+  static Future<PaymentCheckoutData> initiatePayment({
+    required String campaignId,
+    String? baseUrl,
+    http.Client? client,
+  }) async {
+    final token = AuthService.currentSession?.accessToken;
+    if (token == null) {
+      throw Exception('Silakan masuk akun terlebih dahulu.');
+    }
+
+    final effectiveBase = _resolveBaseUrl(baseUrl);
+    final httpClient = client ?? http.Client();
+
+    try {
+      final response = await httpClient.post(
+        Uri.parse('$effectiveBase/ads/campaigns/$campaignId/pay'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return PaymentCheckoutData.fromJson(jsonDecode(response.body));
+      } else {
+        final err = jsonDecode(response.body);
+        throw Exception(err['detail'] ?? 'Gagal memulai pembayaran.');
+      }
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
+  }
+
+  /// Memeriksa status verifikasi pembayaran kampanye terkini
+  static Future<PaymentStatusData> getPaymentStatus({
+    required String campaignId,
+    String? baseUrl,
+    http.Client? client,
+  }) async {
+    final token = AuthService.currentSession?.accessToken;
+    if (token == null) {
+      throw Exception('Silakan masuk akun terlebih dahulu.');
+    }
+
+    final effectiveBase = _resolveBaseUrl(baseUrl);
+    final httpClient = client ?? http.Client();
+
+    try {
+      final response = await httpClient.get(
+        Uri.parse('$effectiveBase/ads/campaigns/$campaignId/payment-status'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return PaymentStatusData.fromJson(jsonDecode(response.body));
+      } else {
+        final err = jsonDecode(response.body);
+        throw Exception(err['detail'] ?? 'Gagal mengambil status pembayaran.');
       }
     } finally {
       if (client == null) {
