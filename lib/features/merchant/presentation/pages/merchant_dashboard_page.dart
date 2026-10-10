@@ -813,7 +813,6 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
                                   color: const Color(0xFFB45309),
                                 ),
                               ),
-                            ,
                               const SizedBox(height: 8),
                               Row(
                                 children: [
@@ -843,7 +842,8 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
                                     ),
                                   ),
                                 ],
-                              )],
+                              ),
+                            ],
                           ],
                         ),
                       ),
