@@ -654,19 +654,15 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Flexible(
-          flex: 4,
-          child: Text(
-            label,
-            style: GoogleFonts.outfit(
-              fontSize: 12.5,
-              color: const Color(0xFF6B7280),
-            ),
+        Text(
+          label,
+          style: GoogleFonts.outfit(
+            fontSize: 12.5,
+            color: const Color(0xFF6B7280),
           ),
         ),
         const SizedBox(width: 8),
         Flexible(
-          flex: 5,
           child: Text(
             value,
             textAlign: TextAlign.end,

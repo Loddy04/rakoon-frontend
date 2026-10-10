@@ -3,39 +3,46 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
-import 'package:rakoon_frontend/widgets/interactive_scale.dart';
 
-/// Reusable ProductCard widget with elegant premium styling.
-/// DM Serif Display / Outfit typography, white card, #E8E4DC border, rounded-3xl, active:scale-95.
+/// Reusable ProductCard widget complying with UI_RULES.md.
+/// - InkWell root interaction for product detail navigation.
+/// - Smooth rounded corners (16px), white background, soft shadow.
+/// - Fixed-height 2-line title container to prevent uneven grid heights.
+/// - No green (+) add button.
+/// - Store logo (16x16), store name, separator dot, and distance with lowercase unit (m/km).
+/// - No upload/update timestamps displayed.
 class ProductCard extends StatelessWidget {
   final RecommendedProduct product;
   final VoidCallback? onTap;
   final double width;
+  final EdgeInsetsGeometry? margin;
 
   const ProductCard({
     super.key,
     required this.product,
     this.onTap,
     this.width = 175,
+    this.margin,
   });
 
+  /// Format distance to lowercase units: 'm' and 'km' (per UI_RULES.md).
   static String formatDistance(double? jarakKm) {
-    if (jarakKm == null) return '800 M';
+    if (jarakKm == null) return '800 m';
     if (jarakKm < 1.0) {
       final meters = (jarakKm * 1000).round();
-      return '$meters M';
+      return '$meters m';
     } else {
-      return '${jarakKm.toStringAsFixed(1)} KM';
+      return '${jarakKm.toStringAsFixed(1)} km';
     }
   }
 
+  /// Utility to format time ago (preserved for backward compatibility).
   static String formatTimeAgo(String? rawUpdatedAt) {
     if (rawUpdatedAt == null || rawUpdatedAt.trim().isEmpty) {
       return 'just now';
     }
     final trimmed = rawUpdatedAt.trim();
 
-    // 1. Try parsing standard DateTime / ISO format
     final parsed = DateTime.tryParse(trimmed);
     if (parsed != null) {
       final now = DateTime.now();
@@ -56,7 +63,6 @@ class ProductCard extends StatelessWidget {
       return '${weeks}w ago';
     }
 
-    // 2. Fallback for relative strings (e.g. "15 mnt lalu", "1 jam lalu", "2 jam lalu", "1 minggu lalu", "Baru saja")
     final lower = trimmed.toLowerCase();
     if (lower.contains('baru saja') || lower.contains('just now')) {
       return 'just now';
@@ -92,172 +98,113 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String formattedPrice = formatRp(product.harga);
-    final String sizeInfo = (product.ukuran != null && product.satuan != null)
+    final String sizeInfo = (product.ukuran != null &&
+            product.satuan != null &&
+            product.satuan!.isNotEmpty)
         ? '${product.ukuran!.toStringAsFixed(product.ukuran! % 1 == 0 ? 0 : 1)} ${product.satuan!.toLowerCase()}'
-        : product.kategori;
+        : (product.satuan != null && product.satuan!.isNotEmpty)
+            ? product.satuan!
+            : product.kategori;
 
     final String distanceStr = formatDistance(product.jarakKm);
-    final String timeAgoStr = formatTimeAgo(product.updatedAt);
 
-    return InteractiveScale(
-      onTap: onTap,
-      child: Container(
-        width: width,
-        margin: const EdgeInsets.only(right: 14.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24.0),
-          border: Border.all(color: const Color(0xFFE8E4DC), width: 1.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Top Badges Row (Best Value in Dominant Green & Heart)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3.5),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFF0D2818), Color(0xFF2E6644)],
-                      ),
-                      borderRadius: BorderRadius.circular(10.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF0D2818).withValues(alpha: 0.25),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      'Best Value',
-                      style: GoogleFonts.outfit(
-                        color: Colors.white,
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ),
-                  const Icon(
-                    Icons.favorite_border_rounded,
-                    size: 16,
-                    color: Color(0xFF7BAE8E),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 5),
+    final effectiveMargin = margin ??
+        (width == double.infinity
+            ? EdgeInsets.zero
+            : const EdgeInsets.only(right: 12.0));
 
-              // 2. Product Image / Photo (With Local Assets & Fallback)
-              Center(
-                child: SizedBox(
-                  height: 60,
-                  child: _buildProductDisplay(),
+    return Container(
+      width: width,
+      margin: effectiveMargin,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16.0),
+        border: Border.all(color: const Color(0xFFE8E4DC), width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16.0),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 10.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Container Gambar Produk + Badges
+                _buildImageContainer(),
+                const SizedBox(height: 8.0),
+
+                // 2. Nama Produk (SizedBox fixed height 40.0, maxLines: 2)
+                SizedBox(
+                  height: 40.0,
+                  child: Text(
+                    product.nama,
+                    style: GoogleFonts.outfit(
+                      fontSize: 13.0,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF0D2818),
+                      height: 1.25,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 5),
+                const SizedBox(height: 2.0),
 
-              // 3. Product Name (Outfit 12.5px Bold)
-              Text(
-                product.nama,
-                style: GoogleFonts.outfit(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0D2818),
-                  height: 1.2,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-
-              // Size / Category Subtitle
-              Text(
-                sizeInfo,
-                style: GoogleFonts.outfit(
-                  fontSize: 10.5,
-                  color: const Color(0xFF6B6B6B),
-                  fontWeight: FontWeight.w400,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const Spacer(),
-
-              // 4. Price and Cart Action Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Text(
-                      formattedPrice,
-                      style: GoogleFonts.outfit(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF0D2818),
-                        letterSpacing: -0.3,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                // 3. Satuan / Varian Produk (Text abu-abu, maxLines: 1)
+                Text(
+                  sizeInfo,
+                  style: GoogleFonts.outfit(
+                    fontSize: 11.0,
+                    color: const Color(0xFF6B6B6B),
+                    fontWeight: FontWeight.w400,
                   ),
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFF059669), Color(0xFF10B981)],
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF059669).withValues(alpha: 0.3),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.add_rounded,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
 
-              // 5. Store & Metadata (Distance & Time Ago for tests)
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                const Spacer(),
+
+                // 4. Harga Produk (Tebal & Jelas, tanpa tombol +)
+                Text(
+                  formattedPrice,
+                  style: GoogleFonts.outfit(
+                    fontSize: 15.0,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF0D2818),
+                    letterSpacing: -0.3,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6.0),
+
+                // 5. Metadata Toko & Jarak (Baris Paling Bawah)
+                Row(
                   children: [
-                    BrandAssets.buildStoreLogo(product.namaToko, size: 13, borderRadius: 2),
-                    const SizedBox(width: 3),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 75),
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: BrandAssets.buildStoreLogo(
+                        product.namaToko,
+                        size: 16,
+                        borderRadius: 3,
+                      ),
+                    ),
+                    const SizedBox(width: 4.0),
+                    Expanded(
                       child: Text(
                         product.namaToko,
                         style: GoogleFonts.outfit(
-                          fontSize: 9.0,
+                          fontSize: 10.0,
                           color: const Color(0xFF6B6B6B),
                           fontWeight: FontWeight.w500,
                         ),
@@ -265,33 +212,116 @@ class ProductCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(width: 3),
                     Text(
-                      distanceStr,
+                      ' · ',
                       style: GoogleFonts.outfit(
-                        fontSize: 8.5,
-                        color: const Color(0xFF6B6B6B),
+                        fontSize: 10.0,
+                        color: const Color(0xFF9E9E9E),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     Text(
-                      ' · ',
-                      style: GoogleFonts.outfit(fontSize: 8.5, color: const Color(0xFF6B6B6B)),
-                    ),
-                    Text(
-                      timeAgoStr,
+                      distanceStr,
                       style: GoogleFonts.outfit(
-                        fontSize: 8.5,
+                        fontSize: 10.0,
                         color: const Color(0xFF6B6B6B),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// Container gambar produk dengan background netral (#F8F9FA),
+  /// badge "Best Value" di pojok kiri atas, dan ikon bookmark di kanan atas.
+  Widget _buildImageContainer() {
+    return Container(
+      width: double.infinity,
+      height: 98,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(12.0),
+        border: Border.all(
+          color: const Color(0xFFF0F0F0),
+          width: 0.8,
+        ),
+      ),
+      child: Stack(
+        children: [
+          // Gambar Produk proporsional dengan BoxFit.contain
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Center(
+                child: _buildProductDisplay(),
+              ),
+            ),
+          ),
+
+          // Badge "Best Value" di pojok kiri atas
+          Positioned(
+            top: 6,
+            left: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7.0, vertical: 3.0),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF0D2818), Color(0xFF2E6644)],
+                ),
+                borderRadius: BorderRadius.circular(8.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0D2818).withValues(alpha: 0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Text(
+                'Best Value',
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 9.0,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ),
+          ),
+
+          // Ikon bookmark/favorite di pojok kanan atas
+          Positioned(
+            top: 6,
+            right: 6,
+            child: Container(
+              padding: const EdgeInsets.all(4.0),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.9),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.favorite_border_rounded,
+                size: 15,
+                color: Color(0xFF2E6644),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -317,23 +347,10 @@ class ProductCard extends StatelessWidget {
   }
 
   Widget _buildAssetImage(String assetPath) {
-    return Container(
-      width: double.infinity,
-      height: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFAF7F2),
-        borderRadius: BorderRadius.circular(12.0),
-        border: Border.all(
-          color: const Color(0xFFE8E4DC),
-          width: 0.8,
-        ),
-      ),
-      child: Image.asset(
-        assetPath,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => _buildFallbackImage(),
-      ),
+    return Image.asset(
+      assetPath,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) => _buildFallbackImage(),
     );
   }
 
@@ -341,84 +358,35 @@ class ProductCard extends StatelessWidget {
     final style = _getProductCategoryStyle(product.kategori, product.nama);
 
     return Container(
-      width: double.infinity,
-      height: 60,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [style.bgStart, style.bgEnd],
         ),
-        borderRadius: BorderRadius.circular(12.0),
-        border: Border.all(
-          color: style.borderColor,
-          width: 1.0,
-        ),
+        borderRadius: BorderRadius.circular(8.0),
       ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Background soft white circle glow
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.8),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: style.iconColor.withValues(alpha: 0.12),
-                  blurRadius: 6,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
+      child: Center(
+        child: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.85),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: style.iconColor.withValues(alpha: 0.12),
+                blurRadius: 6,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
-
-          // Central Category Product Icon
-          Icon(
+          child: Icon(
             style.icon,
             size: 24,
             color: style.iconColor,
           ),
-
-          // Miniature Category Tag on Top Left
-          Positioned(
-            top: 5,
-            left: 5,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: style.borderColor.withValues(alpha: 0.6),
-                  width: 0.8,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    style.badgeIcon,
-                    size: 8.5,
-                    color: style.iconColor,
-                  ),
-                  const SizedBox(width: 2.5),
-                  Text(
-                    style.shortTag,
-                    style: TextStyle(
-                      fontSize: 7.5,
-                      fontWeight: FontWeight.w800,
-                      color: style.iconColor,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

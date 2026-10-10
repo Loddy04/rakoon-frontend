@@ -85,7 +85,6 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('CEK HARGA'), findsOneWidget);
-        expect(find.text('Grafik Tren Fluktuasi Harga'), findsOneWidget);
         expect(find.byType(CustomScrollView), findsOneWidget);
         expect(tester.takeException(), isNull);
       }

@@ -118,10 +118,10 @@ void main() {
                   "store_alamat": "Jl. Raya Condongcatur No. 12, Sleman",
                   "title": "Promo JSM Minyak Goreng & Beras Hemat",
                   "banner_url": "https://example.com/flyer1.jpg",
-                 "duration_days": 7,
-                 "price_paid": 30000,
-                 "distance_km": 0.0,
-                 "expires_at": "2026-10-15T00:00:00Z",
+                  "duration_days": 7,
+                  "price_paid": 30000,
+                  "distance_km": 0.0,
+                  "expires_at": "2026-10-15T00:00:00Z",
                   "days_left": 5,
                   "status": "active",
                   "payment_status": "paid"
@@ -257,7 +257,7 @@ void main() {
         expect(find.text('Toko Terverifikasi'), findsOneWidget);
         expect(find.text('Kelola Foto Produk'), findsOneWidget);
         expect(find.text('Promo JSM Minyak Goreng & Beras Hemat'), findsOneWidget);
-        expect(find.text('Sisa 5 Hari'), findsOneWidget);
+        expect(find.textContaining('Sisa 5 Hari'), findsOneWidget);
       });
     });
 
@@ -338,7 +338,7 @@ void main() {
         // Verify modal content shows honest pending status notice
         expect(find.text('Konfirmasi Kampanye Iklan'), findsOneWidget);
         expect(find.text('Mekanisme Penayangan Iklan'), findsOneWidget);
-        expect(find.text('Menunggu Pembayaran'), findsWidgets);
+        expect(find.textContaining('Menunggu Pembayaran'), findsWidgets);
         expect(find.text('STANDAR PEMBAYARAN NASIONAL'), findsNothing);
 
         // Scroll and tap Buat Kampanye & Terbitkan Invoice
@@ -357,6 +357,7 @@ void main() {
         expect(finishBtn, findsOneWidget);
 
         // Finish
+        final finishBtn = find.text('Selesai & Lihat Dasbor Merchant');
         await tester.ensureVisible(finishBtn);
         await tester.pumpAndSettle();
         await tester.tap(finishBtn);

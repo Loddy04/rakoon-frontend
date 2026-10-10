@@ -16,6 +16,7 @@ import 'package:rakoon_frontend/services/scan_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/services/ads_service.dart';
 import 'package:rakoon_frontend/core/utils/brand_assets.dart';
+import 'package:rakoon_frontend/features/price_check/presentation/providers/price_check_provider.dart';
 import 'package:rakoon_frontend/features/recommendation/presentation/providers/recommendation_provider.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
 import 'package:rakoon_frontend/widgets/interactive_scale.dart';
@@ -44,6 +45,7 @@ class HomeScreenState extends State<HomeScreen> {
   String? _scansError;
 
   final RecommendationProvider _recommendationProvider = RecommendationProvider();
+  final PriceCheckProvider _catalogProvider = PriceCheckProvider();
   List<HomePromoBanner> _promoBanners = [];
   bool _isLoadingBanners = false;
   int _currentBannerIndex = 0;
@@ -61,6 +63,7 @@ class HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _recommendationProvider.dispose();
+    _catalogProvider.dispose();
     _bannerPageController.dispose();
     super.dispose();
   }
@@ -98,7 +101,12 @@ class HomeScreenState extends State<HomeScreen> {
     double? lng,
     double radiusKm = 1.0,
   }) async {
-    await _recommendationProvider.fetchRecommendedProducts(
+    await _catalogProvider.fetchCatalog(
+      baseUrl: _getBaseUrl(),
+      client: widget.httpClient,
+    );
+    // Also trigger recommendation provider in background if needed
+    _recommendationProvider.fetchRecommendedProducts(
       baseUrl: _getBaseUrl(),
       lat: lat ?? _userLat,
       lng: lng ?? _userLng,
@@ -283,9 +291,9 @@ class HomeScreenState extends State<HomeScreen> {
                             children: [
                               Text(
                                 'Rakoon',
-                                style: GoogleFonts.dmSerifDisplay(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.normal,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 18.5,
+                                  fontWeight: FontWeight.w800,
                                   color: const Color(0xFF0D2818),
                                   letterSpacing: -0.3,
                                 ),
@@ -580,11 +588,11 @@ class HomeScreenState extends State<HomeScreen> {
 
                                 Text(
                                   'Smart Shelf Scan\nPindai Rak Belanja',
-                                  style: GoogleFonts.dmSerifDisplay(
-                                    fontSize: 18.5,
-                                    fontWeight: FontWeight.normal,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 18.0,
+                                    fontWeight: FontWeight.w700,
                                     color: const Color(0xFF0D2818),
-                                    height: 1.15,
+                                    height: 1.2,
                                     letterSpacing: -0.2,
                                   ),
                                 ),
@@ -953,9 +961,9 @@ class HomeScreenState extends State<HomeScreen> {
                         Expanded(
                           child: Text(
                             'Produk Pilihan',
-                            style: GoogleFonts.dmSerifDisplay(
-                              fontSize: 21,
-                              fontWeight: FontWeight.normal,
+                            style: GoogleFonts.outfit(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w700,
                               color: const Color(0xFF0D2818),
                               letterSpacing: -0.2,
                             ),
@@ -1002,10 +1010,10 @@ class HomeScreenState extends State<HomeScreen> {
                     SizedBox(
                       height: 260,
                       child: ListenableBuilder(
-                        listenable: _recommendationProvider,
+                        listenable: _catalogProvider,
                         builder: (context, _) {
-                          if (_recommendationProvider.isLoading &&
-                              _recommendationProvider.products.isEmpty) {
+                          if (_catalogProvider.isLoading &&
+                              _catalogProvider.products.isEmpty) {
                             return const Center(
                               child: CircularProgressIndicator(
                                 color: Color(0xFF0D2818),
@@ -1014,8 +1022,8 @@ class HomeScreenState extends State<HomeScreen> {
                             );
                           }
 
-                          final products = _recommendationProvider.products;
-                          if (products.isEmpty) {
+                          final catalogProducts = _catalogProvider.products;
+                          if (catalogProducts.isEmpty) {
                             return Container(
                               margin: const EdgeInsets.symmetric(vertical: 8),
                               decoration: BoxDecoration(
@@ -1032,7 +1040,7 @@ class HomeScreenState extends State<HomeScreen> {
                               ),
                               child: Center(
                                 child: Text(
-                                  'Belum Ada Rekomendasi Produk',
+                                  'Belum Ada Produk Tersedia',
                                   style: GoogleFonts.outfit(
                                     color: const Color(0xFF6B6B6B),
                                     fontSize: 12,
@@ -1045,12 +1053,31 @@ class HomeScreenState extends State<HomeScreen> {
                           return ListView.builder(
                             scrollDirection: Axis.horizontal,
                             physics: const BouncingScrollPhysics(),
-                            itemCount: products.length,
+                            itemCount: catalogProducts.length,
                             itemBuilder: (context, index) {
-                              final product = products[index];
+                              final catalogItem = catalogProducts[index];
+                              final storeInfo = catalogItem.namaTokoTerendah != null
+                                  ? catalogItem.namaTokoTerendah!.trim()
+                                  : (catalogItem.jumlahToko > 0
+                                      ? 'Tersedia di ${catalogItem.jumlahToko} toko'
+                                      : 'Toko Terdekat');
+
+                              final recommendedProd = RecommendedProduct(
+                                id: catalogItem.id,
+                                nama: catalogItem.nama,
+                                kategori: catalogItem.kategori,
+                                harga: catalogItem.hargaTerendah ?? 0.0,
+                                ukuran: catalogItem.ukuran,
+                                satuan: catalogItem.satuan,
+                                namaToko: storeInfo,
+                                jarakKm: null,
+                                updatedAt: catalogItem.updatedAt ?? 'just now',
+                                fotoUrl: catalogItem.fotoUrl,
+                              );
+
                               return ProductCard(
-                                product: product,
-                                onTap: () => _navigateToProductDetail(product),
+                                product: recommendedProd,
+                                onTap: () => _navigateToProductDetail(recommendedProd),
                               );
                             },
                           );
@@ -1070,9 +1097,9 @@ class HomeScreenState extends State<HomeScreen> {
                             children: [
                               Text(
                                 'Riwayat Scan Terbaru',
-                                style: GoogleFonts.dmSerifDisplay(
-                                  fontSize: 21,
-                                  fontWeight: FontWeight.normal,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.w700,
                                   color: const Color(0xFF0D2818),
                                   letterSpacing: -0.2,
                                 ),
@@ -1156,9 +1183,9 @@ class HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: Text(
                 'Promo Toko Sekitarmu',
-                style: GoogleFonts.dmSerifDisplay(
-                  fontSize: 21,
-                  fontWeight: FontWeight.normal,
+                style: GoogleFonts.outfit(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w700,
                   color: const Color(0xFF0D2818),
                   letterSpacing: -0.2,
                 ),
@@ -1569,9 +1596,10 @@ class HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 8),
             Text(
               'Gagal memuat riwayat scan.',
-              style: GoogleFonts.dmSerifDisplay(
+              style: GoogleFonts.outfit(
                 color: const Color(0xFF0D2818),
                 fontSize: 15,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 12),
@@ -1649,9 +1677,9 @@ class HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 12),
             Text(
               'Belum Ada Riwayat Pindai',
-              style: GoogleFonts.dmSerifDisplay(
-                fontSize: 18,
-                fontWeight: FontWeight.normal,
+              style: GoogleFonts.outfit(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
                 color: const Color(0xFF0D2818),
               ),
             ),
