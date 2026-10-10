@@ -191,6 +191,7 @@ class PendingStoreClaimData {
   final String? userEmail;
   final String status;
   final String createdAt;
+  final bool hasVerifiedOwner;
 
   const PendingStoreClaimData({
     required this.userId,
@@ -201,6 +202,7 @@ class PendingStoreClaimData {
     this.userEmail,
     required this.status,
     required this.createdAt,
+    this.hasVerifiedOwner = false,
   });
 
   factory PendingStoreClaimData.fromJson(Map<String, dynamic> json) {
@@ -213,6 +215,7 @@ class PendingStoreClaimData {
       userEmail: json['user_email'] as String?,
       status: json['status'] as String? ?? 'pending',
       createdAt: json['created_at'] as String? ?? '',
+      hasVerifiedOwner: json['has_verified_owner'] as bool? ?? false,
     );
   }
 }

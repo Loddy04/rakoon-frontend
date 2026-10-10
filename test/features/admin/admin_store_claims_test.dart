@@ -7,7 +7,6 @@ import 'package:http/testing.dart';
 import 'package:rakoon_frontend/features/admin/presentation/pages/admin_store_claims_page.dart';
 import 'package:rakoon_frontend/features/merchant/presentation/pages/merchant_dashboard_page.dart';
 import 'package:rakoon_frontend/features/profile/presentation/pages/profile_page.dart';
-import 'package:rakoon_frontend/services/ads_service.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -327,6 +326,73 @@ void main() {
       // Toko Berkah Mandiri removed from pending list
       expect(find.text('Toko Berkah Mandiri'), findsNothing);
       expect(find.text('Warung Bu Siti'), findsOneWidget);
+    });
+
+    testWidgets('Displays conflict warning and disables approve button when store has verified owner', (tester) async {
+      final conflictingClaims = [
+        {
+          'user_id': 'user-123',
+          'store_id': 'store-456',
+          'store_nama': 'Toko Berkah Mandiri',
+          'store_alamat': 'Jl. Kaliurang KM 5 No. 10, Sleman',
+          'user_nama': 'Pak Bambang',
+          'user_email': 'bambang@gmail.com',
+          'status': 'pending',
+          'created_at': '2026-10-10T10:00:00Z',
+          'has_verified_owner': true,
+        },
+      ];
+      final client = createMockClient(claims: conflictingClaims);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AdminStoreClaimsPage(
+            baseUrl: 'http://localhost:8000',
+            httpClient: client,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Conflict warning badge is visible
+      expect(find.byKey(const Key('conflict_badge_store-456')), findsOneWidget);
+      expect(find.text('Toko ini sudah memiliki pemilik terverifikasi.'), findsOneWidget);
+
+      // Approve button is disabled and displays 'Sudah Dimiliki'
+      expect(find.text('Sudah Dimiliki'), findsOneWidget);
+      final approveButton = tester.widget<ElevatedButton>(find.byKey(const Key('approve_claim_store-456')));
+      expect(approveButton.onPressed, isNull);
+
+      // Reject button remains enabled and functional
+      expect(find.byKey(const Key('reject_claim_store-456')), findsOneWidget);
+    });
+
+    testWidgets('Cancelling reject dialog closes dialog without modifying list', (tester) async {
+      final client = createMockClient();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AdminStoreClaimsPage(
+            baseUrl: 'http://localhost:8000',
+            httpClient: client,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('reject_claim_store-456')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tolak Klaim Toko?'), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('reject_reason_input')), 'Alasan batal');
+
+      await tester.tap(find.byKey(const Key('cancel_reject_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tolak Klaim Toko?'), findsNothing);
+      expect(find.text('Toko Berkah Mandiri'), findsOneWidget);
     });
   });
 

@@ -132,76 +132,19 @@ class _AdminStoreClaimsPageState extends State<AdminStoreClaimsPage> {
   }
 
   Future<void> _handleReject(PendingStoreClaimData claim) async {
-    final reasonController = TextEditingController();
-    final confirmed = await showDialog<bool>(
+    final reasonResult = await showDialog<String?>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            const Icon(Icons.cancel_rounded, color: Color(0xFFDC2626), size: 24),
-            const SizedBox(width: 8),
-            Text(
-              'Tolak Klaim Toko?',
-              style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 16),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Apakah Anda yakin ingin menolak klaim toko "${claim.storeNama}" dari merchant "${claim.userNama ?? claim.userEmail ?? claim.userId}"?',
-              style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF374151)),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              key: const Key('reject_reason_input'),
-              controller: reasonController,
-              decoration: InputDecoration(
-                hintText: 'Alasan penolakan (opsional)',
-                hintStyle: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF9CA3AF)),
-                filled: true,
-                fillColor: const Color(0xFFF9FAFB),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              ),
-              style: GoogleFonts.outfit(fontSize: 12.5),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            key: const Key('cancel_reject_button'),
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Batal', style: GoogleFonts.outfit(color: const Color(0xFF6B7280))),
-          ),
-          ElevatedButton(
-            key: const Key('confirm_reject_button'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFDC2626),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Tolak Klaim', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
+      builder: (ctx) => _RejectClaimDialog(claim: claim),
     );
 
-    if (confirmed != true || !mounted) return;
+    if (reasonResult == null || !mounted) return;
 
     setState(() => _processingClaimId = claim.storeId);
     try {
       await AdsService.rejectStoreClaim(
         userId: claim.userId,
         storeId: claim.storeId,
-        reason: reasonController.text.trim().isNotEmpty ? reasonController.text.trim() : null,
+        reason: reasonResult.isNotEmpty ? reasonResult : null,
         baseUrl: widget.baseUrl,
         client: widget.httpClient,
       );
@@ -499,6 +442,35 @@ class _AdminStoreClaimsPageState extends State<AdminStoreClaimsPage> {
                 ),
                 const SizedBox(height: 14),
 
+                if (claim.hasVerifiedOwner) ...[
+                  Container(
+                    key: Key('conflict_badge_${claim.storeId}'),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFECACA)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, size: 16, color: Color(0xFFDC2626)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Toko ini sudah memiliki pemilik terverifikasi.',
+                            style: GoogleFonts.outfit(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFFDC2626),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 // Action Buttons
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -519,7 +491,7 @@ class _AdminStoreClaimsPageState extends State<AdminStoreClaimsPage> {
                     const SizedBox(width: 10),
                     ElevatedButton.icon(
                       key: Key('approve_claim_${claim.storeId}'),
-                      onPressed: isProcessing ? null : () => _handleApprove(claim),
+                      onPressed: (isProcessing || claim.hasVerifiedOwner) ? null : () => _handleApprove(claim),
                       icon: isProcessing
                           ? const SizedBox(
                               width: 14,
@@ -527,9 +499,13 @@ class _AdminStoreClaimsPageState extends State<AdminStoreClaimsPage> {
                               child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                             )
                           : const Icon(Icons.check_rounded, size: 16),
-                      label: Text(isProcessing ? 'Memproses...' : 'Setujui'),
+                      label: Text(
+                        isProcessing
+                            ? 'Memproses...'
+                            : (claim.hasVerifiedOwner ? 'Sudah Dimiliki' : 'Setujui'),
+                      ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF166534),
+                        backgroundColor: claim.hasVerifiedOwner ? const Color(0xFF9CA3AF) : const Color(0xFF166534),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -544,6 +520,92 @@ class _AdminStoreClaimsPageState extends State<AdminStoreClaimsPage> {
           ),
         );
       },
+    );
+  }
+}
+
+class _RejectClaimDialog extends StatefulWidget {
+  final PendingStoreClaimData claim;
+
+  const _RejectClaimDialog({required this.claim});
+
+  @override
+  State<_RejectClaimDialog> createState() => _RejectClaimDialogState();
+}
+
+class _RejectClaimDialogState extends State<_RejectClaimDialog> {
+  late final TextEditingController _reasonController;
+
+  @override
+  void initState() {
+    super.initState();
+    _reasonController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Row(
+        children: [
+          const Icon(Icons.cancel_rounded, color: Color(0xFFDC2626), size: 24),
+          const SizedBox(width: 8),
+          Text(
+            'Tolak Klaim Toko?',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Apakah Anda yakin ingin menolak klaim toko "${widget.claim.storeNama}" dari merchant "${widget.claim.userNama ?? widget.claim.userEmail ?? widget.claim.userId}"?',
+            style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF374151)),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('reject_reason_input'),
+            controller: _reasonController,
+            decoration: InputDecoration(
+              hintText: 'Alasan penolakan (opsional)',
+              hintStyle: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF9CA3AF)),
+              filled: true,
+              fillColor: const Color(0xFFF9FAFB),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+            style: GoogleFonts.outfit(fontSize: 12.5),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          key: const Key('cancel_reject_button'),
+          onPressed: () => Navigator.pop(context, null),
+          child: Text('Batal', style: GoogleFonts.outfit(color: const Color(0xFF6B7280))),
+        ),
+        ElevatedButton(
+          key: const Key('confirm_reject_button'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFDC2626),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          onPressed: () => Navigator.pop(context, _reasonController.text.trim()),
+          child: Text('Tolak Klaim', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+        ),
+      ],
     );
   }
 }
