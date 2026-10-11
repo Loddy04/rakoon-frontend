@@ -32,6 +32,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
   List<StoreNearby> _availableStores = [];
   String? _selectedStoreId;
   bool _isClaiming = false;
+  bool _isOpeningCheckout = false;
 
   @override
   void initState() {
@@ -124,6 +125,41 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
     }
   }
 
+  Future<void> _handleOpenCheckout(BuildContext dialogCtx, String? url) async {
+    if (_isOpeningCheckout) return;
+    setState(() => _isOpeningCheckout = true);
+    try {
+      final success = await AdsService.launchCheckoutUrl(url);
+      if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Tidak dapat membuka browser otomatis. Silakan gunakan tombol "Salin Link".',
+              style: GoogleFonts.outfit(),
+            ),
+            backgroundColor: const Color(0xFFB45309),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Gagal membuka browser. Silakan gunakan tombol "Salin Link".',
+              style: GoogleFonts.outfit(),
+            ),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isOpeningCheckout = false);
+      }
+    }
+  }
+
   Future<void> _handlePayCampaign(HomePromoBanner c) async {
     try {
       final checkout = await AdsService.initiatePayment(
@@ -170,10 +206,26 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
               ],
             ),
             actions: [
-              if (checkout.invoiceUrl != null)
+              if (checkout.hasValidCheckoutUrl)
+                ElevatedButton.icon(
+                  key: const Key('open_checkout_url_button'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF166534),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: _isOpeningCheckout ? null : () => _handleOpenCheckout(ctx, checkout.invoiceUrl),
+                  icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                  label: Text(
+                    _isOpeningCheckout ? 'Membuka...' : 'Buka Checkout',
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              if (checkout.invoiceUrl != null && checkout.invoiceUrl!.trim().isNotEmpty)
                 TextButton.icon(
+                  key: const Key('copy_checkout_url_button'),
                   onPressed: () {
-                    Clipboard.setData(ClipboardData(text: checkout.invoiceUrl!));
+                    Clipboard.setData(ClipboardData(text: checkout.invoiceUrl!.trim()));
                     ScaffoldMessenger.of(ctx).showSnackBar(
                       const SnackBar(
                         content: Text('Link checkout berhasil disalin!'),
@@ -185,6 +237,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
                   label: const Text('Salin Link'),
                 ),
               TextButton(
+                key: const Key('close_checkout_dialog_button'),
                 onPressed: () => Navigator.pop(ctx),
                 child: const Text('Tutup'),
               ),

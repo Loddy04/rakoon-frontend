@@ -710,5 +710,270 @@ void main() {
         expect(claimCalled, isTrue);
       });
     });
+
+    group('Checkout UX & Launch URL Tests', () {
+      test('PaymentCheckoutData.hasValidCheckoutUrl validates HTTPS URLs correctly', () {
+        const valid = PaymentCheckoutData(
+          campaignId: 'c-1',
+          externalId: 'ext-1',
+          amount: 15000,
+          status: 'PENDING',
+          invoiceUrl: 'https://checkout.xendit.co/inv-12345',
+        );
+        expect(valid.hasValidCheckoutUrl, isTrue);
+
+        const nullUrl = PaymentCheckoutData(
+          campaignId: 'c-1',
+          externalId: 'ext-1',
+          amount: 15000,
+          status: 'PENDING',
+          invoiceUrl: null,
+        );
+        expect(nullUrl.hasValidCheckoutUrl, isFalse);
+
+        const emptyUrl = PaymentCheckoutData(
+          campaignId: 'c-1',
+          externalId: 'ext-1',
+          amount: 15000,
+          status: 'PENDING',
+          invoiceUrl: '   ',
+        );
+        expect(emptyUrl.hasValidCheckoutUrl, isFalse);
+
+        const insecureUrl = PaymentCheckoutData(
+          campaignId: 'c-1',
+          externalId: 'ext-1',
+          amount: 15000,
+          status: 'PENDING',
+          invoiceUrl: 'http://insecure-checkout.test/inv-1',
+        );
+        expect(insecureUrl.hasValidCheckoutUrl, isFalse);
+
+        const badScheme = PaymentCheckoutData(
+          campaignId: 'c-1',
+          externalId: 'ext-1',
+          amount: 15000,
+          status: 'PENDING',
+          invoiceUrl: 'javascript:alert(1)',
+        );
+        expect(badScheme.hasValidCheckoutUrl, isFalse);
+      });
+
+      test('PaymentStatusData.hasValidCheckoutUrl validates HTTPS URLs correctly', () {
+        const valid = PaymentStatusData(
+          campaignId: 'c-1',
+          campaignStatus: 'pending_payment',
+          paymentStatus: 'unpaid',
+          invoiceUrl: 'https://checkout.xendit.co/inv-abc',
+        );
+        expect(valid.hasValidCheckoutUrl, isTrue);
+
+        const invalid = PaymentStatusData(
+          campaignId: 'c-1',
+          campaignStatus: 'pending_payment',
+          paymentStatus: 'unpaid',
+          invoiceUrl: 'http://plain.test',
+        );
+        expect(invalid.hasValidCheckoutUrl, isFalse);
+      });
+
+      test('AdsService.launchCheckoutUrl opens HTTPS URL in externalApplication', () async {
+        Uri? launchedUri;
+        LaunchMode? launchedMode;
+
+        final result = await AdsService.launchCheckoutUrl(
+          'https://checkout.xendit.co/inv-valid-999',
+          customLauncher: (uri, {mode = LaunchMode.platformDefault}) async {
+            launchedUri = uri;
+            launchedMode = mode;
+            return true;
+          },
+        );
+
+        expect(result, isTrue);
+        expect(launchedUri, Uri.parse('https://checkout.xendit.co/inv-valid-999'));
+        expect(launchedMode, LaunchMode.externalApplication);
+      });
+
+      test('AdsService.launchCheckoutUrl rejects non-HTTPS or empty URLs safely', () async {
+        bool launcherCalled = false;
+        Future<bool> mockLauncher(Uri uri, {LaunchMode mode = LaunchMode.platformDefault}) async {
+          launcherCalled = true;
+          return true;
+        }
+
+        expect(await AdsService.launchCheckoutUrl(null, customLauncher: mockLauncher), isFalse);
+        expect(await AdsService.launchCheckoutUrl('', customLauncher: mockLauncher), isFalse);
+        expect(await AdsService.launchCheckoutUrl('http://insecure.test', customLauncher: mockLauncher), isFalse);
+        expect(await AdsService.launchCheckoutUrl('ftp://example.com', customLauncher: mockLauncher), isFalse);
+        expect(launcherCalled, isFalse);
+      });
+
+      test('AdsService.launchCheckoutUrl handles launcher exception safely without crash', () async {
+        final result = await AdsService.launchCheckoutUrl(
+          'https://checkout.xendit.co/inv-fail',
+          customLauncher: (uri, {mode = LaunchMode.platformDefault}) async {
+            throw Exception('Platform failure');
+          },
+        );
+        expect(result, isFalse);
+      });
+
+      testWidgets('CreateAdCampaignPage modal displays Buka Checkout button for valid HTTPS invoice', (tester) async {
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/ads/pricing-packages')) {
+            return http.Response(jsonEncode([
+              {'duration_days': 7, 'name': 'Paket Mingguan', 'price': 30000, 'description': '7 hari'}
+            ]), 200);
+          } else if (request.url.path.endsWith('/ads/campaigns') && request.method == 'POST') {
+            return http.Response(jsonEncode({
+              'id': 'ad-checkout-1',
+              'store_id': 'store-1',
+              'store_nama': 'Pamela 6 Supermarket',
+              'title': 'Promo Susu Hemat',
+              'banner_url': 'https://example.com/banner.jpg',
+              'duration_days': 7,
+              'price_paid': 30000,
+              'distance_km': 0.0,
+              'expires_at': '2026-10-18T00:00:00Z',
+              'days_left': 7,
+              'status': 'pending_payment',
+              'payment_status': 'unpaid',
+              'payment_ref': 'INV-123',
+            }), 201);
+          } else if (request.url.path.endsWith('/ads/campaigns/ad-checkout-1/pay') && request.method == 'POST') {
+            return http.Response(jsonEncode({
+              'campaign_id': 'ad-checkout-1',
+              'external_id': 'INV-123',
+              'amount': 30000,
+              'currency': 'IDR',
+              'status': 'PENDING',
+              'invoice_url': 'https://checkout.xendit.co/inv-test-checkout',
+            }), 200);
+          }
+          return http.Response('{}', 200);
+        });
+
+        await tester.pumpWidget(MaterialApp(
+          home: CreateAdCampaignPage(
+            storeId: 'store-1',
+            storeName: 'Pamela 6 Supermarket',
+            baseUrl: 'https://api.test',
+            httpClient: client,
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        // Fill form
+        await tester.enterText(find.byType(TextField).at(0), 'Promo Susu Hemat');
+        await tester.enterText(find.byType(TextField).at(1), 'https://example.com/banner.jpg');
+        await tester.pumpAndSettle();
+
+        // Tap review button
+        final lanjutBtn = find.widgetWithText(ElevatedButton, 'Lanjut Pembayaran (Rp 30.000)');
+        expect(lanjutBtn, findsOneWidget);
+        await tester.ensureVisible(lanjutBtn);
+        await tester.pumpAndSettle();
+        await tester.tap(lanjutBtn);
+        await tester.pumpAndSettle();
+
+        // Confirm creation
+        final submitBtn = find.widgetWithText(ElevatedButton, 'Buat Kampanye & Terbitkan Invoice (Rp 30.000)');
+        expect(submitBtn, findsOneWidget);
+        await tester.ensureVisible(submitBtn);
+        await tester.pumpAndSettle();
+        await tester.tap(submitBtn);
+        await tester.pumpAndSettle();
+
+        // View now shows Buka Checkout Xendit Sandbox button
+        final payBtn = find.text('Buka Checkout Xendit Sandbox');
+        expect(payBtn, findsOneWidget);
+        await tester.ensureVisible(payBtn);
+        await tester.pumpAndSettle();
+        await tester.tap(payBtn);
+        await tester.pumpAndSettle();
+
+        // Checkout Dialog is opened
+        expect(find.byKey(const Key('open_checkout_url_button')), findsOneWidget);
+        expect(find.byKey(const Key('copy_checkout_url_button')), findsOneWidget);
+        expect(find.text('Buka Checkout'), findsOneWidget);
+        expect(find.text('Salin Link'), findsOneWidget);
+
+        // Tap copy button
+        await tester.tap(find.byKey(const Key('copy_checkout_url_button')));
+        await tester.pumpAndSettle();
+
+        // Close dialog
+        await tester.tap(find.byKey(const Key('close_checkout_dialog_button')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('open_checkout_url_button')), findsNothing);
+      });
+
+      testWidgets('MerchantDashboardPage Bayar Xendit opens checkout dialog with Buka Checkout button', (tester) async {
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/ads/my-store')) {
+            return http.Response(jsonEncode({
+              'is_claimed': true,
+              'claim_status': 'verified',
+              'store_id': 'store-1',
+              'store_nama': 'Pamela 6 Supermarket',
+              'campaigns': [
+                {
+                  'id': 'ad-10',
+                  'store_id': 'store-1',
+                  'store_nama': 'Pamela 6 Supermarket',
+                  'title': 'Promo Minyak Murah',
+                  'banner_url': 'https://example.com/oil.jpg',
+                  'duration_days': 7,
+                  'price_paid': 30000,
+                  'distance_km': 0.0,
+                  'expires_at': '2026-10-18T00:00:00Z',
+                  'days_left': 7,
+                  'status': 'pending_payment',
+                  'payment_status': 'unpaid',
+                  'payment_ref': 'INV-OIL-1',
+                }
+              ],
+            }), 200);
+          } else if (request.url.path.endsWith('/ads/campaigns/ad-10/pay') && request.method == 'POST') {
+            return http.Response(jsonEncode({
+              'campaign_id': 'ad-10',
+              'external_id': 'INV-OIL-1',
+              'amount': 30000,
+              'currency': 'IDR',
+              'status': 'PENDING',
+              'invoice_url': 'https://checkout.xendit.co/inv-oil-pay',
+            }), 200);
+          }
+          return http.Response('{}', 200);
+        });
+
+        await tester.pumpWidget(MaterialApp(
+          home: MerchantDashboardPage(
+            baseUrl: 'https://api.test',
+            httpClient: client,
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        final payBtn = find.text('Bayar Xendit');
+        expect(payBtn, findsOneWidget);
+        await tester.tap(payBtn);
+        await tester.pumpAndSettle();
+
+        // Dialog opens with Buka Checkout and Salin Link
+        expect(find.byKey(const Key('open_checkout_url_button')), findsOneWidget);
+        expect(find.byKey(const Key('copy_checkout_url_button')), findsOneWidget);
+        expect(find.text('Buka Checkout'), findsOneWidget);
+        expect(find.text('Salin Link'), findsOneWidget);
+
+        // Closing dialog keeps status pending_payment
+        await tester.tap(find.byKey(const Key('close_checkout_dialog_button')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Menunggu Pembayaran'), findsOneWidget);
+        expect(find.text('Bayar Xendit'), findsOneWidget);
+      });
+    });
   });
 }

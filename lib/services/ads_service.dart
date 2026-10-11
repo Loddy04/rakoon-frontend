@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 
@@ -113,6 +114,13 @@ class PaymentCheckoutData {
       expiryDate: json['expiry_date'] as String?,
     );
   }
+
+  /// Memeriksa apakah URL invoice valid dan aman (skema HTTPS).
+  bool get hasValidCheckoutUrl {
+    if (invoiceUrl == null || invoiceUrl!.trim().isEmpty) return false;
+    final uri = Uri.tryParse(invoiceUrl!.trim());
+    return uri != null && uri.hasScheme && uri.scheme.toLowerCase() == 'https';
+  }
 }
 
 class PaymentStatusData {
@@ -137,7 +145,7 @@ class PaymentStatusData {
     this.xenditInvoiceId,
     this.invoiceUrl,
     this.amount,
-    this.currency,
+    this.currency = 'IDR',
     this.paidAt,
     this.expiresAt,
   });
@@ -156,6 +164,13 @@ class PaymentStatusData {
       paidAt: json['paid_at'] as String?,
       expiresAt: json['expires_at'] as String?,
     );
+  }
+
+  /// Memeriksa apakah URL invoice valid dan aman (skema HTTPS).
+  bool get hasValidCheckoutUrl {
+    if (invoiceUrl == null || invoiceUrl!.trim().isEmpty) return false;
+    final uri = Uri.tryParse(invoiceUrl!.trim());
+    return uri != null && uri.hasScheme && uri.scheme.toLowerCase() == 'https';
   }
 }
 
@@ -703,6 +718,27 @@ class AdsService {
       if (client == null) {
         httpClient.close();
       }
+    }
+  }
+
+  /// Membuka URL checkout Xendit di browser eksternal setelah memvalidasi skema HTTPS.
+  static Future<bool> launchCheckoutUrl(
+    String? rawUrl, {
+    Future<bool> Function(Uri, {LaunchMode mode})? customLauncher,
+  }) async {
+    if (rawUrl == null || rawUrl.trim().isEmpty) {
+      return false;
+    }
+    final trimmed = rawUrl.trim();
+    final uri = Uri.tryParse(trimmed);
+    if (uri == null || !uri.hasScheme || uri.scheme.toLowerCase() != 'https') {
+      return false;
+    }
+    try {
+      final launcher = customLauncher ?? launchUrl;
+      return await launcher(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      return false;
     }
   }
 }

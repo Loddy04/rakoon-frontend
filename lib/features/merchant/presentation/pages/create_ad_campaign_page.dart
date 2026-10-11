@@ -27,6 +27,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
   final TextEditingController _imageUrlController = TextEditingController();
 
   int _selectedDurationDays = 7;
+  bool _isOpeningCheckout = false;
 
   // Presets untuk kemudahan demo / juri tanpa perlu upload manual
   final List<Map<String, String>> _sampleBanners = [
@@ -412,6 +413,41 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
     );
   }
 
+  Future<void> _handleOpenCheckout(BuildContext dialogCtx, String? url) async {
+    if (_isOpeningCheckout) return;
+    setState(() => _isOpeningCheckout = true);
+    try {
+      final success = await AdsService.launchCheckoutUrl(url);
+      if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Tidak dapat membuka browser otomatis. Silakan gunakan tombol "Salin Link".',
+              style: GoogleFonts.outfit(),
+            ),
+            backgroundColor: const Color(0xFFB45309),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Gagal membuka browser. Silakan gunakan tombol "Salin Link".',
+              style: GoogleFonts.outfit(),
+            ),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isOpeningCheckout = false);
+      }
+    }
+  }
+
   void _showCheckoutDialog(BuildContext context, PaymentCheckoutData checkout) {
     showDialog(
       context: context,
@@ -449,10 +485,26 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
           ],
         ),
         actions: [
-          if (checkout.invoiceUrl != null)
+          if (checkout.hasValidCheckoutUrl)
+            ElevatedButton.icon(
+              key: const Key('open_checkout_url_button'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF166534),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: _isOpeningCheckout ? null : () => _handleOpenCheckout(ctx, checkout.invoiceUrl),
+              icon: const Icon(Icons.open_in_new_rounded, size: 16),
+              label: Text(
+                _isOpeningCheckout ? 'Membuka...' : 'Buka Checkout',
+                style: GoogleFonts.outfit(fontWeight: FontWeight.w700),
+              ),
+            ),
+          if (checkout.invoiceUrl != null && checkout.invoiceUrl!.trim().isNotEmpty)
             TextButton.icon(
+              key: const Key('copy_checkout_url_button'),
               onPressed: () {
-                Clipboard.setData(ClipboardData(text: checkout.invoiceUrl!));
+                Clipboard.setData(ClipboardData(text: checkout.invoiceUrl!.trim()));
                 ScaffoldMessenger.of(ctx).showSnackBar(
                   const SnackBar(
                     content: Text('Link checkout berhasil disalin ke clipboard!'),
@@ -464,6 +516,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
               label: const Text('Salin Link'),
             ),
           TextButton(
+            key: const Key('close_checkout_dialog_button'),
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Tutup'),
           ),
