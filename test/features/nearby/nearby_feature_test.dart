@@ -157,7 +157,7 @@ void main() {
     );
 
     testWidgets(
-      'Tapping Toko Sekitar opens NearbyStoresScreen, store cards have Detail Toko action, and Back returns safely',
+      'Tapping Toko Sekitar opens NearbyStoresScreen, store card tap opens revamped detail modal, and Back returns safely',
       (WidgetTester tester) async {
         await mockNetworkImagesFor(() async {
           await http.runWithClient(() async {
@@ -177,22 +177,22 @@ void main() {
             expect(find.byType(NearbyStoresScreen), findsOneWidget);
             expect(find.text('Indomaret Sudirman'), findsOneWidget);
 
-            // Verify "Detail Toko" button is present and "Bandingkan" is absent
-            expect(find.text('Detail Toko'), findsWidgets);
-            expect(find.text('Bandingkan'), findsNothing);
-
-            // Tap "Detail Toko" to open detail sheet
-            await tester.tap(find.text('Detail Toko').first);
+            // Tap store card directly to open revamped detail modal
+            await tester.tap(find.text('Indomaret Sudirman'));
             await tester.pumpAndSettle();
 
-            // Verify Detail bottom sheet items are rendered
-            expect(find.text('Koordinat'), findsOneWidget);
-            expect(find.text('Jarak dari lokasi Anda'), findsOneWidget);
-            expect(find.text('Sumber Data POI'), findsOneWidget);
-            expect(find.text('Lat: -6.208800, Lng: 106.845600'), findsOneWidget);
+            // Verify revamped Detail modal items: address, product list, search input, and Buka Rute
+            expect(find.text('Alamat Toko'), findsOneWidget);
+            expect(find.text('Daftar Produk di Toko Ini'), findsOneWidget);
+            expect(find.text('Cari produk di toko ini...'), findsOneWidget);
+            expect(find.text('Buka Rute'), findsOneWidget);
 
-            // Close bottom sheet
-            await tester.tap(find.text('Tutup'));
+            // Verify backend technical details (Koordinat, Sumber Data POI) are removed
+            expect(find.text('Koordinat'), findsNothing);
+            expect(find.text('Sumber Data POI'), findsNothing);
+
+            // Close modal via top-right close 'X' button
+            await tester.tap(find.byTooltip('Tutup'));
             await tester.pumpAndSettle();
 
             // Back out of map view
@@ -418,7 +418,7 @@ void main() {
               await tester.pumpAndSettle();
 
               expect(tester.takeException(), isNull);
-              expect(find.text('Toko Sekitar'), findsOneWidget);
+              expect(find.text('Toko Sekitar'), findsWidgets);
             }
           }, () => mockClient);
         });
@@ -446,9 +446,9 @@ void main() {
             expect(markerFinder, findsWidgets);
 
             // Tap second store marker (Alfamart Gatot Subroto) via semantics or map marker
-            final alfamartMarker = find.bySemanticsLabel(RegExp(r'Alfamart Gatot Subroto'));
+            final alfamartMarker = find.bySemanticsLabel(RegExp(r'^Toko: Alfamart Gatot Subroto'));
             if (alfamartMarker.evaluate().isNotEmpty) {
-              await tester.tap(alfamartMarker);
+              await tester.tap(alfamartMarker.first);
               await tester.pumpAndSettle();
               expect(find.text('Alfamart Gatot Subroto'), findsWidgets);
             }

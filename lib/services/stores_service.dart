@@ -14,6 +14,9 @@ class StoreNearby {
 
   final String? alamat;
 
+  /// Optional recorded prices count from database if available.
+  final int? productCount;
+
   StoreNearby({
     required this.storeId,
     required this.nama,
@@ -22,6 +25,7 @@ class StoreNearby {
     required this.jarakKm,
     required this.source,
     this.alamat,
+    this.productCount,
   });
 
   /// Factory constructor to parse JSON data combined with root source information.
@@ -34,6 +38,7 @@ class StoreNearby {
       jarakKm: (json['jarak_km'] as num?)?.toDouble() ?? 0.0,
       source: source,
       alamat: json['alamat'] as String?,
+      productCount: (json['product_count'] ?? json['total_products'] ?? json['jumlah_produk']) as int?,
     );
   }
 }

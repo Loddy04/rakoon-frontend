@@ -21,10 +21,13 @@ class BrandAssets {
   static String? getStoreAsset(String? storeName) {
     if (storeName == null || storeName.trim().isEmpty) return null;
     final lower = storeName.toLowerCase();
+    if (lower.contains('superindo') || lower.contains('super indo')) {
+      return null;
+    }
     if (lower.contains('alfa')) {
       return alfamart;
     }
-    if ((lower.contains('indo') && !lower.contains('superindo')) || lower.contains('idm')) {
+    if (lower.contains('indomaret') || lower.contains('idm') || lower.contains('indo')) {
       return indomaret;
     }
     return null;
