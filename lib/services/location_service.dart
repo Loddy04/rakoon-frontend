@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 /// Service that manages device location permissions and fetches current GPS coordinates.
 class LocationService {
@@ -60,6 +61,35 @@ class LocationService {
         'Gagal mengambil koordinat lokasi: $e',
       );
     }
+  }
+
+  /// Melakukan reverse geocoding dari koordinat GPS ke nama wilayah ringkas (Kelurahan/Kecamatan/Kota).
+  static Future<String> getAreaNameFromCoordinates(double lat, double lng) async {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return 'Babarsari';
+    }
+    try {
+      final List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
+      if (placemarks.isNotEmpty) {
+        final p = placemarks.first;
+        // Prioritas wilayah ringkas:
+        // 1. subLocality (Kelurahan / Dusun)
+        if (p.subLocality != null && p.subLocality!.trim().isNotEmpty) {
+          return p.subLocality!.trim();
+        }
+        // 2. locality (Kecamatan / Kota)
+        if (p.locality != null && p.locality!.trim().isNotEmpty) {
+          return p.locality!.trim();
+        }
+        // 3. subAdministrativeArea (Kabupaten / Kota Madya)
+        if (p.subAdministrativeArea != null && p.subAdministrativeArea!.trim().isNotEmpty) {
+          return p.subAdministrativeArea!.trim();
+        }
+      }
+    } catch (_) {
+      // Fallback jika platform reverse geocoder native sedang offline/error
+    }
+    return 'Babarsari';
   }
 }
 

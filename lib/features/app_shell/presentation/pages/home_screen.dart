@@ -34,7 +34,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class HomeScreenState extends State<HomeScreen> {
-  String _locationLabel = 'LOKASI BELUM TERDETEKSI';
+  String _locationLabel = 'Pilih Lokasi';
   double _userLat = -7.7829;
   double _userLng = 110.4083;
   final MapController _mapController = MapController();
@@ -172,6 +172,10 @@ class HomeScreenState extends State<HomeScreen> {
   Future<void> _detectLocationAndStore() async {
     try {
       final position = await LocationService.getCurrentLocation();
+      final areaName = await LocationService.getAreaNameFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
       final response = await StoresService.getNearbyStores(
         lat: position.latitude,
         lng: position.longitude,
@@ -181,22 +185,13 @@ class HomeScreenState extends State<HomeScreen> {
 
       if (!mounted) return;
 
-      if (response.stores.isNotEmpty) {
-        final nearest = response.stores.first;
-        setState(() {
-          _userLat = position.latitude;
-          _userLng = position.longitude;
-          _nearbyStores = response.stores;
-          _locationLabel = '${nearest.nama} · ${nearest.jarakKm.toStringAsFixed(1)} km';
-        });
-      } else {
-        setState(() {
-          _userLat = position.latitude;
-          _userLng = position.longitude;
-          _nearbyStores = [];
-          _locationLabel = 'LOKASI TERDETEKSI';
-        });
-      }
+      setState(() {
+        _userLat = position.latitude;
+        _userLng = position.longitude;
+        _nearbyStores = response.stores;
+        _locationLabel = areaName.isNotEmpty ? areaName : 'Lokasi Aktif';
+      });
+
       fetchRecommendations(
         lat: position.latitude,
         lng: position.longitude,
@@ -206,7 +201,7 @@ class HomeScreenState extends State<HomeScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _locationLabel = 'LOKASI BELUM TERDETEKSI';
+        _locationLabel = 'Pilih Lokasi';
       });
     }
   }
@@ -329,10 +324,10 @@ class HomeScreenState extends State<HomeScreen> {
                         child: InteractiveScale(
                           onTap: _navigateToNearbyStores,
                           child: Container(
-                            constraints: const BoxConstraints(maxWidth: 120),
+                            constraints: const BoxConstraints(maxWidth: 135),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 7.0,
-                              vertical: 4.5,
+                              horizontal: 8.5,
+                              vertical: 5.0,
                             ),
                             decoration: BoxDecoration(
                               color: Colors.white,
@@ -355,23 +350,22 @@ class HomeScreenState extends State<HomeScreen> {
                                 const Icon(
                                   Icons.location_on,
                                   color: Color(0xFF0D2818),
-                                  size: 12,
+                                  size: 13,
                                 ),
-                                const SizedBox(width: 3),
+                                const SizedBox(width: 3.5),
                                 Flexible(
                                   child: Text(
-                                    _locationLabel.toUpperCase(),
+                                    _locationLabel,
                                     style: GoogleFonts.outfit(
                                       color: const Color(0xFF0D2818),
-                                      fontSize: 8.5,
+                                      fontSize: 10.5,
                                       fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.2,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                const SizedBox(width: 2),
+                                const SizedBox(width: 2.5),
                                 const Icon(
                                   Icons.chevron_right_rounded,
                                   color: Color(0xFF7BAE8E),

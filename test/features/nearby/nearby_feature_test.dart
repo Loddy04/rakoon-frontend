@@ -227,7 +227,7 @@ void main() {
 
             // PriceCheckCatalogPage should be open
             expect(find.byType(PriceCheckCatalogPage), findsOneWidget);
-            expect(find.text('CEK HARGA'), findsOneWidget);
+            expect(find.text('Cek Harga'), findsOneWidget);
 
             // Tap back button in catalog view
             await tester.tap(find.byType(BackButton));

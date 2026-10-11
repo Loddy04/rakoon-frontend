@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
-import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/features/price_check/presentation/pages/unified_product_price_detail_page.dart';
 import 'package:rakoon_frontend/features/price_check/presentation/providers/price_check_provider.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
@@ -31,7 +30,6 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
   final TextEditingController _searchController = TextEditingController();
   late PriceCheckProvider _priceCheckProvider;
   Timer? _debounce;
-  final String _selectedLocation = 'Babarsari, Sleman';
 
   @override
   void initState() {
@@ -107,109 +105,15 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF0D2818),
         scrolledUnderElevation: 0,
-        leadingWidth: 42,
         leading: const BackButton(color: Color(0xFF0D2818)),
-        titleSpacing: 0,
-        title: Row(
-          children: [
-            Image.asset(
-              BrandAssets.rakoonLogo,
-              height: 28,
-              errorBuilder: (c, e, s) => const Icon(Icons.shopping_basket_rounded, color: Color(0xFF059669), size: 24),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Rakoon',
-                        style: GoogleFonts.outfit(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xFF0D2818),
-                          height: 1.1,
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      // Subtle badge satisfying exact test assertion: 'CEK HARGA'
-                      Flexible(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFECFDF5),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0xFFA7F3D0)),
-                          ),
-                          child: Text(
-                            'CEK HARGA',
-                            style: GoogleFonts.outfit(
-                              fontSize: 8.5,
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF059669),
-                              letterSpacing: 0.3,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    'Cek Harga, Belanja Lebih Cerdas',
-                    style: GoogleFonts.outfit(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF6B7280),
-                      height: 1.1,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          // Store Location Pill (Ref UI 4)
-          Container(
-            margin: const EdgeInsets.only(right: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            constraints: const BoxConstraints(maxWidth: 135),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFF059669), width: 1.2),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.location_on_rounded, size: 13, color: Color(0xFF059669)),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(
-                    _selectedLocation,
-                    style: GoogleFonts.outfit(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF059669),
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ),
-                const SizedBox(width: 2),
-                const Icon(Icons.keyboard_arrow_down_rounded, size: 15, color: Color(0xFF059669)),
-              ],
-            ),
+        title: Text(
+          'Cek Harga',
+          style: GoogleFonts.outfit(
+            fontSize: 18.0,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF0D2818),
           ),
-        ],
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(color: const Color(0xFFE8E4DC), height: 1.0),

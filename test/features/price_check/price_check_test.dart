@@ -53,7 +53,7 @@ void main() {
         ),
       );
 
-      expect(find.text('CEK HARGA'), findsOneWidget);
+      expect(find.text('Cek Harga'), findsOneWidget);
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('Semua'), findsOneWidget);
       expect(find.text('Minuman'), findsOneWidget);
@@ -84,7 +84,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('CEK HARGA'), findsOneWidget);
+        expect(find.text('Cek Harga'), findsOneWidget);
         expect(find.byType(CustomScrollView), findsOneWidget);
         expect(tester.takeException(), isNull);
       }

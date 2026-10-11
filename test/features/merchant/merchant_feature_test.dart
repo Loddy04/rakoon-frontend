@@ -357,7 +357,6 @@ void main() {
         expect(finishBtn, findsOneWidget);
 
         // Finish
-        final finishBtn = find.text('Selesai & Lihat Dasbor Merchant');
         await tester.ensureVisible(finishBtn);
         await tester.pumpAndSettle();
         await tester.tap(finishBtn);
