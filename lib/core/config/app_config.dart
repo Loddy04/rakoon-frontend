@@ -23,4 +23,11 @@ class AppConfig {
     'GOOGLE_WEB_CLIENT_ID',
     defaultValue: '814624284238-pgqnd3ara3v98ulgpd4k7a4mh9m9qkpl.apps.googleusercontent.com',
   );
+
+  // ponytail: compile-time define for demo ads; add remote config when feature flags are introduced
+  /// Flag to request demo promo ads in development environments.
+  static const bool allowDemoAds = bool.fromEnvironment(
+    'ALLOW_DEMO_ADS',
+    defaultValue: false,
+  );
 }

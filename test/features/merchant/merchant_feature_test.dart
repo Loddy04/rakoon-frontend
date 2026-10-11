@@ -385,6 +385,134 @@ void main() {
       });
     });
 
+    testWidgets('HomeScreen renders Promo kosong when home-banners response is empty', (tester) async {
+      final emptyClient = MockClient((request) async {
+        if (request.url.path.endsWith('/ads/home-banners')) {
+          return http.Response(jsonEncode([]), 200);
+        }
+        return mockClient.send(request).then(http.Response.fromStream);
+      });
+
+      await mockNetworkImagesFor(() async {
+        await http.runWithClient(() async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: HomeScreen(
+                baseUrl: 'https://api.test',
+                httpClient: emptyClient,
+              ),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          expect(find.text('Promo Toko Sekitarmu'), findsOneWidget);
+          expect(find.text('Promo kosong'), findsOneWidget);
+          expect(find.byKey(const Key('home_promo_empty_state')), findsOneWidget);
+        }, () => emptyClient);
+      });
+    });
+
+    testWidgets('HomeScreen handles error safely without crashing and does not display Promo kosong', (tester) async {
+      final errorClient = MockClient((request) async {
+        if (request.url.path.endsWith('/ads/home-banners')) {
+          return http.Response('Internal Server Error', 500);
+        }
+        return mockClient.send(request).then(http.Response.fromStream);
+      });
+
+      await mockNetworkImagesFor(() async {
+        await http.runWithClient(() async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: HomeScreen(
+                baseUrl: 'https://api.test',
+                httpClient: errorClient,
+              ),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          expect(find.text('Promo kosong'), findsNothing);
+          expect(tester.takeException(), isNull);
+        }, () => errorClient);
+      });
+    });
+
+    test('AdsService.getHomeBanners appends include_demo=true when includeDemo is true', () async {
+      bool capturedIncludeDemo = false;
+      final checkClient = MockClient((request) async {
+        if (request.url.path.endsWith('/ads/home-banners')) {
+          capturedIncludeDemo = request.url.queryParameters['include_demo'] == 'true';
+          return http.Response(jsonEncode([]), 200);
+        }
+        return http.Response('{}', 200);
+      });
+
+      await AdsService.getHomeBanners(
+        baseUrl: 'https://api.test',
+        client: checkClient,
+        includeDemo: true,
+      );
+
+      expect(capturedIncludeDemo, isTrue);
+    });
+
+    testWidgets('HomeScreen with includeDemo: true passes include_demo and renders carousel banner', (tester) async {
+      bool forwardedIncludeDemo = false;
+      final demoClient = MockClient((request) async {
+        if (request.url.path.endsWith('/ads/home-banners')) {
+          forwardedIncludeDemo = request.url.queryParameters['include_demo'] == 'true';
+          return http.Response(
+            jsonEncode([
+              {
+                "id": "ad-demo-1",
+                "store_id": "store-1",
+                "store_nama": "Manna Kampus Babarsari",
+                "store_alamat": "Jl. Raya Solo - Yogyakarta",
+                "store_lat": -7.7831,
+                "store_lng": 110.4145,
+                "title": "Promo JSM Minyak Goreng & Beras Super Hemat",
+                "banner_url": "https://example.com/demo1.jpg",
+                "duration_days": 7,
+                "price_paid": 30000,
+                "distance_km": 0.7,
+                "expires_at": "2026-10-18T08:55:33Z",
+                "days_left": 7,
+                "status": "active",
+                "payment_method": "DEMO",
+                "payment_status": "demo"
+              }
+            ]),
+            200,
+          );
+        }
+        return mockClient.send(request).then(http.Response.fromStream);
+      });
+
+      await mockNetworkImagesFor(() async {
+        await http.runWithClient(() async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: HomeScreen(
+                baseUrl: 'https://api.test',
+                httpClient: demoClient,
+                includeDemo: true,
+              ),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          expect(forwardedIncludeDemo, isTrue);
+          expect(find.text('Promo Toko Sekitarmu'), findsOneWidget);
+          expect(find.text('Promo JSM Minyak Goreng & Beras Super Hemat'), findsOneWidget);
+          expect(find.text('Promo kosong'), findsNothing);
+        }, () => demoClient);
+      });
+    });
+
     test('AdsService.initiatePayment requests official checkout URL', () async {
       final checkout = await AdsService.initiatePayment(
         campaignId: 'ad-new-123',

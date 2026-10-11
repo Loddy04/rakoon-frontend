@@ -273,15 +273,21 @@ class AdsService {
     double lat = -7.7829,
     double lng = 110.4083,
     double radiusKm = 15.0,
+    bool includeDemo = false,
   }) async {
     final effectiveBase = _resolveBaseUrl(baseUrl);
     final httpClient = client ?? http.Client();
+    final queryParams = <String, String>{
+      'lat': lat.toString(),
+      'lng': lng.toString(),
+      'radius_km': radiusKm.toString(),
+    };
+    if (includeDemo) {
+      queryParams['include_demo'] = 'true';
+    }
+
     final uri = Uri.parse('$effectiveBase/ads/home-banners').replace(
-      queryParameters: {
-        'lat': lat.toString(),
-        'lng': lng.toString(),
-        'radius_km': radiusKm.toString(),
-      },
+      queryParameters: queryParams,
     );
 
     try {
@@ -296,9 +302,7 @@ class AdsService {
             .map((item) => HomePromoBanner.fromJson(item as Map<String, dynamic>))
             .toList();
       }
-      return [];
-    } catch (_) {
-      return [];
+      throw http.ClientException('Gagal memuat promo (HTTP ${response.statusCode})');
     } finally {
       if (client == null) {
         httpClient.close();

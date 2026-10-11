@@ -15,6 +15,7 @@ import 'package:rakoon_frontend/services/location_service.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/services/ads_service.dart';
+import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/features/price_check/presentation/providers/price_check_provider.dart';
 import 'package:rakoon_frontend/features/recommendation/presentation/providers/recommendation_provider.dart';
@@ -26,8 +27,14 @@ import 'package:rakoon_frontend/widgets/rakoon_location_map.dart';
 class HomeScreen extends StatefulWidget {
   final String? baseUrl;
   final http.Client? httpClient;
+  final bool? includeDemo;
 
-  const HomeScreen({super.key, this.baseUrl, this.httpClient});
+  const HomeScreen({
+    super.key,
+    this.baseUrl,
+    this.httpClient,
+    this.includeDemo,
+  });
 
   @override
   State<HomeScreen> createState() => HomeScreenState();
@@ -48,6 +55,7 @@ class HomeScreenState extends State<HomeScreen> {
   final PriceCheckProvider _catalogProvider = PriceCheckProvider();
   List<HomePromoBanner> _promoBanners = [];
   bool _isLoadingBanners = false;
+  String? _bannersError;
   int _currentBannerIndex = 0;
   final PageController _bannerPageController = PageController(viewportFraction: 0.92);
 
@@ -72,6 +80,7 @@ class HomeScreenState extends State<HomeScreen> {
     if (mounted) {
       setState(() {
         _isLoadingBanners = true;
+        _bannersError = null;
       });
     }
     try {
@@ -80,17 +89,20 @@ class HomeScreenState extends State<HomeScreen> {
         client: widget.httpClient,
         lat: _userLat,
         lng: _userLng,
+        includeDemo: widget.includeDemo ?? AppConfig.allowDemoAds,
       );
       if (mounted) {
         setState(() {
           _promoBanners = banners;
           _isLoadingBanners = false;
+          _bannersError = null;
         });
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(() {
           _isLoadingBanners = false;
+          _bannersError = e.toString();
         });
       }
     }
@@ -1160,10 +1172,10 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildPromoBannersSection() {
-    if (_isLoadingBanners && _promoBanners.isEmpty) {
+    if (_bannersError != null) {
       return const SizedBox.shrink();
     }
-    if (_promoBanners.isEmpty) {
+    if (_isLoadingBanners && _promoBanners.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -1221,10 +1233,39 @@ class HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 12.0),
 
-        // Carousel Slider
-        SizedBox(
-          height: 195,
-          child: PageView.builder(
+        if (_promoBanners.isEmpty)
+          Container(
+            key: const Key('home_promo_empty_state'),
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20.0),
+              border: Border.all(color: const Color(0xFFE8E4DC), width: 1.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 8.0,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                'Promo kosong',
+                style: GoogleFonts.outfit(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF6B7280),
+                ),
+              ),
+            ),
+          )
+        else ...[
+          // Carousel Slider
+          SizedBox(
+            height: 195,
+            child: PageView.builder(
             controller: _bannerPageController,
             physics: const BouncingScrollPhysics(),
             itemCount: _promoBanners.length,
@@ -1397,9 +1438,10 @@ class HomeScreenState extends State<HomeScreen> {
             }),
           ),
         ],
-        const SizedBox(height: 22.0),
       ],
-    );
+      const SizedBox(height: 22.0),
+    ],
+  );
   }
 
   void _showPromoDetailDialog(HomePromoBanner banner) {
