@@ -112,14 +112,13 @@ void main() {
         ),
       );
 
-      expect(find.text('DETAIL HARGA PRODUK'), findsOneWidget);
+      expect(find.text('Detail Produk'), findsOneWidget);
       expect(find.text('INDOMIE GORENG 85G'), findsOneWidget);
-      expect(find.text('TREN FLUKTUASI HARGA'), findsOneWidget);
-      expect(find.text('PERBANDINGAN DI TOKO TERDEKAT'), findsOneWidget);
-      expect(find.text('1M'), findsOneWidget);
-      expect(find.text('3M'), findsOneWidget);
-      expect(find.text('6M'), findsOneWidget);
-      expect(find.text('Semua'), findsOneWidget);
+      expect(find.text('Tersedia di Toko Terdekat'), findsOneWidget);
+      expect(find.text('Riwayat Harga'), findsOneWidget);
+      expect(find.text('30 Hari'), findsOneWidget);
+      expect(find.text('3 Bulan'), findsOneWidget);
+      expect(find.text('Semua Toko'), findsOneWidget);
     });
 
     testWidgets('UnifiedProductPriceDetailPage renders across narrow mobile viewports without overflow', (tester) async {
@@ -158,9 +157,9 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('PERBANDINGAN DI TOKO TERDEKAT'), findsOneWidget);
-        expect(find.text('Lihat di Peta'), findsOneWidget);
-        expect(find.text('DETAIL HARGA PRODUK'), findsOneWidget);
+        expect(find.text('Detail Produk'), findsOneWidget);
+        expect(find.text('Tersedia di Toko Terdekat'), findsOneWidget);
+        expect(find.text('Riwayat Harga'), findsOneWidget);
         expect(tester.takeException(), isNull);
       }
 
