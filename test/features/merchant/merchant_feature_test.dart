@@ -975,5 +975,101 @@ void main() {
         expect(find.text('Bayar Xendit'), findsOneWidget);
       });
     });
+
+    group('Store Claim Error Handling & FormatException Prevention Tests', () {
+      test('extractErrorMessage handles plain-text 500 without FormatException', () {
+        final resp = http.Response('Internal Server Error', 500);
+        final msg = AdsService.extractErrorMessage(resp);
+        expect(msg, 'Terjadi kesalahan pada server. Silakan coba lagi.');
+      });
+
+      test('extractErrorMessage handles HTML 502/503 without FormatException', () {
+        final resp = http.Response('<html><body>502 Bad Gateway</body></html>', 502);
+        final msg = AdsService.extractErrorMessage(resp);
+        expect(msg, 'Terjadi kesalahan pada server. Silakan coba lagi.');
+      });
+
+      test('extractErrorMessage extracts detail from structured JSON error', () {
+        final resp = http.Response(
+          jsonEncode({'detail': 'Toko ini sudah memiliki pemilik terverifikasi.'}),
+          409,
+        );
+        final msg = AdsService.extractErrorMessage(resp);
+        expect(msg, 'Toko ini sudah memiliki pemilik terverifikasi.');
+      });
+
+      test('extractErrorMessage filters raw internal SQL/traceback leaks', () {
+        final resp = http.Response(
+          jsonEncode({'detail': 'psycopg2.errors.UndefinedColumn: column store_owners.rejection_reason does not exist'}),
+          400,
+        );
+        final msg = AdsService.extractErrorMessage(resp);
+        expect(msg, 'Terjadi kesalahan pada server. Silakan coba lagi.');
+      });
+
+      test('AdsService.claimStore throws Exception with friendly server message on 500 without FormatException', () async {
+        final mock500Client = MockClient((request) async {
+          return http.Response('Internal Server Error', 500);
+        });
+
+        expect(
+          () => AdsService.claimStore(
+            storeId: 'store-1',
+            baseUrl: 'https://api.test',
+            client: mock500Client,
+          ),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Terjadi kesalahan pada server. Silakan coba lagi.'),
+            ),
+          ),
+        );
+      });
+
+      testWidgets('MerchantDashboardPage displays clean error message in SnackBar on 500 plain text without FormatException', (tester) async {
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/ads/my-store')) {
+            return http.Response(jsonEncode({
+              'is_claimed': false,
+              'campaigns': [],
+            }), 200);
+          } else if (request.url.path.endsWith('/stores/nearby')) {
+            return http.Response(jsonEncode({
+              'source': 'live',
+              'stores': [
+                {
+                  'store_id': 'store-pamela-6',
+                  'nama': 'Pamela 6 Supermarket',
+                  'alamat': 'Jl. Raya Condongcatur',
+                }
+              ]
+            }), 200);
+          } else if (request.url.path.endsWith('/ads/claim-store')) {
+            return http.Response('Internal Server Error', 500);
+          }
+          return http.Response('{}', 200);
+        });
+
+        await tester.pumpWidget(MaterialApp(
+          home: MerchantDashboardPage(
+            baseUrl: 'https://api.test',
+            httpClient: client,
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        final claimBtn = find.text('Klaim & Kelola Toko Ini');
+        expect(claimBtn, findsOneWidget);
+        await tester.tap(claimBtn);
+        await tester.pumpAndSettle();
+
+        // Must display friendly Indonesian error
+        expect(find.text('Gagal mengklaim toko: Terjadi kesalahan pada server. Silakan coba lagi.'), findsOneWidget);
+        // Must NOT display FormatException or raw Internal Server Error
+        expect(find.textContaining('FormatException'), findsNothing);
+      });
+    });
   });
 }

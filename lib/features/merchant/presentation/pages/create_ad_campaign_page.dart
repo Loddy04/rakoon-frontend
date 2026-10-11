@@ -295,7 +295,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                                       if (mounted) {
                                         setModalState(() {
                                           isProcessing = false;
-                                          errorMessage = 'Gagal membuat kampanye iklan: $e';
+                                          errorMessage = 'Gagal membuat kampanye iklan: ${e.toString().replaceFirst("Exception: ", "")}';
                                         });
                                       }
                                     }
@@ -654,7 +654,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Gagal memulai checkout: $e'),
+                      content: Text('Gagal memulai checkout: ${e.toString().replaceFirst("Exception: ", "")}'),
                       backgroundColor: const Color(0xFFDC2626),
                     ),
                   );

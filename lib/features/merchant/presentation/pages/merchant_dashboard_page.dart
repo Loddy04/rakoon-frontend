@@ -77,7 +77,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Gagal memuat data toko: $e';
+          _errorMessage = 'Gagal memuat data toko: ${e.toString().replaceFirst("Exception: ", "")}';
           _isLoading = false;
         });
       }
@@ -117,7 +117,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal mengklaim toko: $e'),
+            content: Text('Gagal mengklaim toko: ${e.toString().replaceFirst("Exception: ", "")}'),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
@@ -284,7 +284,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal memeriksa status: $e'),
+            content: Text('Gagal memeriksa status: ${e.toString().replaceFirst("Exception: ", "")}'),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -418,8 +419,7 @@ class AdsService {
       if (response.statusCode == 200) {
         return MyStoreData.fromJson(jsonDecode(response.body));
       } else {
-        final err = jsonDecode(response.body);
-        throw Exception(err['detail'] ?? 'Gagal mengklaim toko.');
+        throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal mengklaim toko.'));
       }
     } finally {
       if (client == null) {
@@ -472,8 +472,7 @@ class AdsService {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       return data['banner_url'] as String;
     } else {
-      final err = jsonDecode(response.body);
-      throw Exception(err['detail'] ?? 'Gagal mengunggah foto iklan.');
+      throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal mengunggah foto iklan.'));
     }
   }
 
@@ -516,8 +515,7 @@ class AdsService {
       if (response.statusCode == 201) {
         return HomePromoBanner.fromJson(jsonDecode(response.body));
       } else {
-        final err = jsonDecode(response.body);
-        throw Exception(err['detail'] ?? 'Gagal membuat kampanye iklan.');
+        throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal membuat kampanye iklan.'));
       }
     } finally {
       if (client == null) {
@@ -552,8 +550,7 @@ class AdsService {
       if (response.statusCode == 200) {
         return PaymentCheckoutData.fromJson(jsonDecode(response.body));
       } else {
-        final err = jsonDecode(response.body);
-        throw Exception(err['detail'] ?? 'Gagal memulai pembayaran.');
+        throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal memulai checkout pembayaran.'));
       }
     } finally {
       if (client == null) {
@@ -588,8 +585,7 @@ class AdsService {
       if (response.statusCode == 200) {
         return PaymentStatusData.fromJson(jsonDecode(response.body));
       } else {
-        final err = jsonDecode(response.body);
-        throw Exception(err['detail'] ?? 'Gagal mengambil status pembayaran.');
+        throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal mengambil status pembayaran.'));
       }
     } finally {
       if (client == null) {
@@ -625,8 +621,7 @@ class AdsService {
             .map((e) => PendingStoreClaimData.fromJson(e as Map<String, dynamic>))
             .toList();
       } else {
-        final err = jsonDecode(response.body);
-        throw Exception(err['detail'] ?? 'Gagal mengambil daftar klaim pending.');
+        throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal mengambil daftar klaim pending.'));
       }
     } finally {
       if (client == null) {
@@ -667,8 +662,7 @@ class AdsService {
       if (response.statusCode == 200) {
         return MyStoreData.fromJson(jsonDecode(response.body));
       } else {
-        final err = jsonDecode(response.body);
-        throw Exception(err['detail'] ?? 'Gagal menyetujui klaim toko.');
+        throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal menyetujui klaim toko.'));
       }
     } finally {
       if (client == null) {
@@ -711,14 +705,74 @@ class AdsService {
       if (response.statusCode == 200) {
         return MyStoreData.fromJson(jsonDecode(response.body));
       } else {
-        final err = jsonDecode(response.body);
-        throw Exception(err['detail'] ?? 'Gagal menolak klaim toko.');
+        throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal menolak klaim toko.'));
       }
     } finally {
       if (client == null) {
         httpClient.close();
       }
     }
+  }
+
+  /// Ekstraksi pesan error yang tangguh untuk respons HTTP non-200.
+  /// Mencegah FormatException pada respons non-JSON (500 text/plain, 502 HTML, dsb)
+  /// dan menyaring internal exception traceback tanpa memaparkannya ke pengguna.
+  static String extractErrorMessage(
+    http.Response response, {
+    String fallbackMessage = 'Terjadi kesalahan pada sistem.',
+  }) {
+    return extractErrorMessageFromBody(
+      response.body,
+      response.statusCode,
+      fallbackMessage: fallbackMessage,
+    );
+  }
+
+  static String extractErrorMessageFromBody(
+    String responseBody,
+    int statusCode, {
+    String fallbackMessage = 'Terjadi kesalahan pada sistem.',
+  }) {
+    // Catat log diagnostik untuk developer tanpa membocorkan ke pengguna
+    debugPrint('[AdsService Error $statusCode]: $responseBody');
+
+    // 1. Coba parsing JSON terstruktur terlebih dahulu
+    try {
+      final decoded = jsonDecode(responseBody);
+      if (decoded is Map<String, dynamic>) {
+        final detail = decoded['detail'] ?? decoded['message'] ?? decoded['error'];
+        if (detail != null && detail.toString().trim().isNotEmpty) {
+          final detailStr = detail.toString().trim();
+          // Filter internal database / server error messages yang tidak sengaja terbawa
+          if (detailStr.toLowerCase().contains('psycopg2') ||
+              detailStr.toLowerCase().contains('syntax error') ||
+              detailStr.toLowerCase().contains('traceback') ||
+              detailStr.toLowerCase().contains('internal server error')) {
+            return 'Terjadi kesalahan pada server. Silakan coba lagi.';
+          }
+          return detailStr;
+        }
+      }
+    } catch (_) {
+      // Body adalah plain text atau HTML non-JSON
+    }
+
+    // 2. Respons server error (5xx) non-JSON
+    if (statusCode >= 500) {
+      return 'Terjadi kesalahan pada server. Silakan coba lagi.';
+    }
+
+    if (statusCode == 401) {
+      return 'Silakan masuk akun terlebih dahulu.';
+    }
+    if (statusCode == 403) {
+      return 'Anda tidak memiliki izin untuk melakukan tindakan ini.';
+    }
+    if (statusCode == 404) {
+      return 'Data yang dipilih tidak ditemukan.';
+    }
+
+    return fallbackMessage;
   }
 
   /// Membuka URL checkout Xendit di browser eksternal setelah memvalidasi skema HTTPS.
