@@ -429,6 +429,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
             ),
           if (_myStoreData?.claimStatus == 'rejected')
             Container(
+              key: const Key('rejected_claim_banner'),
               margin: const EdgeInsets.only(bottom: 16.0),
               padding: const EdgeInsets.all(14.0),
               decoration: BoxDecoration(
@@ -437,13 +438,35 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
                 border: Border.all(color: const Color(0xFFFECACA)),
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Icon(Icons.info_outline_rounded, color: Color(0xFFDC2626), size: 20),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      'Permohonan klaim toko Anda sebelumnya ditolak oleh admin. Anda dapat mengajukan klaim toko kembali di bawah ini.',
-                      style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF991B1B), fontWeight: FontWeight.w500),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _myStoreData?.rejectionReason != null && _myStoreData!.rejectionReason!.trim().isNotEmpty
+                              ? 'Klaim Ditolak: ${_myStoreData!.rejectionReason!.trim()}'
+                              : 'Permohonan klaim toko Anda sebelumnya ditolak oleh admin.',
+                          key: const Key('rejected_claim_reason_text'),
+                          style: GoogleFonts.outfit(
+                            fontSize: 12.5,
+                            color: const Color(0xFF991B1B),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Anda dapat mengajukan klaim toko kembali di bawah ini jika terdapat data yang diperbaiki.',
+                          style: GoogleFonts.outfit(
+                            fontSize: 11.5,
+                            color: const Color(0xFFB91C1C),
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

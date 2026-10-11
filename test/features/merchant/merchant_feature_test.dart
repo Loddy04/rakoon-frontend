@@ -412,5 +412,175 @@ void main() {
       expect(status.transactionStatus, 'PENDING');
       expect(status.amount, 30000);
     });
+
+    group('Store Claim Rejection Reason & Re-claim Flow Tests', () {
+      test('MyStoreData.fromJson mem-parsing rejection_reason yang ada', () {
+        final json = {
+          'is_claimed': false,
+          'claim_status': 'rejected',
+          'store_id': 'store-123',
+          'store_nama': 'Toko ABC',
+          'rejection_reason': 'Dokumen SIUP tidak terbaca jelas.',
+          'campaigns': [],
+        };
+        final data = MyStoreData.fromJson(json);
+        expect(data.isClaimed, false);
+        expect(data.claimStatus, 'rejected');
+        expect(data.rejectionReason, 'Dokumen SIUP tidak terbaca jelas.');
+      });
+
+      test('MyStoreData.fromJson menangani rejection_reason yang null', () {
+        final json = {
+          'is_claimed': false,
+          'claim_status': 'rejected',
+          'store_id': 'store-123',
+          'rejection_reason': null,
+          'campaigns': [],
+        };
+        final data = MyStoreData.fromJson(json);
+        expect(data.rejectionReason, isNull);
+      });
+
+      testWidgets('MerchantDashboardPage menampilkan teks alasan penolakan saat rejection_reason tersedia', (tester) async {
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/ads/my-store')) {
+            return http.Response(jsonEncode({
+              'is_claimed': false,
+              'claim_status': 'rejected',
+              'store_id': 'store-pamela-6',
+              'store_nama': 'Pamela 6 Supermarket',
+              'rejection_reason': 'Toko telah diverifikasi untuk mitra lain.',
+              'campaigns': [],
+            }), 200);
+          } else if (request.url.path.endsWith('/stores/nearby')) {
+            return http.Response(jsonEncode({'source': 'live', 'stores': []}), 200);
+          }
+          return http.Response(jsonEncode({}), 200);
+        });
+
+        await tester.pumpWidget(MaterialApp(
+          home: MerchantDashboardPage(
+            baseUrl: 'https://api.test',
+            httpClient: client,
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('rejected_claim_banner')), findsOneWidget);
+        expect(find.text('Klaim Ditolak: Toko telah diverifikasi untuk mitra lain.'), findsOneWidget);
+      });
+
+      testWidgets('MerchantDashboardPage menampilkan fallback default saat rejection_reason null atau kosong', (tester) async {
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/ads/my-store')) {
+            return http.Response(jsonEncode({
+              'is_claimed': false,
+              'claim_status': 'rejected',
+              'store_id': 'store-pamela-6',
+              'store_nama': 'Pamela 6 Supermarket',
+              'rejection_reason': null,
+              'campaigns': [],
+            }), 200);
+          } else if (request.url.path.endsWith('/stores/nearby')) {
+            return http.Response(jsonEncode({'source': 'live', 'stores': []}), 200);
+          }
+          return http.Response(jsonEncode({}), 200);
+        });
+
+        await tester.pumpWidget(MaterialApp(
+          home: MerchantDashboardPage(
+            baseUrl: 'https://api.test',
+            httpClient: client,
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('rejected_claim_banner')), findsOneWidget);
+        expect(find.text('Permohonan klaim toko Anda sebelumnya ditolak oleh admin.'), findsOneWidget);
+      });
+
+      testWidgets('MerchantDashboardPage merender tombol klaim ulang saat status rejected', (tester) async {
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/ads/my-store')) {
+            return http.Response(jsonEncode({
+              'is_claimed': false,
+              'claim_status': 'rejected',
+              'rejection_reason': 'Data tidak valid',
+              'campaigns': [],
+            }), 200);
+          } else if (request.url.path.endsWith('/stores/nearby')) {
+            return http.Response(jsonEncode({
+              'source': 'live',
+              'stores': [
+                {
+                  'store_id': 'store-pamela-6',
+                  'nama': 'Pamela 6 Supermarket',
+                  'alamat': 'Jl. Raya Condongcatur',
+                }
+              ]
+            }), 200);
+          }
+          return http.Response(jsonEncode({}), 200);
+        });
+
+        await tester.pumpWidget(MaterialApp(
+          home: MerchantDashboardPage(
+            baseUrl: 'https://api.test',
+            httpClient: client,
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Klaim & Kelola Toko Ini'), findsOneWidget);
+      });
+
+      testWidgets('Tombol klaim ulang memicu alur klaim ulang yang benar', (tester) async {
+        bool claimCalled = false;
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/ads/my-store')) {
+            return http.Response(jsonEncode({
+              'is_claimed': false,
+              'claim_status': claimCalled ? 'pending' : 'rejected',
+              'rejection_reason': claimCalled ? null : 'Data tidak lengkap',
+              'campaigns': [],
+            }), 200);
+          } else if (request.url.path.endsWith('/stores/nearby')) {
+            return http.Response(jsonEncode({
+              'source': 'live',
+              'stores': [
+                {
+                  'store_id': 'store-pamela-6',
+                  'nama': 'Pamela 6 Supermarket',
+                  'alamat': 'Jl. Raya Condongcatur',
+                }
+              ]
+            }), 200);
+          } else if (request.url.path.endsWith('/ads/claim-store') && request.method == 'POST') {
+            claimCalled = true;
+            return http.Response(jsonEncode({
+              'status': 'pending',
+              'store_id': 'store-pamela-6',
+              'message': 'Permohonan klaim berhasil diajukan.',
+            }), 200);
+          }
+          return http.Response(jsonEncode({}), 200);
+        });
+
+        await tester.pumpWidget(MaterialApp(
+          home: MerchantDashboardPage(
+            baseUrl: 'https://api.test',
+            httpClient: client,
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        final claimBtn = find.text('Klaim & Kelola Toko Ini');
+        expect(claimBtn, findsOneWidget);
+        await tester.tap(claimBtn);
+        await tester.pumpAndSettle();
+
+        expect(claimCalled, isTrue);
+      });
+    });
   });
 }

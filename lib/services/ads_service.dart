@@ -228,6 +228,7 @@ class MyStoreData {
   final String? storeAlamat;
   final double? storeLat;
   final double? storeLng;
+  final String? rejectionReason;
   final List<HomePromoBanner> campaigns;
 
   const MyStoreData({
@@ -238,6 +239,7 @@ class MyStoreData {
     this.storeAlamat,
     this.storeLat,
     this.storeLng,
+    this.rejectionReason,
     this.campaigns = const [],
   });
 
@@ -251,6 +253,7 @@ class MyStoreData {
       storeAlamat: json['store_alamat'] as String?,
       storeLat: (json['store_lat'] as num?)?.toDouble(),
       storeLng: (json['store_lng'] as num?)?.toDouble(),
+      rejectionReason: json['rejection_reason'] as String?,
       campaigns: list
           .map((e) => HomePromoBanner.fromJson(e as Map<String, dynamic>))
           .toList(),
