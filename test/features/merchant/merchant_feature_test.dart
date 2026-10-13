@@ -1071,5 +1071,122 @@ void main() {
         expect(find.textContaining('FormatException'), findsNothing);
       });
     });
+
+    group('Payment Synchronization & App Lifecycle Tests', () {
+      testWidgets('MerchantDashboardPage automatically reloads data when app resumes from external browser', (tester) async {
+        int getMyStoreCalls = 0;
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/ads/my-store')) {
+            getMyStoreCalls++;
+            return http.Response(jsonEncode({
+              'is_claimed': true,
+              'claim_status': 'verified',
+              'store_id': 'store-1',
+              'store_nama': 'Pamela 6 Supermarket',
+              'campaigns': [
+                {
+                  'id': 'ad-10',
+                  'store_id': 'store-1',
+                  'store_nama': 'Pamela 6 Supermarket',
+                  'title': 'Promo Minyak Murah',
+                  'banner_url': 'https://example.com/oil.jpg',
+                  'duration_days': 7,
+                  'price_paid': 30000,
+                  'distance_km': 0.0,
+                  'expires_at': '2026-10-18T00:00:00Z',
+                  'days_left': 7,
+                  'status': getMyStoreCalls > 1 ? 'active' : 'pending_payment',
+                  'payment_status': getMyStoreCalls > 1 ? 'paid' : 'unpaid',
+                  'payment_ref': 'INV-OIL-1',
+                }
+              ],
+            }), 200);
+          }
+          return http.Response('{}', 200);
+        });
+
+        await tester.pumpWidget(MaterialApp(
+          home: MerchantDashboardPage(
+            baseUrl: 'https://api.test',
+            httpClient: client,
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        expect(getMyStoreCalls, 1);
+        expect(find.text('Menunggu Pembayaran'), findsOneWidget);
+
+        // Simulate returning to the app from external browser (resumed lifecycle)
+        final state = tester.state(find.byType(MerchantDashboardPage)) as WidgetsBindingObserver;
+        state.didChangeAppLifecycleState(AppLifecycleState.resumed);
+        await tester.pumpAndSettle();
+
+        // getMyStore was called again and UI updated
+        expect(getMyStoreCalls, 2);
+        expect(find.text('Menunggu Pembayaran'), findsNothing);
+        expect(find.text('Paket 7 Hari'), findsOneWidget);
+      });
+
+      testWidgets('Tapping Cek Status updates pending campaign to active when paid', (tester) async {
+        bool isPaid = false;
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/ads/my-store')) {
+            return http.Response(jsonEncode({
+              'is_claimed': true,
+              'claim_status': 'verified',
+              'store_id': 'store-1',
+              'store_nama': 'Pamela 6 Supermarket',
+              'campaigns': [
+                {
+                  'id': 'ad-10',
+                  'store_id': 'store-1',
+                  'store_nama': 'Pamela 6 Supermarket',
+                  'title': 'Promo Minyak Murah',
+                  'banner_url': 'https://example.com/oil.jpg',
+                  'duration_days': 7,
+                  'price_paid': 30000,
+                  'distance_km': 0.0,
+                  'expires_at': '2026-10-18T00:00:00Z',
+                  'days_left': 7,
+                  'status': isPaid ? 'active' : 'pending_payment',
+                  'payment_status': isPaid ? 'paid' : 'unpaid',
+                  'payment_ref': 'INV-OIL-1',
+                }
+              ],
+            }), 200);
+          } else if (request.url.path.endsWith('/ads/campaigns/ad-10/payment-status')) {
+            isPaid = true;
+            return http.Response(jsonEncode({
+              'campaign_id': 'ad-10',
+              'campaign_status': 'active',
+              'payment_status': 'paid',
+              'transaction_status': 'PAID',
+              'amount': 30000,
+            }), 200);
+          }
+          return http.Response('{}', 200);
+        });
+
+        await tester.pumpWidget(MaterialApp(
+          home: MerchantDashboardPage(
+            baseUrl: 'https://api.test',
+            httpClient: client,
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Menunggu Pembayaran'), findsOneWidget);
+        final checkBtn = find.text('Cek Status');
+        expect(checkBtn, findsOneWidget);
+
+        await tester.tap(checkBtn);
+        await tester.pumpAndSettle();
+
+        // Verification SnackBar appears
+        expect(find.text('Pembayaran berhasil diverifikasi! Iklan telah aktif.'), findsOneWidget);
+        // Status badge updated
+        expect(find.text('Menunggu Pembayaran'), findsNothing);
+      });
+    });
   });
 }
