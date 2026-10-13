@@ -1804,7 +1804,7 @@ class HomeScreenState extends State<HomeScreen> {
           key: Key('recent_scan_item_${scan.id}'),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24.0),
+            borderRadius: BorderRadius.circular(20.0),
             border: Border.all(color: const Color(0xFFE8E4DC), width: 1.0),
             boxShadow: [
               BoxShadow(
@@ -1816,12 +1816,13 @@ class HomeScreenState extends State<HomeScreen> {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Shelf / Session Thumbnail with Store Logo
               BrandAssets.buildStoreLogo(
                 scan.storeName,
-                size: 48,
-                borderRadius: 16.0,
+                size: 46,
+                borderRadius: 14.0,
                 fallbackBgColor: const Color(0xFF0D2818),
                 fallbackIconColor: Colors.white,
               ),
@@ -1832,48 +1833,70 @@ class HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      storeName,
-                      style: GoogleFonts.outfit(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF0D2818),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    // Top row: Store Name (Expanded) & Date (Right aligned)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            storeName,
+                            style: GoogleFonts.outfit(
+                              fontSize: 14.0,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF0D2818),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _formatDateTime(scan.timestamp),
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFF9CA3AF),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      productCountText,
-                      style: GoogleFonts.outfit(
-                        color: const Color(0xFF6B6B6B),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w400,
-                      ),
+                    const SizedBox(height: 5),
+
+                    // Sub-information: Icon receipt_long + Product Count
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.receipt_long_rounded,
+                          size: 13.5,
+                          color: Color(0xFF059669),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            productCountText,
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF059669),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
 
-              // Time and Chevron
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _formatDateTime(scan.timestamp),
-                    style: GoogleFonts.outfit(
-                      color: const Color(0xFF6B6B6B),
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                  const SizedBox(width: 2),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    size: 16,
-                    color: Color(0xFF7BAE8E),
-                  ),
-                ],
+              // Vertically centered Navigation Chevron with comfortable breathing room
+              const Padding(
+                padding: EdgeInsets.only(left: 8.0, right: 2.0),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: Color(0xFF9CA3AF),
+                ),
               ),
             ],
           ),
