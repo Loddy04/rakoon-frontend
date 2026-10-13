@@ -297,6 +297,7 @@ class RecentScan {
   final String id;
   final String storeId;
   final String? storeName;
+  final String? storeAddress;
   final DateTime timestamp;
   final int productCount;
 
@@ -304,6 +305,7 @@ class RecentScan {
     required this.id,
     required this.storeId,
     this.storeName,
+    this.storeAddress,
     required this.timestamp,
     required this.productCount,
   });
@@ -318,6 +320,7 @@ class RecentScan {
       id: (json['id'] ?? '').toString(),
       storeId: (json['store_id'] ?? '').toString(),
       storeName: json['store_name'] as String?,
+      storeAddress: (json['store_address'] ?? json['alamat']) as String?,
       timestamp: parseScanTimestamp(json['timestamp']),
       productCount: count,
     );
@@ -357,6 +360,7 @@ class ScanSessionDetail {
   final String id;
   final String storeId;
   final String? storeName;
+  final String? storeAddress;
   final DateTime timestamp;
   final int productCount;
   final List<ScanSessionProductItem> items;
@@ -365,6 +369,7 @@ class ScanSessionDetail {
     required this.id,
     required this.storeId,
     this.storeName,
+    this.storeAddress,
     required this.timestamp,
     required this.productCount,
     required this.items,
@@ -385,6 +390,7 @@ class ScanSessionDetail {
       id: (json['id'] ?? '').toString(),
       storeId: (json['store_id'] ?? '').toString(),
       storeName: json['store_name'] as String?,
+      storeAddress: (json['store_address'] ?? json['alamat']) as String?,
       timestamp: parseScanTimestamp(json['timestamp']),
       productCount: count,
       items: parsedItems,

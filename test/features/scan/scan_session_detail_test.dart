@@ -331,6 +331,104 @@ void main() {
 
       tester.view.resetPhysicalSize();
     });
+
+    testWidgets('8. ScanSessionDetailScreen groups identical multi-qty products', (
+      WidgetTester tester,
+    ) async {
+      final multiQtyDetail = {
+        'id': 'session-multi',
+        'store_id': 'store-1',
+        'store_name': 'Super Indo Kaliurang',
+        'timestamp': '2026-08-14T07:32:00Z',
+        'product_count': 3,
+        'items': [
+          {
+            'product_id': 'prod-milk',
+            'nama_produk': 'Indomilk Good Milk',
+            'kategori': 'Susu & Olahan',
+            'ukuran': 1.0,
+            'satuan': 'L',
+            'harga': 18000,
+          },
+          {
+            'product_id': 'prod-milk',
+            'nama_produk': 'Indomilk Good Milk',
+            'kategori': 'Susu & Olahan',
+            'ukuran': 1.0,
+            'satuan': 'L',
+            'harga': 18000,
+          },
+          {
+            'product_id': 'prod-milk',
+            'nama_produk': 'Indomilk Good Milk',
+            'kategori': 'Susu & Olahan',
+            'ukuran': 1.0,
+            'satuan': 'L',
+            'harga': 18000,
+          },
+        ],
+      };
+
+      final multiClient = MockClient((request) async {
+        if (request.url.path == '/scan/session/session-multi') {
+          return http.Response(jsonEncode(multiQtyDetail), 200);
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ScanSessionDetailScreen(
+            scanSessionId: 'session-multi',
+            baseUrl: 'http://localhost:8000',
+            httpClient: multiClient,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Check section title displays unique product count: 1
+      expect(find.text('Daftar Produk (1)'), findsOneWidget);
+
+      // Check product name displays (3x)
+      expect(find.text('Indomilk Good Milk (3x)'), findsOneWidget);
+
+      // Check total price Rp 54.000 and unit price @ Rp 18.000
+      expect(find.text('Rp 54.000'), findsOneWidget);
+      expect(find.text('@ Rp 18.000'), findsOneWidget);
+      expect(find.text('3 pcs'), findsOneWidget);
+    });
+
+    testWidgets('9. ScanHistoryScreen dynamically filters scans via search bar', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ScanHistoryScreen(
+            baseUrl: 'http://localhost:8000',
+            httpClient: mockHttpClient,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Supermarket Toko Amanah'), findsOneWidget);
+      expect(find.text('Alfamart Dago'), findsOneWidget);
+
+      // Enter search query "Alfamart"
+      await tester.enterText(find.byType(TextField), 'Alfamart');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Alfamart Dago'), findsOneWidget);
+      expect(find.text('Supermarket Toko Amanah'), findsNothing);
+
+      // Clear text
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Supermarket Toko Amanah'), findsOneWidget);
+      expect(find.text('Alfamart Dago'), findsOneWidget);
+    });
   });
 
   group('Timestamp & Timezone Parsing Unit Tests', () {
