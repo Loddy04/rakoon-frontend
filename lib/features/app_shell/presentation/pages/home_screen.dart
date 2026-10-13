@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/features/budget_shopping/budget_shopping_screen.dart';
@@ -22,7 +21,6 @@ import 'package:rakoon_frontend/features/recommendation/presentation/providers/r
 import 'package:rakoon_frontend/services/recommendation_service.dart';
 import 'package:rakoon_frontend/widgets/interactive_scale.dart';
 import 'package:rakoon_frontend/widgets/product_card.dart';
-import 'package:rakoon_frontend/widgets/rakoon_location_map.dart';
 
 class HomeScreen extends StatefulWidget {
   final String? baseUrl;
@@ -44,9 +42,7 @@ class HomeScreenState extends State<HomeScreen> {
   String _locationLabel = 'Pilih Lokasi';
   double _userLat = -7.7829;
   double _userLng = 110.4083;
-  final MapController _mapController = MapController();
 
-  List<StoreNearby> _nearbyStores = [];
   List<RecentScan>? _recentScans;
   bool _isLoadingScans = false;
   String? _scansError;
@@ -54,10 +50,8 @@ class HomeScreenState extends State<HomeScreen> {
   final RecommendationProvider _recommendationProvider = RecommendationProvider();
   final PriceCheckProvider _catalogProvider = PriceCheckProvider();
   List<HomePromoBanner> _promoBanners = [];
-  bool _isLoadingBanners = false;
-  String? _bannersError;
   int _currentBannerIndex = 0;
-  final PageController _bannerPageController = PageController(viewportFraction: 0.92);
+  final PageController _bannerPageController = PageController(viewportFraction: 1.0);
 
   @override
   void initState() {
@@ -77,12 +71,6 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> fetchPromoBanners() async {
-    if (mounted) {
-      setState(() {
-        _isLoadingBanners = true;
-        _bannersError = null;
-      });
-    }
     try {
       final banners = await AdsService.getHomeBanners(
         baseUrl: _getBaseUrl(),
@@ -94,15 +82,12 @@ class HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         setState(() {
           _promoBanners = banners;
-          _isLoadingBanners = false;
-          _bannersError = null;
         });
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() {
-          _isLoadingBanners = false;
-          _bannersError = e.toString();
+          _promoBanners = [];
         });
       }
     }
@@ -188,7 +173,7 @@ class HomeScreenState extends State<HomeScreen> {
         position.latitude,
         position.longitude,
       );
-      final response = await StoresService.getNearbyStores(
+      await StoresService.getNearbyStores(
         lat: position.latitude,
         lng: position.longitude,
         baseUrl: _getBaseUrl(),
@@ -200,7 +185,6 @@ class HomeScreenState extends State<HomeScreen> {
       setState(() {
         _userLat = position.latitude;
         _userLng = position.longitude;
-        _nearbyStores = response.stores;
         _locationLabel = areaName.isNotEmpty ? areaName : 'Lokasi Aktif';
       });
 
@@ -483,395 +467,27 @@ class HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
 
-                    // 3. Mini Map (OpenStreetMap with Rounded-3xl Borders & Shadow-sm)
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24.0),
-                        border: Border.all(
-                          color: const Color(0xFFE8E4DC),
-                          width: 1.0,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 10.0,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24.0),
-                        child: RakoonLocationMap(
-                          userLat: _userLat,
-                          userLng: _userLng,
-                          mapController: _mapController,
-                          height: 155,
-                          heroTag: 'home_location_map',
-                          margin: EdgeInsets.zero,
-                          borderRadius: BorderRadius.circular(24.0),
-                          border: Border.all(
-                            color: const Color(0xFFE8E4DC),
-                            width: 1.0,
-                          ),
-                          boxShadow: const [],
-                          onMapTap: _navigateToNearbyStores,
-                          onMarkerTap: (storeId) => _navigateToNearbyStores(),
-                          markers: _nearbyStores.map((store) {
-                            return MapStoreMarker(
-                              storeId: store.storeId,
-                              lat: store.lat,
-                              lng: store.lng,
-                              label: store.nama,
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14.0),
+                    // 3. Karusel Ramping "Promo & Fitur" (Rakoon AI + Promo Brosur)
+                    _buildPromoAndFeaturesCarousel(),
+                    const SizedBox(height: 16.0),
 
-                    // 4. Hero Banner ("Rakoon AI - Smart Shelf Scan")
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24.0),
-                        border: Border.all(
-                          color: const Color(0xFFE8E4DC),
-                          width: 1.0,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 10.0,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.all(16.0),
+                    // 4. Menu Cepat (Flat Circular Icons - Gojek/Grab Style)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2.0),
                       child: Row(
                         children: [
-                          // Left Content
+                          // Quick Action 1: Cek Harga
                           Expanded(
-                            flex: 6,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Sparkle Pill Badge (Soft Mint Green)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8.0,
-                                    vertical: 3.5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF1F8F4),
-                                    borderRadius: BorderRadius.circular(16.0),
-                                    border: Border.all(
-                                      color: const Color(0xFFD1E7DD),
-                                      width: 1.0,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.auto_awesome_rounded,
-                                        color: Color(0xFF166534),
-                                        size: 13,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'Rakoon AI',
-                                        style: GoogleFonts.outfit(
-                                          color: const Color(0xFF0D2818),
-                                          fontSize: 11.0,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-
-                                Text(
-                                  'Smart Shelf Scan\nPindai Rak Belanja',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 18.0,
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF0D2818),
-                                    height: 1.2,
-                                    letterSpacing: -0.2,
-                                  ),
-                                ),
-                                const SizedBox(height: 5),
-                                Text(
-                                  'Temukan harga, bandingkan produk,\ndan belanja lebih hemat dengan AI.',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 11.0,
-                                    color: const Color(0xFF6B6B6B),
-                                    height: 1.3,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-
-                                // Action Button "Mulai Scan ->" (Deep Forest Green Gradient + warm glow shadow + active:scale-95)
-                                InteractiveScale(
-                                  onTap: _openScanCamera,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14.0,
-                                      vertical: 8.0,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: [Color(0xFF0D2818), Color(0xFF2E6644)],
-                                      ),
-                                      borderRadius: BorderRadius.circular(24.0),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: const Color(0xFF0D2818)
-                                              .withValues(alpha: 0.3),
-                                          blurRadius: 10.0,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            'Mulai Scan',
-                                            style: GoogleFonts.outfit(
-                                              color: Colors.white,
-                                              fontSize: 11.5,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 5),
-                                          const Icon(
-                                            Icons.arrow_forward_rounded,
-                                            color: Colors.white,
-                                            size: 13,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Right Illustration with Real Product Assets & Scanner Mockup
-                          Expanded(
-                            flex: 4,
-                            child: SizedBox(
-                              height: 120,
-                              child: Stack(
-                                alignment: Alignment.center,
-                                clipBehavior: Clip.none,
-                                children: [
-                                  // Phone Scanner Mockup Container in Deep Forest Green
-                                  Container(
-                                    width: 84,
-                                    height: 112,
-                                    decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: [Color(0xFF0D2818), Color(0xFF1E4830)],
-                                      ),
-                                      borderRadius: BorderRadius.circular(16.0),
-                                      border: Border.all(
-                                        color: const Color(0xFF7BAE8E),
-                                        width: 1.2,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: const Color(0xFF0D2818).withValues(alpha: 0.2),
-                                          blurRadius: 8.0,
-                                          offset: const Offset(0, 3),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        // Product Being Scanned inside viewfinder (Indomie)
-                                        Padding(
-                                          padding: const EdgeInsets.all(10.0),
-                                          child: Image.asset(
-                                            BrandAssets.indomie,
-                                            fit: BoxFit.contain,
-                                            errorBuilder: (context, error, stackTrace) => const Icon(
-                                              Icons.qr_code_scanner_rounded,
-                                              color: Color(0xFF7BAE8E),
-                                              size: 38,
-                                            ),
-                                          ),
-                                        ),
-                                        // Green Scan Light Bar
-                                        Positioned(
-                                          top: 36,
-                                          left: 8,
-                                          right: 8,
-                                          child: Container(
-                                            height: 2,
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFF10B981),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: const Color(0xFF10B981).withValues(alpha: 0.8),
-                                                  blurRadius: 4,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  // Floating Ultra Milk Miniature Badge
-                                  Positioned(
-                                    left: -4,
-                                    top: 10,
-                                    child: Container(
-                                      width: 28,
-                                      height: 28,
-                                      padding: const EdgeInsets.all(3),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(color: const Color(0xFFE8E4DC), width: 1),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.08),
-                                            blurRadius: 4,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Image.asset(
-                                        BrandAssets.ultramilk,
-                                        fit: BoxFit.contain,
-                                        errorBuilder: (context, error, stackTrace) => const SizedBox(),
-                                      ),
-                                    ),
-                                  ),
-
-                                  // Floating Bimoli Miniature Badge
-                                  Positioned(
-                                    left: 2,
-                                    bottom: 12,
-                                    child: Container(
-                                      width: 26,
-                                      height: 26,
-                                      padding: const EdgeInsets.all(3),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(color: const Color(0xFFE8E4DC), width: 1),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.08),
-                                            blurRadius: 4,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Image.asset(
-                                        BrandAssets.bimoli,
-                                        fit: BoxFit.contain,
-                                        errorBuilder: (context, error, stackTrace) => const SizedBox(),
-                                      ),
-                                    ),
-                                  ),
-
-                                  // Mascot Peeking
-                                  Positioned(
-                                    right: 0,
-                                    bottom: 0,
-                                    child: Image.asset(
-                                      BrandAssets.rakoonLogo,
-                                      height: 60,
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (context, error, stackTrace) =>
-                                          const SizedBox(),
-                                    ),
-                                  ),
-
-                                  // Mini Speech Bubble
-                                  Positioned(
-                                    top: 4,
-                                    right: 2,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6.0,
-                                        vertical: 3.0,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(10.0),
-                                        border: Border.all(
-                                          color: const Color(0xFFE8E4DC),
-                                          width: 1.0,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.06),
-                                            blurRadius: 4.0,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Text(
-                                        '✦ AI Shelf',
-                                        style: GoogleFonts.outfit(
-                                          fontSize: 8.0,
-                                          fontWeight: FontWeight.w700,
-                                          color: const Color(0xFF0D2818),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 18.0),
-
-                    // 5. Quick Actions (3 Rounded-3xl Cards with Gradients & Active Scale)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Quick Action 1: Cek Harga
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 3.0),
                             child: Semantics(
                               label: 'Cek Harga, buka katalog produk dan perbandingan harga',
                               button: true,
                               container: true,
                               excludeSemantics: true,
-                              child: _ColorfulQuickActionButton(
-                                icon: Icons.sell_rounded,
-                                gradient: const LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [Color(0xFF0D2818), Color(0xFF2E6644)],
-                                ),
-                                iconColor: Colors.white,
+                              child: _QuickActionCircleButton(
                                 title: 'Cek Harga',
-                                subtitle: 'Lihat & bandingkan\nharga produk',
+                                icon: Icons.sell_rounded,
+                                circleColor: const Color(0xFFEBF5EE),
+                                iconColor: const Color(0xFF0D2818),
                                 onTap: () {
                                   Navigator.push(
                                     context,
@@ -888,56 +504,36 @@ class HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                           ),
-                        ),
 
-                        // Quick Action 2: Toko Sekitar (Emerald Green + Alfamart/Indomaret Chips)
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 3.0),
+                          // Quick Action 2: Toko Sekitar
+                          Expanded(
                             child: Semantics(
                               label: 'Toko Sekitar, cari toko terdekat di sekitar kamu',
                               button: true,
                               container: true,
                               excludeSemantics: true,
-                              child: _ColorfulQuickActionButton(
-                                icon: Icons.storefront_rounded,
-                                gradient: const LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [Color(0xFF059669), Color(0xFF10B981)],
-                                ),
-                                iconColor: Colors.white,
+                              child: _QuickActionCircleButton(
                                 title: 'Toko Sekitar',
-                                subtitle: 'Temukan supermarket\nterdekat',
-                                trailingWidget: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                ),
+                                icon: Icons.storefront_rounded,
+                                circleColor: const Color(0xFFECFDF5),
+                                iconColor: const Color(0xFF059669),
                                 onTap: _navigateToNearbyStores,
                               ),
                             ),
                           ),
-                        ),
 
-                        // Quick Action 3: Smart Budget (Sage / Forest Green Gradient)
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 3.0),
+                          // Quick Action 3: Smart Budget
+                          Expanded(
                             child: Semantics(
                               label: 'Smart Budget, kalkulasi belanja sesuai anggaran',
                               button: true,
                               container: true,
                               excludeSemantics: true,
-                              child: _ColorfulQuickActionButton(
-                                icon: Icons.pie_chart_rounded,
-                                gradient: const LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [Color(0xFF166534), Color(0xFF2E7D32)],
-                                ),
-                                iconColor: Colors.white,
+                              child: _QuickActionCircleButton(
                                 title: 'Smart Budget',
-                                subtitle: 'Atur belanja\nlebih hemat',
+                                icon: Icons.pie_chart_rounded,
+                                circleColor: const Color(0xFFF0FDF4),
+                                iconColor: const Color(0xFF15803D),
                                 onTap: () {
                                   Navigator.push(
                                     context,
@@ -951,13 +547,10 @@ class HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 22.0),
-
-                    // Promo Toko Sekitarmu (Hyperlocal Flyer Ad Carousel)
-                    _buildPromoBannersSection(),
+                    const SizedBox(height: 20.0),
 
                     // 6. Section "Produk Pilihan" Horizontal Carousel
                     Row(
@@ -1171,263 +764,87 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPromoBannersSection() {
-    if (_bannersError != null) {
-      return const SizedBox.shrink();
-    }
-    if (_isLoadingBanners && _promoBanners.isEmpty) {
-      return const SizedBox.shrink();
-    }
+  Widget _buildPromoAndFeaturesCarousel() {
+    final totalSlides = 1 + _promoBanners.length;
+    final safeIndex = _currentBannerIndex >= totalSlides ? 0 : _currentBannerIndex;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Expanded(
-              child: Text(
-                'Promo Toko Sekitarmu',
-                style: GoogleFonts.outfit(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0D2818),
-                  letterSpacing: -0.2,
+            Text(
+              'Promo & Fitur',
+              style: GoogleFonts.outfit(
+                fontSize: 16.5,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF0D2818),
+                letterSpacing: -0.2,
+              ),
+            ),
+            if (_promoBanners.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3.0),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(12.0),
+                  border: Border.all(color: const Color(0xFFA7F3D0)),
                 ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9.0, vertical: 4.0),
-              decoration: BoxDecoration(
-                color: const Color(0xFFECFDF5),
-                borderRadius: BorderRadius.circular(16.0),
-                border: Border.all(color: const Color(0xFFA7F3D0)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.storefront_rounded, size: 12, color: Color(0xFF059669)),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Mitra Ritel',
-                    style: GoogleFonts.outfit(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF059669),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.auto_awesome_rounded, size: 11, color: Color(0xFF059669)),
+                    const SizedBox(width: 3.5),
+                    Text(
+                      '✦ Rakoon AI & Mitra',
+                      style: GoogleFonts.outfit(
+                        fontSize: 10.0,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF059669),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
           ],
         ),
-        const SizedBox(height: 3.0),
-        Text(
-          'Flyer promo offline toko ritel terdekat di Yogyakarta',
-          style: GoogleFonts.outfit(
-            fontSize: 11.5,
-            color: const Color(0xFF6B6B6B),
-          ),
-        ),
-        const SizedBox(height: 12.0),
+        const SizedBox(height: 10.0),
 
-        if (_promoBanners.isEmpty)
-          Container(
-            key: const Key('home_promo_empty_state'),
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20.0),
-              border: Border.all(color: const Color(0xFFE8E4DC), width: 1.0),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 8.0,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Text(
-                'Promo kosong',
-                style: GoogleFonts.outfit(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF6B7280),
-                ),
-              ),
-            ),
-          )
-        else ...[
-          // Carousel Slider
-          SizedBox(
-            height: 195,
-            child: PageView.builder(
+        SizedBox(
+          height: 200,
+          child: PageView.builder(
             controller: _bannerPageController,
             physics: const BouncingScrollPhysics(),
-            itemCount: _promoBanners.length,
+            itemCount: totalSlides,
             onPageChanged: (idx) {
               setState(() {
                 _currentBannerIndex = idx;
               });
             },
             itemBuilder: (context, index) {
-              final banner = _promoBanners[index];
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: InteractiveScale(
-                  onTap: () => _showPromoDetailDialog(banner),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(22.0),
-                      border: Border.all(color: const Color(0xFFE8E4DC)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 10.0,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(22.0),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          // Background Image Flyer
-                          Image.network(
-                            banner.bannerUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              color: const Color(0xFFE5E7EB),
-                              child: const Center(
-                                child: Icon(Icons.image_not_supported_outlined, color: Colors.grey, size: 36),
-                              ),
-                            ),
-                          ),
-
-                          // Top Badges
-                          Positioned(
-                            top: 12,
-                            left: 12,
-                            right: 12,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.65),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.location_on_rounded, color: Color(0xFF10B981), size: 12),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '${banner.storeNama} • ${banner.distanceKm.toStringAsFixed(1)} km',
-                                        style: GoogleFonts.outfit(
-                                          color: Colors.white,
-                                          fontSize: 10.5,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF166534),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    'Sisa ${banner.daysLeft} Hari',
-                                    style: GoogleFonts.outfit(
-                                      color: Colors.white,
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Bottom Gradient & Title
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.transparent,
-                                    Colors.black.withValues(alpha: 0.85),
-                                  ],
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    banner.title,
-                                    style: GoogleFonts.outfit(
-                                      color: Colors.white,
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'Ketuk untuk lihat brosur penuh',
-                                        style: GoogleFonts.outfit(
-                                          color: Colors.white.withValues(alpha: 0.8),
-                                          fontSize: 10.5,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 11),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
+              if (index == 0) {
+                return _buildSmartShelfScanSlide();
+              } else {
+                final banner = _promoBanners[index - 1];
+                return _buildPromoBannerSlide(banner);
+              }
             },
           ),
         ),
 
         // Indicator Dots
-        if (_promoBanners.length > 1) ...[
-          const SizedBox(height: 10.0),
+        if (totalSlides > 1) ...[
+          const SizedBox(height: 8.0),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(_promoBanners.length, (idx) {
-              final isCurrent = _currentBannerIndex == idx;
+            children: List.generate(totalSlides, (idx) {
+              final isCurrent = safeIndex == idx;
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
-                margin: const EdgeInsets.symmetric(horizontal: 3.0),
+                margin: const EdgeInsets.symmetric(horizontal: 2.5),
                 height: 5,
                 width: isCurrent ? 18 : 6,
                 decoration: BoxDecoration(
@@ -1439,9 +856,437 @@ class HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ],
-      const SizedBox(height: 22.0),
-    ],
-  );
+    );
+  }
+
+  Widget _buildSmartShelfScanSlide() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2.0),
+      child: InteractiveScale(
+        onTap: _openScanCamera,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0D2818), Color(0xFF1E4830)],
+            ),
+            borderRadius: BorderRadius.circular(22.0),
+            border: Border.all(
+              color: const Color(0xFF2E6644),
+              width: 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 10.0,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              // Left Content
+              Expanded(
+                flex: 6,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Sparkle Pill Badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF163E27),
+                          borderRadius: BorderRadius.circular(16.0),
+                          border: Border.all(
+                            color: const Color(0xFF3B8256),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.auto_awesome_rounded,
+                              color: Color(0xFF86EFAC),
+                              size: 13,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Rakoon AI',
+                              style: GoogleFonts.outfit(
+                                color: const Color(0xFF86EFAC),
+                                fontSize: 11.0,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      Text(
+                        'Smart Shelf Scan\nPindai Rak Belanja',
+                        style: GoogleFonts.outfit(
+                          fontSize: 18.0,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          height: 1.2,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        'Temukan harga, bandingkan produk,\ndan belanja lebih hemat dengan AI.',
+                        style: GoogleFonts.outfit(
+                          fontSize: 11.0,
+                          color: Colors.white.withValues(alpha: 0.82),
+                          height: 1.3,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Action Button "Mulai Scan"
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14.0,
+                          vertical: 8.0,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981),
+                          borderRadius: BorderRadius.circular(24.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                              blurRadius: 10.0,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Mulai Scan',
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            const Icon(
+                              Icons.arrow_forward_rounded,
+                              color: Colors.white,
+                              size: 13,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // Right Illustration with Real Product Assets & Scanner Mockup
+              Expanded(
+                flex: 4,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: SizedBox(
+                    width: 115,
+                    height: 135,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      clipBehavior: Clip.none,
+                      children: [
+                        // Phone Scanner Mockup Container in Deep Forest Green
+                        Container(
+                          width: 82,
+                          height: 112,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFF081C10), Color(0xFF163E27)],
+                            ),
+                            borderRadius: BorderRadius.circular(16.0),
+                            border: Border.all(
+                              color: const Color(0xFF34D399),
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 8.0,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Product Being Scanned inside viewfinder (Indomie)
+                              Padding(
+                                padding: const EdgeInsets.all(10.0),
+                                child: Image.asset(
+                                  BrandAssets.indomie,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) => const Icon(
+                                    Icons.qr_code_scanner_rounded,
+                                    color: Color(0xFF7BAE8E),
+                                    size: 38,
+                                  ),
+                                ),
+                              ),
+                              // Green Scan Light Bar
+                              Positioned(
+                                top: 36,
+                                left: 8,
+                                right: 8,
+                                child: Container(
+                                  height: 2,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF10B981),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.8),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Floating Ultra Milk Miniature Badge
+                        Positioned(
+                          left: -4,
+                          top: 10,
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: const Color(0xFFE8E4DC), width: 1),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.08),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Image.asset(
+                              BrandAssets.ultramilk,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                            ),
+                          ),
+                        ),
+
+                        // Floating Bimoli Miniature Badge
+                        Positioned(
+                          left: 2,
+                          bottom: 12,
+                          child: Container(
+                            width: 26,
+                            height: 26,
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: const Color(0xFFE8E4DC), width: 1),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.08),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Image.asset(
+                              BrandAssets.bimoli,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                            ),
+                          ),
+                        ),
+
+                        // Mascot Peeking
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Image.asset(
+                            BrandAssets.rakoonLogo,
+                            height: 58,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPromoBannerSlide(HomePromoBanner banner) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2.0),
+      child: InteractiveScale(
+        onTap: () => _showPromoDetailDialog(banner),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20.0),
+            border: Border.all(color: const Color(0xFFE8E4DC)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10.0,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20.0),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Background Image Flyer
+                Image.network(
+                  banner.bannerUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: const Color(0xFFE5E7EB),
+                    child: const Center(
+                      child: Icon(Icons.image_not_supported_outlined, color: Colors.grey, size: 36),
+                    ),
+                  ),
+                ),
+
+                // Top Badges
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  right: 8,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.65),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.location_on_rounded, color: Color(0xFF10B981), size: 11),
+                            const SizedBox(width: 3.5),
+                            Text(
+                              '${banner.storeNama} • ${banner.distanceKm.toStringAsFixed(1)} km',
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF166534),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          'Sisa ${banner.daysLeft} Hari',
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Bottom Gradient & Title
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 9.0),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.85),
+                        ],
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          banner.title,
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 1),
+                        Row(
+                          children: [
+                            Text(
+                              'Ketuk untuk lihat brosur',
+                              style: GoogleFonts.outfit(
+                                color: Colors.white.withValues(alpha: 0.8),
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                            const SizedBox(width: 3),
+                            const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 10),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _showPromoDetailDialog(HomePromoBanner banner) {
@@ -1932,99 +1777,62 @@ class HomeScreenState extends State<HomeScreen> {
   }
 }
 
-/// Colorful Quick Action Button Item with Rounded-3xl Card & Active Scale
-class _ColorfulQuickActionButton extends StatelessWidget {
+/// Flat Circular Quick Action Button Item (Gojek/Grab Style, no outer border)
+class _QuickActionCircleButton extends StatelessWidget {
   final IconData icon;
-  final Gradient gradient;
+  final Color circleColor;
   final Color iconColor;
   final String title;
-  final String subtitle;
   final VoidCallback onTap;
-  final Widget? trailingWidget;
 
-  const _ColorfulQuickActionButton({
+  const _QuickActionCircleButton({
     required this.icon,
-    required this.gradient,
+    required this.circleColor,
     required this.iconColor,
     required this.title,
-    required this.subtitle,
     required this.onTap,
-    this.trailingWidget,
   });
 
   @override
   Widget build(BuildContext context) {
     return InteractiveScale(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24.0),
-          border: Border.all(
-            color: const Color(0xFFE8E4DC),
-            width: 1.0,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 8.0,
-              offset: const Offset(0, 2),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: circleColor,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                gradient: gradient,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
+            child: Center(
               child: Icon(
                 icon,
                 color: iconColor,
-                size: 22,
+                size: 24,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
-                fontSize: 12.0,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF0D2818),
-              ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.outfit(
+              fontSize: 12.0,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF0D2818),
             ),
-            const SizedBox(height: 2),
-            if (trailingWidget != null) ...[
-              trailingWidget!,
-              const SizedBox(height: 3),
-            ],
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.outfit(
-                fontSize: 9.5,
-                color: const Color(0xFF6B6B6B),
-                fontWeight: FontWeight.w400,
-                height: 1.2,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
