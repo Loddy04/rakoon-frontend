@@ -25,7 +25,8 @@ class MerchantDashboardPage extends StatefulWidget {
   State<MerchantDashboardPage> createState() => _MerchantDashboardPageState();
 }
 
-class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
+class _MerchantDashboardPageState extends State<MerchantDashboardPage>
+    with WidgetsBindingObserver {
   bool _isLoading = true;
   String? _errorMessage;
   MyStoreData? _myStoreData;
@@ -37,14 +38,30 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadData();
   }
 
-  Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadData(silent: true);
+    }
+  }
+
+  Future<void> _loadData({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
     try {
       final storeData = await AdsService.getMyStore(
@@ -68,7 +85,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
         setState(() {
           _myStoreData = storeData;
           _availableStores = stores;
-          if (stores.isNotEmpty) {
+          if (stores.isNotEmpty && _selectedStoreId == null) {
             _selectedStoreId = stores.first.storeId;
           }
           _isLoading = false;
@@ -77,7 +94,9 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Gagal memuat data toko: ${e.toString().replaceFirst("Exception: ", "")}';
+          if (!silent) {
+            _errorMessage = 'Gagal memuat data toko: ${e.toString().replaceFirst("Exception: ", "")}';
+          }
           _isLoading = false;
         });
       }
@@ -168,7 +187,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
         client: widget.httpClient,
       );
       if (mounted) {
-        showDialog(
+        await showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -244,6 +263,9 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
             ],
           ),
         );
+        if (mounted) {
+          _handleCheckPaymentStatus(c, showToastOnPending: false);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -257,7 +279,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
     }
   }
 
-  Future<void> _handleCheckPaymentStatus(HomePromoBanner c) async {
+  Future<void> _handleCheckPaymentStatus(HomePromoBanner c, {bool showToastOnPending = true}) async {
     try {
       final statusData = await AdsService.getPaymentStatus(
         campaignId: c.id,
@@ -266,16 +288,18 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
       );
       if (mounted) {
         final isPaid = statusData.paymentStatus == 'paid' || statusData.transactionStatus == 'PAID';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isPaid
-                  ? 'Pembayaran berhasil diverifikasi! Iklan telah aktif.'
-                  : 'Status: Menunggu Pembayaran (${statusData.transactionStatus ?? "PENDING"})',
+        if (isPaid || showToastOnPending) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isPaid
+                    ? 'Pembayaran berhasil diverifikasi! Iklan telah aktif.'
+                    : 'Status: Menunggu Pembayaran (${statusData.transactionStatus ?? "PENDING"})',
+              ),
+              backgroundColor: isPaid ? const Color(0xFF166534) : const Color(0xFFB45309),
             ),
-            backgroundColor: isPaid ? const Color(0xFF166534) : const Color(0xFFB45309),
-          ),
-        );
+          );
+        }
         if (isPaid) {
           _loadData();
         }
