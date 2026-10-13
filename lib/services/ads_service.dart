@@ -207,6 +207,15 @@ class PendingStoreClaimData {
   final String status;
   final String createdAt;
   final bool hasVerifiedOwner;
+  final String? submissionId;
+  final String claimType; // "claim" atau "new_store"
+  final String? applicantName;
+  final String? applicantPhone;
+  final String? applicantRole;
+  final String? businessEntityName;
+  final String? storeCategory;
+  final String? documentUrl;
+  final String? storePhotoUrl;
 
   const PendingStoreClaimData({
     required this.userId,
@@ -218,6 +227,15 @@ class PendingStoreClaimData {
     required this.status,
     required this.createdAt,
     this.hasVerifiedOwner = false,
+    this.submissionId,
+    this.claimType = 'claim',
+    this.applicantName,
+    this.applicantPhone,
+    this.applicantRole,
+    this.businessEntityName,
+    this.storeCategory,
+    this.documentUrl,
+    this.storePhotoUrl,
   });
 
   factory PendingStoreClaimData.fromJson(Map<String, dynamic> json) {
@@ -231,6 +249,71 @@ class PendingStoreClaimData {
       status: json['status'] as String? ?? 'pending',
       createdAt: json['created_at'] as String? ?? '',
       hasVerifiedOwner: json['has_verified_owner'] as bool? ?? false,
+      submissionId: json['submission_id'] as String?,
+      claimType: json['claim_type'] as String? ?? 'claim',
+      applicantName: json['applicant_name'] as String?,
+      applicantPhone: json['applicant_phone'] as String?,
+      applicantRole: json['applicant_role'] as String?,
+      businessEntityName: json['business_entity_name'] as String?,
+      storeCategory: json['store_category'] as String?,
+      documentUrl: json['document_url'] as String?,
+      storePhotoUrl: json['store_photo_url'] as String?,
+    );
+  }
+}
+
+class UserSubmissionData {
+  final String id;
+  final String submissionType; // "claim" atau "new_store"
+  final String? storeId;
+  final String storeName;
+  final String? storeAddress;
+  final String? storeCategory;
+  final String? businessEntityName;
+  final String? applicantName;
+  final String? applicantPhone;
+  final String? applicantRole;
+  final String? documentUrl;
+  final String? storePhotoUrl;
+  final String status; // "pending", "under_review", "verified", "rejected"
+  final String? rejectionReason;
+  final String createdAt;
+
+  const UserSubmissionData({
+    required this.id,
+    required this.submissionType,
+    this.storeId,
+    required this.storeName,
+    this.storeAddress,
+    this.storeCategory,
+    this.businessEntityName,
+    this.applicantName,
+    this.applicantPhone,
+    this.applicantRole,
+    this.documentUrl,
+    this.storePhotoUrl,
+    required this.status,
+    this.rejectionReason,
+    required this.createdAt,
+  });
+
+  factory UserSubmissionData.fromJson(Map<String, dynamic> json) {
+    return UserSubmissionData(
+      id: json['id'] as String? ?? '',
+      submissionType: json['submission_type'] as String? ?? 'claim',
+      storeId: json['store_id'] as String?,
+      storeName: json['store_name'] as String? ?? '',
+      storeAddress: json['store_address'] as String?,
+      storeCategory: json['store_category'] as String?,
+      businessEntityName: json['business_entity_name'] as String?,
+      applicantName: json['applicant_name'] as String?,
+      applicantPhone: json['applicant_phone'] as String?,
+      applicantRole: json['applicant_role'] as String?,
+      documentUrl: json['document_url'] as String?,
+      storePhotoUrl: json['store_photo_url'] as String?,
+      status: json['status'] as String? ?? 'pending',
+      rejectionReason: json['rejection_reason'] as String?,
+      createdAt: json['created_at'] as String? ?? '',
     );
   }
 }
@@ -244,6 +327,10 @@ class MyStoreData {
   final double? storeLat;
   final double? storeLng;
   final String? rejectionReason;
+  final String? applicantName;
+  final String? applicantRole;
+  final String? documentUrl;
+  final String? storePhotoUrl;
   final List<HomePromoBanner> campaigns;
 
   const MyStoreData({
@@ -255,6 +342,10 @@ class MyStoreData {
     this.storeLat,
     this.storeLng,
     this.rejectionReason,
+    this.applicantName,
+    this.applicantRole,
+    this.documentUrl,
+    this.storePhotoUrl,
     this.campaigns = const [],
   });
 
@@ -269,6 +360,10 @@ class MyStoreData {
       storeLat: (json['store_lat'] as num?)?.toDouble(),
       storeLng: (json['store_lng'] as num?)?.toDouble(),
       rejectionReason: json['rejection_reason'] as String?,
+      applicantName: json['applicant_name'] as String?,
+      applicantRole: json['applicant_role'] as String?,
+      documentUrl: json['document_url'] as String?,
+      storePhotoUrl: json['store_photo_url'] as String?,
       campaigns: list
           .map((e) => HomePromoBanner.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -390,9 +485,14 @@ class AdsService {
     }
   }
 
-  /// Mengklaim toko yang dipilih oleh pemilik toko
+  /// Mengklaim toko yang dipilih oleh pemilik toko (Jalur A: Klaim Toko Terdaftar)
   static Future<MyStoreData> claimStore({
     required String storeId,
+    String? applicantName,
+    String? applicantPhone,
+    String? applicantRole,
+    String? documentUrl,
+    String? storePhotoUrl,
     String? baseUrl,
     http.Client? client,
   }) async {
@@ -412,7 +512,14 @@ class AdsService {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: jsonEncode({'store_id': storeId}),
+        body: jsonEncode({
+          'store_id': storeId,
+          if (applicantName != null && applicantName.trim().isNotEmpty) 'applicant_name': applicantName.trim(),
+          if (applicantPhone != null && applicantPhone.trim().isNotEmpty) 'applicant_phone': applicantPhone.trim(),
+          if (applicantRole != null && applicantRole.trim().isNotEmpty) 'applicant_role': applicantRole.trim(),
+          if (documentUrl != null && documentUrl.trim().isNotEmpty) 'document_url': documentUrl.trim(),
+          if (storePhotoUrl != null && storePhotoUrl.trim().isNotEmpty) 'store_photo_url': storePhotoUrl.trim(),
+        }),
       );
 
       if (response.statusCode == 200) {
@@ -424,6 +531,199 @@ class AdsService {
       if (client == null) {
         httpClient.close();
       }
+    }
+  }
+
+  /// Mengajukan pendaftaran toko baru (Jalur B: Pengajuan Toko Baru)
+  static Future<UserSubmissionData> submitNewStore({
+    required String storeName,
+    required String storeAddress,
+    required String applicantName,
+    required String applicantPhone,
+    required String applicantRole,
+    String? businessEntityName,
+    String? storeCategory,
+    String? documentUrl,
+    String? storePhotoUrl,
+    String? baseUrl,
+    http.Client? client,
+  }) async {
+    final token = AuthService.currentSession?.accessToken;
+    if (token == null) {
+      throw Exception('Silakan masuk akun terlebih dahulu.');
+    }
+
+    final effectiveBase = _resolveBaseUrl(baseUrl);
+    final httpClient = client ?? http.Client();
+
+    try {
+      final response = await httpClient.post(
+        Uri.parse('$effectiveBase/ads/submit-new-store'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'store_name': storeName.trim(),
+          'store_address': storeAddress.trim(),
+          'applicant_name': applicantName.trim(),
+          'applicant_phone': applicantPhone.trim(),
+          'applicant_role': applicantRole.trim(),
+          if (businessEntityName != null && businessEntityName.trim().isNotEmpty)
+            'business_entity_name': businessEntityName.trim(),
+          if (storeCategory != null && storeCategory.trim().isNotEmpty)
+            'store_category': storeCategory.trim(),
+          if (documentUrl != null && documentUrl.trim().isNotEmpty)
+            'document_url': documentUrl.trim(),
+          if (storePhotoUrl != null && storePhotoUrl.trim().isNotEmpty)
+            'store_photo_url': storePhotoUrl.trim(),
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        return UserSubmissionData.fromJson(jsonDecode(response.body));
+      } else {
+        throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal mengajukan toko baru.'));
+      }
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
+  }
+
+  /// Mengambil daftar seluruh riwayat pengajuan kepemilikan dan pendaftaran toko milik pengguna
+  static Future<List<UserSubmissionData>> getMySubmissions({
+    String? baseUrl,
+    http.Client? client,
+  }) async {
+    final token = AuthService.currentSession?.accessToken;
+    if (token == null) {
+      return [];
+    }
+
+    final effectiveBase = _resolveBaseUrl(baseUrl);
+    final httpClient = client ?? http.Client();
+
+    try {
+      final response = await httpClient.get(
+        Uri.parse('$effectiveBase/ads/my-submissions'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> list = jsonDecode(response.body);
+        return list.map((e) => UserSubmissionData.fromJson(e as Map<String, dynamic>)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
+  }
+
+  /// Mengunggah berkas dokumen legalitas usaha (NIB, dsb) secara aman ke private storage backend
+  static Future<String> uploadClaimDocument({
+    required Uint8List bytes,
+    required String filename,
+    String? baseUrl,
+    http.Client? client,
+  }) async {
+    final token = AuthService.currentSession?.accessToken;
+    if (token == null) {
+      throw Exception('Silakan masuk akun terlebih dahulu.');
+    }
+
+    final effectiveBase = _resolveBaseUrl(baseUrl);
+    final uri = Uri.parse('$effectiveBase/ads/upload-claim-document');
+
+    final request = http.MultipartRequest('POST', uri)
+      ..headers['Authorization'] = 'Bearer $token';
+
+    final lowerName = filename.toLowerCase();
+    MediaType mediaType;
+    if (lowerName.endsWith('.pdf')) {
+      mediaType = MediaType('application', 'pdf');
+    } else if (lowerName.endsWith('.png')) {
+      mediaType = MediaType('image', 'png');
+    } else if (lowerName.endsWith('.webp')) {
+      mediaType = MediaType('image', 'webp');
+    } else {
+      mediaType = MediaType('image', 'jpeg');
+    }
+
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'file',
+        bytes,
+        filename: filename,
+        contentType: mediaType,
+      ),
+    );
+
+    final streamedResponse = await (client ?? http.Client()).send(request);
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return data['document_url'] as String;
+    } else {
+      throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal mengunggah dokumen legalitas.'));
+    }
+  }
+
+  /// Mengunggah foto tampak depan toko yang memperlihatkan papan nama
+  static Future<String> uploadClaimPhoto({
+    required Uint8List bytes,
+    required String filename,
+    String? baseUrl,
+    http.Client? client,
+  }) async {
+    final token = AuthService.currentSession?.accessToken;
+    if (token == null) {
+      throw Exception('Silakan masuk akun terlebih dahulu.');
+    }
+
+    final effectiveBase = _resolveBaseUrl(baseUrl);
+    final uri = Uri.parse('$effectiveBase/ads/upload-claim-photo');
+
+    final request = http.MultipartRequest('POST', uri)
+      ..headers['Authorization'] = 'Bearer $token';
+
+    final lowerName = filename.toLowerCase();
+    MediaType mediaType;
+    if (lowerName.endsWith('.png')) {
+      mediaType = MediaType('image', 'png');
+    } else if (lowerName.endsWith('.webp')) {
+      mediaType = MediaType('image', 'webp');
+    } else {
+      mediaType = MediaType('image', 'jpeg');
+    }
+
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'file',
+        bytes,
+        filename: filename,
+        contentType: mediaType,
+      ),
+    );
+
+    final streamedResponse = await (client ?? http.Client()).send(request);
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return data['photo_url'] as String;
+    } else {
+      throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal mengunggah foto toko.'));
     }
   }
 
@@ -705,6 +1005,86 @@ class AdsService {
         return MyStoreData.fromJson(jsonDecode(response.body));
       } else {
         throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal menolak klaim toko.'));
+      }
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
+  }
+
+  /// Menyetujui pengajuan toko baru (Admin only)
+  static Future<Map<String, dynamic>> verifyNewStore({
+    required String submissionId,
+    String? baseUrl,
+    http.Client? client,
+  }) async {
+    final token = AuthService.currentSession?.accessToken;
+    if (token == null) {
+      throw Exception('Silakan masuk akun terlebih dahulu.');
+    }
+
+    final effectiveBase = _resolveBaseUrl(baseUrl);
+    final httpClient = client ?? http.Client();
+
+    try {
+      final response = await httpClient.post(
+        Uri.parse('$effectiveBase/ads/verify-new-store'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'submission_id': submissionId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal menyetujui pengajuan toko baru.'));
+      }
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
+  }
+
+  /// Menolak pengajuan toko baru (Admin only)
+  static Future<Map<String, dynamic>> rejectNewStore({
+    required String submissionId,
+    String? reason,
+    String? baseUrl,
+    http.Client? client,
+  }) async {
+    final token = AuthService.currentSession?.accessToken;
+    if (token == null) {
+      throw Exception('Silakan masuk akun terlebih dahulu.');
+    }
+
+    final effectiveBase = _resolveBaseUrl(baseUrl);
+    final httpClient = client ?? http.Client();
+
+    try {
+      final response = await httpClient.post(
+        Uri.parse('$effectiveBase/ads/reject-new-store'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'submission_id': submissionId,
+          if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal menolak pengajuan toko baru.'));
       }
     } finally {
       if (client == null) {
