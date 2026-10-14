@@ -682,6 +682,70 @@ void main() {
         tempDir.deleteSync(recursive: true);
       }
     });
+
+    test('ScanService.scanPhoto maps 401 to login prompt message without raw response body', () async {
+      final client401 = MockClient((request) async {
+        return http.Response(jsonEncode({'detail': 'Not authenticated or token expired'}), 401);
+      });
+
+      final tempDir = Directory.systemTemp.createTempSync();
+      final tempFile = File('${tempDir.path}/test_scan.jpg')..writeAsBytesSync([0, 1, 2]);
+
+      try {
+        expect(
+          () => ScanService.scanPhoto(
+            tempFile,
+            baseUrl: 'http://localhost:8000',
+            client: client401,
+          ),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              allOf(
+                contains('Sesi telah berakhir, silakan login ulang'),
+                isNot(contains('detail')),
+                isNot(contains('token expired')),
+              ),
+            ),
+          ),
+        );
+      } finally {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    test('ScanService.scanPhoto maps 429 to rate limit message without raw response body', () async {
+      final client429 = MockClient((request) async {
+        return http.Response(jsonEncode({'detail': 'Rate limit exceeded: 5 requests per minute'}), 429);
+      });
+
+      final tempDir = Directory.systemTemp.createTempSync();
+      final tempFile = File('${tempDir.path}/test_scan.jpg')..writeAsBytesSync([0, 1, 2]);
+
+      try {
+        expect(
+          () => ScanService.scanPhoto(
+            tempFile,
+            baseUrl: 'http://localhost:8000',
+            client: client429,
+          ),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              allOf(
+                contains('Terlalu banyak scan, coba lagi nanti'),
+                isNot(contains('detail')),
+                isNot(contains('5 requests')),
+              ),
+            ),
+          ),
+        );
+      } finally {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
   });
 }
 

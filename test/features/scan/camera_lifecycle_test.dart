@@ -406,5 +406,87 @@ void main() {
       expect(scanEndpointCalled, isTrue);
       expect(capturedAuthHeader, 'Bearer authenticated-user-token-123');
     });
+
+    testWidgets('ScanCameraScreen displays friendly message on 401 without raw response body', (tester) async {
+      AuthService.mockSession = Session(
+        accessToken: 'expired-token',
+        tokenType: 'bearer',
+        user: User(
+          id: 'user-1',
+          appMetadata: {},
+          userMetadata: {},
+          aud: 'authenticated',
+          createdAt: DateTime.now().toIso8601String(),
+          email: 'user@rakoon.app',
+        ),
+      );
+
+      final client = MockClient((request) async {
+        return http.Response(jsonEncode({'detail': 'Token expired, authentication failed'}), 401);
+      });
+
+      final mockPicker = MockImagePicker(fileToReturn: XFile(mockPhotoFile.path));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ScanCameraScreen(
+            baseUrl: 'http://localhost:8000',
+            httpClient: client,
+            imagePicker: mockPicker,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('gallery_picker_fallback_btn')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(find.text('Analisis Gagal'), findsOneWidget);
+      expect(find.text('Sesi telah berakhir, silakan login ulang'), findsOneWidget);
+      expect(find.textContaining('Token expired'), findsNothing);
+      expect(find.textContaining('detail'), findsNothing);
+    });
+
+    testWidgets('ScanCameraScreen displays friendly message on 429 without raw response body', (tester) async {
+      AuthService.mockSession = Session(
+        accessToken: 'valid-token',
+        tokenType: 'bearer',
+        user: User(
+          id: 'user-1',
+          appMetadata: {},
+          userMetadata: {},
+          aud: 'authenticated',
+          createdAt: DateTime.now().toIso8601String(),
+          email: 'user@rakoon.app',
+        ),
+      );
+
+      final client = MockClient((request) async {
+        return http.Response(jsonEncode({'detail': 'Too many requests, rate limited'}), 429);
+      });
+
+      final mockPicker = MockImagePicker(fileToReturn: XFile(mockPhotoFile.path));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ScanCameraScreen(
+            baseUrl: 'http://localhost:8000',
+            httpClient: client,
+            imagePicker: mockPicker,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('gallery_picker_fallback_btn')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(find.text('Analisis Gagal'), findsOneWidget);
+      expect(find.text('Terlalu banyak scan, coba lagi nanti'), findsOneWidget);
+      expect(find.textContaining('rate limited'), findsNothing);
+      expect(find.textContaining('detail'), findsNothing);
+    });
   });
 }

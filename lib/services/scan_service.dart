@@ -122,8 +122,12 @@ class ScanService {
         }
         
         return detectedJson.map((item) => ScanResultItem.fromJson(item)).toList();
+      } else if (response.statusCode == 401) {
+        throw Exception('Sesi telah berakhir, silakan login ulang');
+      } else if (response.statusCode == 429) {
+        throw Exception('Terlalu banyak scan, coba lagi nanti');
       } else {
-        throw Exception('Server mengembalikan error (HTTP ${response.statusCode})');
+        throw Exception('Gagal memproses scan. Silakan coba lagi nanti.');
       }
     } on SocketException {
       throw const SocketException('Tidak dapat terhubung ke server. Silakan periksa koneksi internet Anda atau Base URL backend.');

@@ -1011,6 +1011,7 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   /// Backward-compatible alias
+  // ignore: unused_element
   Widget _buildSmartShelfScanSlide() => _buildSmartShelfScanCard();
 
   /// Standalone Hero Feature Card "Smart Shelf Scan" (Fitur Utama Rakoon AI)
