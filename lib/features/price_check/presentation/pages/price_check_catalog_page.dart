@@ -6,6 +6,7 @@ import 'package:rakoon_frontend/features/price_check/presentation/pages/unified_
 import 'package:rakoon_frontend/features/price_check/presentation/providers/price_check_provider.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
 import 'package:rakoon_frontend/widgets/interactive_scale.dart';
+import 'package:rakoon_frontend/widgets/price_freshness_label.dart';
 import 'package:rakoon_frontend/widgets/product_card.dart';
 
 class PriceCheckCatalogPage extends StatefulWidget {
@@ -339,10 +340,23 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
                                     fotoUrl: catalogItem.fotoUrl,
                                   );
 
-                                  return ProductCard(
-                                    product: recommendedProd,
-                                    onTap: () => _navigateToDetail(recommendedProd),
-                                    width: double.infinity,
+                                  return Stack(
+                                    children: [
+                                      ProductCard(
+                                        product: recommendedProd,
+                                        onTap: () => _navigateToDetail(recommendedProd),
+                                        width: double.infinity,
+                                      ),
+                                      if (catalogItem.stale)
+                                        Positioned(
+                                          top: 8,
+                                          left: 8,
+                                          child: PriceFreshnessLabel(
+                                            isStale: catalogItem.stale,
+                                            updatedAt: catalogItem.updatedAt,
+                                          ),
+                                        ),
+                                    ],
                                   );
                                 },
                                 childCount: _priceCheckProvider.products.length,

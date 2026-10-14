@@ -1,10 +1,14 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:rakoon_frontend/features/price_check/data/models/product_catalog_model.dart';
 import 'package:rakoon_frontend/features/price_check/presentation/pages/price_check_catalog_page.dart';
 import 'package:rakoon_frontend/features/price_check/presentation/pages/unified_product_price_detail_page.dart';
 import 'package:rakoon_frontend/features/price_check/presentation/providers/price_check_provider.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
+import 'package:rakoon_frontend/widgets/price_freshness_label.dart';
 
 void main() {
   group('PriceCheck Model & Provider Tests', () {
@@ -34,6 +38,41 @@ void main() {
       expect(product.jumlahToko, 3);
       expect(product.fotoUrl, 'http://example.com/indomie.png');
       expect(product.updatedAt, '2026-08-11T18:33:27Z');
+      expect(product.stale, isFalse);
+    });
+
+    test('CatalogProduct.fromJson parses stale and updated_at, defaults to false when omitted', () {
+      final staleJson = {
+        'id': 'p124',
+        'nama': 'Minyak Goreng 2L',
+        'kategori': 'Makanan Pokok',
+        'harga_terendah': 34000.0,
+        'updated_at': '2026-01-10T00:00:00Z',
+        'stale': true,
+      };
+      final staleProduct = CatalogProduct.fromJson(staleJson);
+      expect(staleProduct.stale, isTrue);
+      expect(staleProduct.updatedAt, '2026-01-10T00:00:00Z');
+
+      final freshJson = {
+        'id': 'p125',
+        'nama': 'Beras 5kg',
+        'kategori': 'Makanan Pokok',
+        'harga_terendah': 68000.0,
+        'updated_at': '2026-10-10T00:00:00Z',
+        'stale': false,
+      };
+      final freshProduct = CatalogProduct.fromJson(freshJson);
+      expect(freshProduct.stale, isFalse);
+
+      final omittedJson = {
+        'id': 'p126',
+        'nama': 'Gula Pasir 1kg',
+        'kategori': 'Makanan Pokok',
+        'harga_terendah': 17500.0,
+      };
+      final omittedProduct = CatalogProduct.fromJson(omittedJson);
+      expect(omittedProduct.stale, isFalse);
     });
 
     test('PriceCheckProvider initializes with default categories and search query', () {
@@ -238,6 +277,58 @@ void main() {
 
       // Displays fallback shopping bag icon
       expect(find.byIcon(Icons.shopping_bag_outlined), findsOneWidget);
+    });
+
+    testWidgets('PriceCheckCatalogPage renders PriceFreshnessLabel for stale products and omits for fresh ones', (tester) async {
+      final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/products')) {
+          return http.Response(
+            jsonEncode([
+              {
+                'id': 'stale-1',
+                'nama': 'Minyak Goreng Sawit 2L',
+                'kategori': 'Makanan Pokok',
+                'harga_terendah': 34000.0,
+                'nama_toko_terendah': 'Indomaret',
+                'jumlah_toko': 2,
+                'updated_at': '2026-01-10T00:00:00Z',
+                'stale': true,
+              },
+              {
+                'id': 'fresh-1',
+                'nama': 'Beras Premium 5kg',
+                'kategori': 'Makanan Pokok',
+                'harga_terendah': 68000.0,
+                'nama_toko_terendah': 'Alfamart',
+                'jumlah_toko': 1,
+                'updated_at': '2026-10-10T00:00:00Z',
+                'stale': false,
+              },
+            ]),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        return http.Response('[]', 200);
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PriceCheckCatalogPage(
+            baseUrl: 'http://localhost:8000',
+            httpClient: mockClient,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify that PriceFreshnessLabel appears for the stale item
+      expect(find.byType(PriceFreshnessLabel), findsOneWidget);
+      expect(find.text('Harga per 10 Jan 2026'), findsOneWidget);
+
+      // Verify that both products render
+      expect(find.text('Minyak Goreng Sawit 2L'), findsOneWidget);
+      expect(find.text('Beras Premium 5kg'), findsOneWidget);
     });
   });
 }

@@ -9,6 +9,7 @@ class CatalogProduct {
   final int jumlahToko;
   final String? fotoUrl;
   final String? updatedAt;
+  final bool stale;
 
   CatalogProduct({
     required this.id,
@@ -21,6 +22,7 @@ class CatalogProduct {
     this.jumlahToko = 0,
     this.fotoUrl,
     this.updatedAt,
+    this.stale = false,
   });
 
   factory CatalogProduct.fromJson(Map<String, dynamic> json) {
@@ -35,6 +37,7 @@ class CatalogProduct {
       jumlahToko: json['jumlah_toko'] as int? ?? 0,
       fotoUrl: json['foto_url'] as String?,
       updatedAt: json['updated_at'] as String?,
+      stale: json['stale'] as bool? ?? false,
     );
   }
 
@@ -50,6 +53,7 @@ class CatalogProduct {
       'jumlah_toko': jumlahToko,
       'foto_url': fotoUrl,
       'updated_at': updatedAt,
+      'stale': stale,
     };
   }
 }
