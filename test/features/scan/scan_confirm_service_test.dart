@@ -76,6 +76,63 @@ void main() {
     });
   });
 
+  group('ScanService.confirmScan friendly errors (no raw body)', () {
+    Future<void> confirmWithStatus(int status, String body) {
+      final client = MockClient((request) async => http.Response(body, status));
+      return ScanService.confirmScan(
+        storeId: 'store-1',
+        userId: 'user-uuid-123',
+        items: [_item()],
+        baseUrl: 'http://localhost:8000',
+        client: client,
+      );
+    }
+
+    Future<String> messageOf(int status, String body) async {
+      try {
+        await confirmWithStatus(status, body);
+      } catch (e) {
+        return e.toString().replaceFirst('Exception: ', '');
+      }
+      fail('seharusnya melempar exception untuk status $status');
+    }
+
+    const rawBodies = {
+      'detail string': '{"detail":"Toko tidak ditemukan."}',
+      'pydantic list': '{"detail":[{"type":"greater_than","loc":["body","items",0,"harga"],"msg":"Input should be greater than 0"}]}',
+      'html': '<html><body>Not Found</body></html>',
+      'empty': '',
+    };
+
+    test('404 -> "Toko tidak ditemukan, pilih toko lagi" for any body', () async {
+      for (final entry in rawBodies.entries) {
+        expect(await messageOf(404, entry.value), 'Toko tidak ditemukan, pilih toko lagi', reason: entry.key);
+      }
+    });
+
+    test('422 -> "Ada harga atau jumlah item yang tidak valid" without leaking validation details', () async {
+      for (final entry in rawBodies.entries) {
+        final message = await messageOf(422, entry.value);
+        expect(message, 'Ada harga atau jumlah item yang tidak valid', reason: entry.key);
+        expect(message, isNot(contains('loc')));
+        expect(message, isNot(contains('greater_than')));
+      }
+    });
+
+    test('429 -> "Batas konfirmasi harian tercapai, coba lagi besok" for any body', () async {
+      for (final entry in rawBodies.entries) {
+        expect(await messageOf(429, entry.value), 'Batas konfirmasi harian tercapai, coba lagi besok', reason: entry.key);
+      }
+    });
+
+    test('other errors keep a readable server detail or a generic fallback, never a parse crash', () async {
+      expect(await messageOf(500, '{"detail":"Terjadi kesalahan saat menyimpan konfirmasi scan."}'),
+          'Terjadi kesalahan saat menyimpan konfirmasi scan.');
+      expect(await messageOf(500, '<html>boom</html>'), 'Gagal menyimpan konfirmasi');
+      expect(await messageOf(500, '{"detail":[{"msg":"x"}]}'), 'Gagal menyimpan konfirmasi');
+    });
+  });
+
   group('ScanService.confirmScan response model', () {
     test('returns a model with itemsPendingReview 0 for an old-style response', () async {
       final result = await confirmWith({'items_saved': 1, 'products_created': 0, 'message': 'Berhasil'});

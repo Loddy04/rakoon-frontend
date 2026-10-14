@@ -452,6 +452,35 @@ void main() {
       expect(find.textContaining('menunggu verifikasi'), findsNothing);
     });
 
+    testWidgets('9d. Daily quota (429) shows the friendly message and keeps the user on the screen', (
+      WidgetTester tester,
+    ) async {
+      mockHttpClient = MockClient((request) async {
+        if (request.url.path.endsWith('/stores/nearby')) {
+          return http.Response(
+            jsonEncode({
+              'source': 'osm',
+              'stores': [
+                {'store_id': 'store-test-id-1', 'nama': 'Superindo Dago', 'lat': -6.2088, 'lng': 106.8456, 'jarak_km': 0.8},
+              ],
+              'message': null,
+            }),
+            200,
+          );
+        }
+        if (request.url.path.endsWith('/scan/confirm')) {
+          return http.Response('{"detail":"Kuota konfirmasi harian tercapai (maksimum 200 entri)."}', 429);
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      await saveValidItem(tester);
+
+      expect(find.textContaining('Batas konfirmasi harian tercapai, coba lagi besok'), findsOneWidget);
+      expect(find.textContaining('maksimum 200 entri'), findsNothing);
+      expect(find.text('Simpan Berhasil'), findsNothing);
+    });
+
     // 10. Rapidly tapping "Simpan Hasil Scan" does not stack multiple validation dialogs
     testWidgets('10. Rapidly tapping "Simpan Hasil Scan" does not stack multiple validation dialogs', (
       WidgetTester tester,

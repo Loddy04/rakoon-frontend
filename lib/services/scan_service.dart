@@ -96,6 +96,12 @@ class ConfirmScanResult {
   }
 }
 
+const Map<int, String> _confirmErrorMessages = {
+  404: 'Toko tidak ditemukan, pilih toko lagi',
+  422: 'Ada harga atau jumlah item yang tidak valid',
+  429: 'Batas konfirmasi harian tercapai, coba lagi besok',
+};
+
 class ScanService {
   // Default Base URL for Android / Cloud Backend
   static String defaultBaseUrl = const String.fromEnvironment(
@@ -204,8 +210,16 @@ class ScanService {
       if (response.statusCode == 201) {
         return ConfirmScanResult.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
       } else {
-        final errorData = jsonDecode(response.body);
-        final String errorDetail = errorData['detail'] ?? 'Gagal menyimpan konfirmasi';
+        final friendly = _confirmErrorMessages[response.statusCode];
+        if (friendly != null) {
+          throw Exception(friendly);
+        }
+        // Detail dari server hanya dipakai bila berupa string; body lain (HTML, list validasi) tidak ditampilkan.
+        String errorDetail = 'Gagal menyimpan konfirmasi';
+        try {
+          final detail = (jsonDecode(response.body) as Map<String, dynamic>)['detail'];
+          if (detail is String && detail.isNotEmpty) errorDetail = detail;
+        } catch (_) {}
         throw Exception(errorDetail);
       }
     } on SocketException {
