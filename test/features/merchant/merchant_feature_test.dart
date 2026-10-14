@@ -178,7 +178,50 @@ void main() {
             }),
             200,
           );
-} else if (path.endsWith('/stores/nearby')) {
+        } else if (path.endsWith('/reconcile-payment')) {
+          return http.Response(
+            jsonEncode({
+              "campaign_id": "ad-new-123",
+              "campaign_status": "active",
+              "payment_status": "paid",
+              "transaction_status": "PAID",
+              "external_id": "INV-20261010-ABCD1234",
+              "xendit_invoice_id": "xinv-mock-999",
+              "invoice_url": "https://checkout.xendit.co/inv-mock-999",
+              "amount": 30000,
+              "currency": "IDR",
+            }),
+            200,
+          );
+        } else if (path.endsWith('/reconcile-payments')) {
+          return http.Response(
+            jsonEncode({
+              "is_claimed": true,
+              "store_id": "store-pamela-6",
+              "store_nama": "Pamela 6 Supermarket",
+              "store_alamat": "Jl. Raya Condongcatur No. 12, Sleman",
+              "campaigns": [
+                {
+                  "id": "ad-1",
+                  "store_id": "store-pamela-6",
+                  "store_nama": "Pamela 6 Supermarket",
+                  "store_alamat": "Jl. Raya Condongcatur No. 12, Sleman",
+                  "title": "Promo JSM Minyak Goreng & Beras Hemat",
+                  "banner_url": "https://example.com/flyer1.jpg",
+                  "duration_days": 7,
+                  "price_paid": 30000,
+                  "distance_km": 1.2,
+                  "expires_at": "2026-10-15T00:00:00Z",
+                  "days_left": 5,
+                  "status": "active",
+                  "payment_status": "paid",
+                  "payment_ref": "INV-20261010-ABCD1234"
+                }
+              ]
+            }),
+            200,
+          );
+        } else if (path.endsWith('/stores/nearby')) {
           return http.Response(
             jsonEncode({
               "source": "live",
@@ -549,6 +592,72 @@ void main() {
       expect(status.paymentStatus, 'unpaid');
       expect(status.transactionStatus, 'PENDING');
       expect(status.amount, 30000);
+    });
+
+    test('AdsService.reconcileCampaignPayment sends POST with Authorization and parses status', () async {
+      String? capturedAuthHeader;
+      String? capturedMethod;
+      final checkClient = MockClient((request) async {
+        if (request.url.path.endsWith('/ads/campaigns/ad-new-123/reconcile-payment')) {
+          capturedMethod = request.method;
+          capturedAuthHeader = request.headers['Authorization'];
+          return http.Response(
+            jsonEncode({
+              "campaign_id": "ad-new-123",
+              "campaign_status": "active",
+              "payment_status": "paid",
+              "transaction_status": "PAID",
+              "amount": 30000,
+            }),
+            200,
+          );
+        }
+        return http.Response('{}', 404);
+      });
+
+      final status = await AdsService.reconcileCampaignPayment(
+        campaignId: 'ad-new-123',
+        baseUrl: 'https://api.test',
+        client: checkClient,
+      );
+
+      expect(capturedMethod, 'POST');
+      expect(capturedAuthHeader, 'Bearer test-merchant-token');
+      expect(status.campaignId, 'ad-new-123');
+      expect(status.paymentStatus, 'paid');
+      expect(status.transactionStatus, 'PAID');
+    });
+
+    test('AdsService.reconcileMyStorePayments sends POST with Authorization and parses store data', () async {
+      String? capturedAuthHeader;
+      String? capturedMethod;
+      final checkClient = MockClient((request) async {
+        if (request.url.path.endsWith('/ads/my-store/reconcile-payments')) {
+          capturedMethod = request.method;
+          capturedAuthHeader = request.headers['Authorization'];
+          return http.Response(
+            jsonEncode({
+              "is_claimed": true,
+              "store_id": "store-pamela-6",
+              "store_nama": "Pamela 6 Supermarket",
+              "campaigns": [],
+            }),
+            200,
+          );
+        }
+        return http.Response('{}', 404);
+      });
+
+      final store = await AdsService.reconcileMyStorePayments(
+        baseUrl: 'https://api.test',
+        client: checkClient,
+      );
+
+      expect(capturedMethod, 'POST');
+      expect(capturedAuthHeader, 'Bearer test-merchant-token');
+      expect(store.isClaimed, isTrue);
+      expect(store.storeId, 'store-pamela-6');
+      expect(store.storeNama, 'Pamela 6 Supermarket');
     });
 
     group('Store Claim Rejection Reason & Re-claim Flow Tests', () {
