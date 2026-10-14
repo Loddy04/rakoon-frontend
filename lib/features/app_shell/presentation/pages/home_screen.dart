@@ -709,6 +709,8 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                       MaterialPageRoute(
                                         builder: (context) => BudgetShoppingScreen(
                                           baseUrl: _getBaseUrl(),
+                                          userLat: _userLat,
+                                          userLng: _userLng,
                                         ),
                                       ),
                                     );

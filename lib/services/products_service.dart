@@ -11,6 +11,7 @@ class Product {
   final String? fotoUrl;
 
   final double? estimasiHarga;
+  final String? namaTokoTerendah;
 
   Product({
     required this.id,
@@ -20,6 +21,7 @@ class Product {
     this.satuan,
     this.fotoUrl,
     this.estimasiHarga,
+    this.namaTokoTerendah,
   });
 
   /// Factory constructor to parse product JSON.
@@ -32,6 +34,7 @@ class Product {
       satuan: json['satuan'] as String?,
       fotoUrl: json['foto_url'] as String?,
       estimasiHarga: (json['harga_terendah'] ?? json['harga'] ?? json['estimasi_harga'] as num?)?.toDouble(),
+      namaTokoTerendah: json['nama_toko_terendah'] as String?,
     );
   }
 

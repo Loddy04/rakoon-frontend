@@ -299,6 +299,23 @@ class BudgetResultScreen extends StatelessWidget {
                             ),
                           ],
                         ),
+                        if (store.distanceKm != null) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const Icon(Icons.directions_walk_rounded, size: 16, color: Color(0xFF059669)),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Jarak: ~${store.distanceKm} km dari lokasi Anda',
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF059669),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                         if (store.lat != null && store.lng != null) ...[
                           const SizedBox(height: 8),
                           Row(
@@ -549,7 +566,9 @@ class BudgetResultScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Sisa Budget: ${_formatRupiah(alt.remainingBudget)}',
+                                    alt.storeInfo.distanceKm != null
+                                        ? 'Sisa Budget: ${_formatRupiah(alt.remainingBudget)} • ~${alt.storeInfo.distanceKm} km'
+                                        : 'Sisa Budget: ${_formatRupiah(alt.remainingBudget)}',
                                     style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
                                   ),
                                 ],
