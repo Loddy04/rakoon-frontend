@@ -69,6 +69,41 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
     );
   }
 
+  void _loadMore() {
+    _priceCheckProvider.loadMore(baseUrl: widget.baseUrl, client: widget.httpClient);
+  }
+
+  Widget _buildLoadMoreFooter() {
+    if (_priceCheckProvider.loadMoreError != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+        child: Column(
+          children: [
+            Text(
+              _priceCheckProvider.loadMoreError!,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6B7280)),
+            ),
+            TextButton(onPressed: _loadMore, child: const Text('Coba lagi')),
+          ],
+        ),
+      );
+    }
+    if (_priceCheckProvider.isLoadingMore) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0D2818)),
+          ),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
   void _navigateToDetail(RecommendedProduct product) {
     Navigator.push(
       context,
@@ -285,7 +320,14 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
                   client: widget.httpClient,
                 ),
                 color: const Color(0xFF0D2818),
-                child: ListenableBuilder(
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (n) {
+                    if (n.metrics.axis == Axis.vertical && n.metrics.extentAfter < 400) {
+                      _loadMore();
+                    }
+                    return false;
+                  },
+                  child: ListenableBuilder(
                   listenable: _priceCheckProvider,
                   builder: (context, child) {
                     if (_priceCheckProvider.isLoading) {
@@ -363,12 +405,14 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
                               ),
                             ),
                           ),
+                        SliverToBoxAdapter(child: _buildLoadMoreFooter()),
                         const SliverToBoxAdapter(
                           child: SizedBox(height: 24),
                         ),
                       ],
                     );
                   },
+                  ),
                 ),
               ),
             ),

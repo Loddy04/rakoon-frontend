@@ -14,6 +14,13 @@ class PriceCheckProvider extends ChangeNotifier {
   String _searchQuery = '';
   String _selectedCategory = 'Semua';
 
+  // Infinite scroll state; a page is "full" when it has pageSize items.
+  static const int pageSize = 100;
+  bool _hasMore = false;
+  bool _isLoadingMore = false;
+  String? _loadMoreError;
+  int _generation = 0;
+
   // Product detail state
   PriceCheckStatus _detailStatus = PriceCheckStatus.initial;
   PriceHistoryResponse? _historyResponse;
@@ -48,6 +55,9 @@ class PriceCheckProvider extends ChangeNotifier {
   String get selectedRange => _selectedRange;
 
   bool get isLoading => _status == PriceCheckStatus.loading;
+  bool get isLoadingMore => _isLoadingMore;
+  bool get hasMore => _hasMore;
+  String? get loadMoreError => _loadMoreError;
   bool get isDetailLoading => _detailStatus == PriceCheckStatus.loading;
 
   @override
@@ -72,6 +82,10 @@ class PriceCheckProvider extends ChangeNotifier {
     if (search != null) _searchQuery = search;
     if (category != null) _selectedCategory = category;
 
+    final generation = ++_generation; // invalidates any in-flight loadMore
+    _isLoadingMore = false;
+    _loadMoreError = null;
+    _hasMore = false;
     _status = PriceCheckStatus.loading;
     _errorMessage = null;
     notifyListeners();
@@ -80,19 +94,53 @@ class PriceCheckProvider extends ChangeNotifier {
       final items = await PriceCheckService.getCatalogProducts(
         search: _searchQuery,
         category: _selectedCategory,
+        limit: pageSize,
         baseUrl: baseUrl,
         client: client,
       );
 
-      if (_isDisposed) return;
+      if (_isDisposed || generation != _generation) return;
       _products = items;
+      _hasMore = items.length >= pageSize;
       _status = PriceCheckStatus.success;
     } catch (e) {
-      if (_isDisposed) return;
+      if (_isDisposed || generation != _generation) return;
       _status = PriceCheckStatus.error;
       _errorMessage = 'Gagal memuat katalog: $e';
     } finally {
       if (!_isDisposed) notifyListeners();
+    }
+  }
+
+  /// Loads the next catalog page at offset = items already loaded.
+  /// No-op while loading or when the last page was short.
+  Future<void> loadMore({String? baseUrl, http.Client? client}) async {
+    if (_isLoadingMore || !_hasMore || isLoading) return;
+    final generation = _generation;
+    _isLoadingMore = true;
+    _loadMoreError = null;
+    notifyListeners();
+
+    try {
+      final items = await PriceCheckService.getCatalogProducts(
+        search: _searchQuery,
+        category: _selectedCategory,
+        limit: pageSize,
+        offset: _products.length,
+        baseUrl: baseUrl,
+        client: client,
+      );
+      if (_isDisposed || generation != _generation) return;
+      _products = [..._products, ...items];
+      _hasMore = items.length >= pageSize;
+    } catch (_) {
+      if (_isDisposed || generation != _generation) return;
+      _loadMoreError = 'Gagal memuat produk berikutnya. Periksa koneksi lalu coba lagi.';
+    } finally {
+      if (!_isDisposed && generation == _generation) {
+        _isLoadingMore = false;
+        notifyListeners();
+      }
     }
   }
 

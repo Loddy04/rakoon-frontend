@@ -11,6 +11,7 @@ class PriceCheckService {
     String? search,
     String? category,
     int limit = 100,
+    int offset = 0,
     String? baseUrl,
     http.Client? client,
   }) async {
@@ -23,6 +24,7 @@ class PriceCheckService {
 
     final Map<String, String> queryParams = {
       'limit': limit.toString(),
+      if (offset > 0) 'offset': offset.toString(),
     };
     if (search != null && search.trim().isNotEmpty) {
       queryParams['search'] = search.trim();
@@ -44,8 +46,10 @@ class PriceCheckService {
             .map((e) => CatalogProduct.fromJson(e as Map<String, dynamic>))
             .toList();
       }
+      if (offset > 0) throw Exception('catalog page failed: ${response.statusCode}');
     } catch (_) {
-      // Return empty list on failure
+      // Follow-up pages must surface failure so an empty list is not mistaken for "no more".
+      if (offset > 0) rethrow;
     }
 
     return [];
