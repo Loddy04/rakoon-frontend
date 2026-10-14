@@ -1683,6 +1683,7 @@ class HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
+                          flex: 3,
                           child: Text(
                             storeName,
                             style: GoogleFonts.outfit(
@@ -1695,12 +1696,17 @@ class HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          _formatDateTime(scan.timestamp),
-                          style: GoogleFonts.outfit(
-                            color: const Color(0xFF9CA3AF),
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w400,
+                        Flexible(
+                          flex: 2,
+                          child: Text(
+                            _formatDateTime(scan.timestamp),
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF9CA3AF),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
