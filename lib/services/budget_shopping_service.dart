@@ -37,6 +37,8 @@ class BudgetItemResult {
   final int qty;
   final double hargaSatuan;
   final double subtotal;
+  final bool stale;
+  final String? tanggalHarga;
 
   BudgetItemResult({
     required this.productId,
@@ -44,6 +46,8 @@ class BudgetItemResult {
     required this.qty,
     required this.hargaSatuan,
     required this.subtotal,
+    this.stale = false,
+    this.tanggalHarga,
   });
 
   factory BudgetItemResult.fromJson(Map<String, dynamic> json) {
@@ -53,6 +57,8 @@ class BudgetItemResult {
       qty: json['qty'] as int? ?? 1,
       hargaSatuan: (json['harga_satuan'] as num? ?? 0).toDouble(),
       subtotal: (json['subtotal'] as num? ?? 0).toDouble(),
+      stale: json['stale'] as bool? ?? false,
+      tanggalHarga: json['tanggal_harga'] as String?,
     );
   }
 }

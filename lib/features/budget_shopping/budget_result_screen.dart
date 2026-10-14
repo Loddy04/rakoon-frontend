@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 import 'package:rakoon_frontend/services/budget_shopping_service.dart';
+import 'package:rakoon_frontend/widgets/price_freshness_label.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
 
 class BudgetResultScreen extends StatelessWidget {
@@ -385,6 +386,10 @@ class BudgetResultScreen extends StatelessWidget {
                                     '${item.qty} x ${_formatRupiah(item.hargaSatuan)}',
                                     style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
                                   ),
+                                  if (item.stale) ...[
+                                    const SizedBox(height: 4),
+                                    PriceFreshnessLabel(isStale: true, updatedAt: item.tanggalHarga),
+                                  ],
                                 ],
                               ),
                             ),

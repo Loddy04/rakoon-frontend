@@ -9,6 +9,7 @@ import 'package:rakoon_frontend/features/budget_shopping/budget_shopping_screen.
 import 'package:rakoon_frontend/features/budget_shopping/budget_result_screen.dart';
 import 'package:rakoon_frontend/features/budget_shopping/utils/budget_parser.dart';
 import 'package:rakoon_frontend/services/budget_shopping_service.dart';
+import 'package:rakoon_frontend/widgets/price_freshness_label.dart';
 
 void main() {
   group('BudgetParser Unit Tests', () {
@@ -266,6 +267,43 @@ void main() {
       );
 
       expect(capturedBudget, 250000.0);
+    });
+  });
+
+  group('Budget stale price', () {
+    test('BudgetItemResult.fromJson parses stale and tanggal_harga, missing stale = false', () {
+      final base = {'product_id': 'c1', 'nama_produk': 'Susu', 'qty': 1, 'harga_satuan': 1000, 'subtotal': 1000};
+      final stale = BudgetItemResult.fromJson({...base, 'stale': true, 'tanggal_harga': '2026-01-10T00:00:00Z'});
+      expect(stale.stale, isTrue);
+      expect(stale.tanggalHarga, '2026-01-10T00:00:00Z');
+      expect(BudgetItemResult.fromJson(base).stale, isFalse);
+    });
+
+    testWidgets('BudgetResultScreen labels only stale items', (tester) async {
+      BudgetItemResult item(String id, bool stale) => BudgetItemResult(
+            productId: id,
+            namaProduk: 'Produk $id',
+            qty: 1,
+            hargaSatuan: 1000.0,
+            subtotal: 1000.0,
+            stale: stale,
+            tanggalHarga: '2026-01-10T00:00:00Z',
+          );
+      final response = BudgetRecommendResponse(
+        budget: 10000.0,
+        totalCost: 2000.0,
+        remainingBudget: 8000.0,
+        isFullMatch: true,
+        recommendedStore: StoreInfoOutput(storeId: '10', nama: 'Indomaret Gatsu'),
+        items: [item('a', true), item('b', false)],
+        explanation: 'ok',
+      );
+
+      await tester.pumpWidget(MaterialApp(home: BudgetResultScreen(result: response)));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PriceFreshnessLabel, skipOffstage: false), findsOneWidget);
+      expect(find.text('Harga per 10 Jan 2026', skipOffstage: false), findsOneWidget);
     });
   });
 
