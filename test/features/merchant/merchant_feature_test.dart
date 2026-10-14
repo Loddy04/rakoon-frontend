@@ -378,13 +378,13 @@ void main() {
 
           await tester.pumpAndSettle();
 
-          expect(find.text('Promo & Fitur'), findsOneWidget);
-          expect(find.text('✦ Rakoon AI & Mitra'), findsOneWidget);
+          // Standalone Smart Shelf Scan hero card is rendered
+          expect(find.text('Smart Shelf Scan\nPindai Rak Belanja'), findsOneWidget);
 
-          // Geser ke slide banner promo (slide 1)
-          await tester.fling(find.byType(PageView), const Offset(-500, 0), 1000);
-          await tester.pumpAndSettle();
+          // Dedicated Promo Toko Sekitarmu section is rendered
+          expect(find.text('Promo Toko Sekitarmu'), findsOneWidget);
 
+          // In the separate promo carousel, the promo banner is visible directly
           expect(find.text('Promo JSM Minyak Goreng & Beras Hemat'), findsOneWidget);
         }, () => mockClient);
       });
@@ -411,9 +411,8 @@ void main() {
 
           await tester.pumpAndSettle();
 
-          expect(find.text('Promo & Fitur'), findsOneWidget);
-          expect(find.text('✦ Rakoon AI & Mitra'), findsNothing);
           expect(find.text('Smart Shelf Scan\nPindai Rak Belanja'), findsOneWidget);
+          expect(find.text('Promo Toko Sekitarmu'), findsNothing);
         }, () => emptyClient);
       });
     });
@@ -511,13 +510,9 @@ void main() {
           await tester.pumpAndSettle();
 
           expect(forwardedIncludeDemo, isTrue);
-          expect(find.text('Promo & Fitur'), findsOneWidget);
-          expect(find.text('✦ Rakoon AI & Mitra'), findsOneWidget);
+          expect(find.text('Promo Toko Sekitarmu'), findsOneWidget);
 
-          // Geser ke slide banner promo demo (slide 1)
-          await tester.fling(find.byType(PageView), const Offset(-500, 0), 1000);
-          await tester.pumpAndSettle();
-
+          // In the separate promo carousel, demo banner is visible directly
           expect(find.text('Promo JSM Minyak Goreng & Beras Super Hemat'), findsOneWidget);
         }, () => demoClient);
       });

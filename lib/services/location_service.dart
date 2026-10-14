@@ -4,9 +4,52 @@ import 'package:geocoding/geocoding.dart';
 
 /// Service that manages device location permissions and fetches current GPS coordinates.
 class LocationService {
+  /// Test override for checking if location service is enabled (for unit/widget tests).
+  static bool? testIsLocationServiceEnabled;
+
+  /// Test callback when openLocationSettings is invoked.
+  static void Function()? onOpenLocationSettings;
+
+  /// Test callback when openAppSettings is invoked.
+  static void Function()? onOpenAppSettings;
+
+  /// Checks if location services (GPS) are enabled on the device.
+  static Future<bool> isLocationServiceEnabled() async {
+    if (testIsLocationServiceEnabled != null) {
+      return testIsLocationServiceEnabled!;
+    }
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return true;
+    }
+    return await Geolocator.isLocationServiceEnabled();
+  }
+
+  /// Opens the device's location service settings screen (GPS toggle).
+  static Future<bool> openLocationSettings() async {
+    onOpenLocationSettings?.call();
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return true;
+    }
+    return await Geolocator.openLocationSettings();
+  }
+
+  /// Opens the app's permission settings screen.
+  static Future<bool> openAppSettings() async {
+    onOpenAppSettings?.call();
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return true;
+    }
+    return await Geolocator.openAppSettings();
+  }
+
   /// Requests GPS permission and returns the current [Position].
   /// Throws a clear user-facing exception on denial or errors.
   static Future<Position> getCurrentLocation() async {
+    if (testIsLocationServiceEnabled == false) {
+      throw const LocationServiceException(
+        'Layanan lokasi (GPS) tidak aktif. Silakan aktifkan GPS pada perangkat Anda.',
+      );
+    }
     if (Platform.environment.containsKey('FLUTTER_TEST')) {
       return Position(
         longitude: 106.8456,

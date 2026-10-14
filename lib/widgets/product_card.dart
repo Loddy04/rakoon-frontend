@@ -238,8 +238,7 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  /// Container gambar produk dengan background netral (#F8F9FA),
-  /// badge "Best Value" di pojok kiri atas, dan ikon bookmark di kanan atas.
+  /// Container gambar produk dengan background netral (#F8F9FA).
   Widget _buildImageContainer() {
     return Container(
       width: double.infinity,
@@ -252,76 +251,11 @@ class ProductCard extends StatelessWidget {
           width: 0.8,
         ),
       ),
-      child: Stack(
-        children: [
-          // Gambar Produk proporsional dengan BoxFit.contain
-          Positioned.fill(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Center(
-                child: _buildProductDisplay(),
-              ),
-            ),
-          ),
-
-          // Badge "Best Value" di pojok kiri atas
-          Positioned(
-            top: 6,
-            left: 6,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7.0, vertical: 3.0),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF0D2818), Color(0xFF2E6644)],
-                ),
-                borderRadius: BorderRadius.circular(8.0),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF0D2818).withValues(alpha: 0.2),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: Text(
-                'Best Value',
-                style: GoogleFonts.outfit(
-                  color: Colors.white,
-                  fontSize: 9.0,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ),
-          ),
-
-          // Ikon bookmark/favorite di pojok kanan atas
-          Positioned(
-            top: 6,
-            right: 6,
-            child: Container(
-              padding: const EdgeInsets.all(4.0),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.9),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.favorite_border_rounded,
-                size: 15,
-                color: Color(0xFF2E6644),
-              ),
-            ),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Center(
+          child: _buildProductDisplay(),
+        ),
       ),
     );
   }

@@ -38,8 +38,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => HomeScreenState();
 }
 
-class HomeScreenState extends State<HomeScreen> {
-  String _locationLabel = 'Pilih Lokasi';
+class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+  String _locationLabel = 'Tidak Terdeteksi';
   double _userLat = -7.7829;
   double _userLng = 110.4083;
 
@@ -56,6 +56,7 @@ class HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _detectLocationAndStore();
     fetchRecentScans();
     fetchRecommendations();
@@ -64,10 +65,18 @@ class HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _recommendationProvider.dispose();
     _catalogProvider.dispose();
     _bannerPageController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _locationLabel == 'Tidak Terdeteksi') {
+      _detectLocationAndStore();
+    }
   }
 
   Future<void> fetchPromoBanners() async {
@@ -173,12 +182,6 @@ class HomeScreenState extends State<HomeScreen> {
         position.latitude,
         position.longitude,
       );
-      await StoresService.getNearbyStores(
-        lat: position.latitude,
-        lng: position.longitude,
-        baseUrl: _getBaseUrl(),
-        client: widget.httpClient,
-      );
 
       if (!mounted) return;
 
@@ -187,6 +190,17 @@ class HomeScreenState extends State<HomeScreen> {
         _userLng = position.longitude;
         _locationLabel = areaName.isNotEmpty ? areaName : 'Lokasi Aktif';
       });
+
+      try {
+        await StoresService.getNearbyStores(
+          lat: position.latitude,
+          lng: position.longitude,
+          baseUrl: _getBaseUrl(),
+          client: widget.httpClient,
+        );
+      } catch (_) {
+        // Network error fetching nearby stores does not invalidate GPS location
+      }
 
       fetchRecommendations(
         lat: position.latitude,
@@ -197,9 +211,152 @@ class HomeScreenState extends State<HomeScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _locationLabel = 'Pilih Lokasi';
+        _locationLabel = 'Tidak Terdeteksi';
       });
     }
+  }
+
+  Future<void> _handleLocationPillTap() async {
+    final isGpsEnabled = await LocationService.isLocationServiceEnabled();
+    if (!isGpsEnabled) {
+      if (!mounted) return;
+      _showEnableLocationBottomSheet();
+      return;
+    }
+
+    // Jika GPS aktif tapi sebelumnya gagal deteksi (misal baru dinyalakan)
+    if (_locationLabel == 'Tidak Terdeteksi') {
+      await _detectLocationAndStore();
+      if (!mounted) return;
+      final isStillGpsEnabled = await LocationService.isLocationServiceEnabled();
+      if (!isStillGpsEnabled) {
+        _showEnableLocationBottomSheet();
+        return;
+      }
+    }
+
+    if (mounted) {
+      _navigateToNearbyStores();
+    }
+  }
+
+  void _showEnableLocationBottomSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24.0)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag Handle
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE5E7EB),
+                  borderRadius: BorderRadius.circular(2.0),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Alert Icon
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFFDE68A), width: 1.5),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.location_off_rounded,
+                    color: Color(0xFFD97706),
+                    size: 28,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              Text(
+                'Layanan Lokasi (GPS) Nonaktif',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(
+                  fontSize: 18.0,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0D2818),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              Text(
+                'Layanan lokasi pada perangkat Anda belum aktif. Silakan aktifkan GPS agar Rakoon dapat mendeteksi supermarket terdekat dan menampilkan promo serta perbandingan harga di sekitar Anda secara otomatis.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(
+                  fontSize: 13.0,
+                  color: const Color(0xFF6B6B6B),
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Primary Action: Open Location Settings
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await LocationService.openLocationSettings();
+                  },
+                  icon: const Icon(Icons.settings_rounded, size: 18, color: Colors.white),
+                  label: Text(
+                    'Buka Pengaturan Lokasi',
+                    style: GoogleFonts.outfit(
+                      fontSize: 14.0,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0D2818),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.0),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Dismiss button
+              SizedBox(
+                width: double.infinity,
+                height: 42,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Nanti Saja',
+                    style: GoogleFonts.outfit(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF6B6B6B),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _navigateToNearbyStores() {
@@ -274,34 +431,18 @@ class HomeScreenState extends State<HomeScreen> {
                             size: 24,
                           ),
                         ),
-                        const SizedBox(width: 5),
+                        const SizedBox(width: 6),
                         Flexible(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Rakoon',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 18.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: const Color(0xFF0D2818),
-                                  letterSpacing: -0.3,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                'Belanja Lebih Cerdas',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 8.5,
-                                  color: const Color(0xFF6B6B6B),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
+                          child: Text(
+                            'Rakoon',
+                            style: GoogleFonts.outfit(
+                              fontSize: 19.0,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF0D2818),
+                              letterSpacing: -0.3,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -318,9 +459,9 @@ class HomeScreenState extends State<HomeScreen> {
                         label: 'Lokasi terdeteksi: $_locationLabel',
                         container: true,
                         child: InteractiveScale(
-                          onTap: _navigateToNearbyStores,
+                          onTap: _handleLocationPillTap,
                           child: Container(
-                            constraints: const BoxConstraints(maxWidth: 135),
+                            constraints: const BoxConstraints(maxWidth: 140),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8.5,
                               vertical: 5.0,
@@ -417,8 +558,13 @@ class HomeScreenState extends State<HomeScreen> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
-                              blurRadius: 8.0,
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 16.0,
+                              offset: const Offset(0, 6),
+                            ),
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.02),
+                              blurRadius: 4.0,
                               offset: const Offset(0, 2),
                             ),
                           ],
@@ -467,83 +613,107 @@ class HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
 
-                    // 3. Karusel Ramping "Promo & Fitur" (Rakoon AI + Promo Brosur)
-                    _buildPromoAndFeaturesCarousel(),
-                    const SizedBox(height: 16.0),
+                    // 3. Hero Card "Smart Shelf Scan" (Fitur Utama Rakoon AI)
+                    _buildSmartShelfScanCard(),
+                    const SizedBox(height: 18.0),
 
-                    // 4. Menu Cepat (Flat Circular Icons - Gojek/Grab Style)
+                    // 4. Menu Cepat (Quick Action Cards)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 2.0),
                       child: Row(
                         children: [
                           // Quick Action 1: Cek Harga
                           Expanded(
-                            child: Semantics(
-                              label: 'Cek Harga, buka katalog produk dan perbandingan harga',
-                              button: true,
-                              container: true,
-                              excludeSemantics: true,
-                              child: _QuickActionCircleButton(
-                                title: 'Cek Harga',
-                                icon: Icons.sell_rounded,
-                                circleColor: const Color(0xFFEBF5EE),
-                                iconColor: const Color(0xFF0D2818),
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => PriceCheckCatalogPage(
-                                        baseUrl: _getBaseUrl(),
-                                        httpClient: widget.httpClient,
-                                        userLat: _userLat,
-                                        userLng: _userLng,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 3.5),
+                              child: Semantics(
+                                label: 'Cek Harga, buka katalog produk dan perbandingan harga',
+                                button: true,
+                                container: true,
+                                excludeSemantics: true,
+                                child: _QuickActionCardButton(
+                                  title: 'Cek Harga',
+                                  subtitle: 'Lihat & bandingkan\nharga produk',
+                                  icon: Icons.sell_rounded,
+                                  gradient: const LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [Color(0xFF0D2818), Color(0xFF2E6644)],
+                                  ),
+                                  iconColor: Colors.white,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => PriceCheckCatalogPage(
+                                          baseUrl: _getBaseUrl(),
+                                          httpClient: widget.httpClient,
+                                          userLat: _userLat,
+                                          userLng: _userLng,
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                },
+                                    );
+                                  },
+                                ),
                               ),
                             ),
                           ),
 
                           // Quick Action 2: Toko Sekitar
                           Expanded(
-                            child: Semantics(
-                              label: 'Toko Sekitar, cari toko terdekat di sekitar kamu',
-                              button: true,
-                              container: true,
-                              excludeSemantics: true,
-                              child: _QuickActionCircleButton(
-                                title: 'Toko Sekitar',
-                                icon: Icons.storefront_rounded,
-                                circleColor: const Color(0xFFECFDF5),
-                                iconColor: const Color(0xFF059669),
-                                onTap: _navigateToNearbyStores,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 3.5),
+                              child: Semantics(
+                                label: 'Toko Sekitar, cari toko terdekat di sekitar kamu',
+                                button: true,
+                                container: true,
+                                excludeSemantics: true,
+                                child: _QuickActionCardButton(
+                                  title: 'Toko Sekitar',
+                                  subtitle: 'Temukan\nsupermarket',
+                                  icon: Icons.storefront_rounded,
+                                  gradient: const LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [Color(0xFF059669), Color(0xFF10B981)],
+                                  ),
+                                  iconColor: Colors.white,
+                                  onTap: _navigateToNearbyStores,
+                                ),
                               ),
                             ),
                           ),
 
                           // Quick Action 3: Smart Budget
                           Expanded(
-                            child: Semantics(
-                              label: 'Smart Budget, kalkulasi belanja sesuai anggaran',
-                              button: true,
-                              container: true,
-                              excludeSemantics: true,
-                              child: _QuickActionCircleButton(
-                                title: 'Smart Budget',
-                                icon: Icons.pie_chart_rounded,
-                                circleColor: const Color(0xFFF0FDF4),
-                                iconColor: const Color(0xFF15803D),
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => BudgetShoppingScreen(
-                                        baseUrl: _getBaseUrl(),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 3.5),
+                              child: Semantics(
+                                label: 'Smart Budget, kalkulasi belanja sesuai anggaran',
+                                button: true,
+                                container: true,
+                                excludeSemantics: true,
+                                child: _QuickActionCardButton(
+                                  title: 'Smart Budget',
+                                  subtitle: 'Atur belanja\nlebih hemat',
+                                  icon: Icons.pie_chart_rounded,
+                                  gradient: const LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [Color(0xFF166534), Color(0xFF2E7D32)],
+                                  ),
+                                  iconColor: Colors.white,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => BudgetShoppingScreen(
+                                          baseUrl: _getBaseUrl(),
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                },
+                                    );
+                                  },
+                                ),
                               ),
                             ),
                           ),
@@ -551,6 +721,12 @@ class HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 20.0),
+
+                    // 5. Section "Promo Toko Sekitarmu" (Karusel Iklan Toko Ritel Mitra)
+                    if (_promoBanners.isNotEmpty) ...[
+                      _buildPromoBannersSection(),
+                      const SizedBox(height: 20.0),
+                    ],
 
                     // 6. Section "Produk Pilihan" Horizontal Carousel
                     Row(
@@ -631,8 +807,13 @@ class HomeScreenState extends State<HomeScreen> {
                                 border: Border.all(color: const Color(0xFFE8E4DC)),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.03),
-                                    blurRadius: 8,
+                                    color: Colors.black.withValues(alpha: 0.05),
+                                    blurRadius: 16.0,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.02),
+                                    blurRadius: 4.0,
                                     offset: const Offset(0, 2),
                                   ),
                                 ],
@@ -764,83 +945,53 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPromoAndFeaturesCarousel() {
-    final totalSlides = 1 + _promoBanners.length;
-    final safeIndex = _currentBannerIndex >= totalSlides ? 0 : _currentBannerIndex;
+  /// Section Karusel Promo Iklan Toko Ritel Mitra (Didedikasikan untuk flyer iklan toko)
+  Widget _buildPromoBannersSection() {
+    if (_promoBanners.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final safeIndex = _currentBannerIndex >= _promoBanners.length ? 0 : _currentBannerIndex;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              'Promo & Fitur',
-              style: GoogleFonts.outfit(
-                fontSize: 16.5,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF0D2818),
-                letterSpacing: -0.2,
-              ),
-            ),
-            if (_promoBanners.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3.0),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
-                  borderRadius: BorderRadius.circular(12.0),
-                  border: Border.all(color: const Color(0xFFA7F3D0)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.auto_awesome_rounded, size: 11, color: Color(0xFF059669)),
-                    const SizedBox(width: 3.5),
-                    Text(
-                      '✦ Rakoon AI & Mitra',
-                      style: GoogleFonts.outfit(
-                        fontSize: 10.0,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF059669),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
+        Text(
+          'Promo Toko Sekitarmu',
+          style: GoogleFonts.outfit(
+            fontSize: 18.0,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF0D2818),
+            letterSpacing: -0.2,
+          ),
         ),
         const SizedBox(height: 10.0),
 
         SizedBox(
-          height: 200,
+          height: 190,
           child: PageView.builder(
             controller: _bannerPageController,
             physics: const BouncingScrollPhysics(),
-            itemCount: totalSlides,
+            itemCount: _promoBanners.length,
             onPageChanged: (idx) {
               setState(() {
                 _currentBannerIndex = idx;
               });
             },
             itemBuilder: (context, index) {
-              if (index == 0) {
-                return _buildSmartShelfScanSlide();
-              } else {
-                final banner = _promoBanners[index - 1];
-                return _buildPromoBannerSlide(banner);
-              }
+              final banner = _promoBanners[index];
+              return _buildPromoBannerSlide(banner);
             },
           ),
         ),
 
         // Indicator Dots
-        if (totalSlides > 1) ...[
+        if (_promoBanners.length > 1) ...[
           const SizedBox(height: 8.0),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(totalSlides, (idx) {
+            children: List.generate(_promoBanners.length, (idx) {
               final isCurrent = safeIndex == idx;
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
@@ -859,7 +1010,11 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSmartShelfScanSlide() {
+  /// Backward-compatible alias
+  Widget _buildSmartShelfScanSlide() => _buildSmartShelfScanCard();
+
+  /// Standalone Hero Feature Card "Smart Shelf Scan" (Fitur Utama Rakoon AI)
+  Widget _buildSmartShelfScanCard() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 2.0),
       child: InteractiveScale(
@@ -1159,9 +1314,14 @@ class HomeScreenState extends State<HomeScreen> {
             border: Border.all(color: const Color(0xFFE8E4DC)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10.0,
-                offset: const Offset(0, 3),
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 18.0,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 4.0,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
@@ -1182,52 +1342,31 @@ class HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                // Top Badges
+                // Top Store Badge
                 Positioned(
                   top: 8,
                   left: 8,
-                  right: 8,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.65),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.location_on_rounded, color: Color(0xFF10B981), size: 11),
-                            const SizedBox(width: 3.5),
-                            Text(
-                              '${banner.storeNama} • ${banner.distanceKm.toStringAsFixed(1)} km',
-                              style: GoogleFonts.outfit(
-                                color: Colors.white,
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF166534),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          'Sisa ${banner.daysLeft} Hari',
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.65),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.location_on_rounded, color: Color(0xFF10B981), size: 11),
+                        const SizedBox(width: 3.5),
+                        Text(
+                          '${banner.storeNama} • ${banner.distanceKm.toStringAsFixed(1)} km',
                           style: GoogleFonts.outfit(
                             color: Colors.white,
                             fontSize: 9.5,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
 
@@ -1377,7 +1516,7 @@ class HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Promo offline berlaku langsung di toko fisik • Sisa ${banner.daysLeft} hari',
+                      'Promo offline berlaku langsung di toko fisik',
                       style: GoogleFonts.outfit(
                         fontSize: 11.5,
                         color: const Color(0xFF059669),
@@ -1422,8 +1561,13 @@ class HomeScreenState extends State<HomeScreen> {
           border: Border.all(color: const Color(0xFFE8E4DC), width: 1.0),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 8.0,
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 16.0,
+              offset: const Offset(0, 6),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 4.0,
               offset: const Offset(0, 2),
             ),
           ],
@@ -1461,8 +1605,13 @@ class HomeScreenState extends State<HomeScreen> {
           border: Border.all(color: const Color(0xFFE8E4DC), width: 1.0),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 8.0,
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 16.0,
+              offset: const Offset(0, 6),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 4.0,
               offset: const Offset(0, 2),
             ),
           ],
@@ -1529,9 +1678,14 @@ class HomeScreenState extends State<HomeScreen> {
           border: Border.all(color: const Color(0xFFE8E4DC), width: 1.0),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 16.0,
+              offset: const Offset(0, 6),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 4.0,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -1653,8 +1807,13 @@ class HomeScreenState extends State<HomeScreen> {
             border: Border.all(color: const Color(0xFFE8E4DC), width: 1.0),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 8,
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 16.0,
+                offset: const Offset(0, 6),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 4.0,
                 offset: const Offset(0, 2),
               ),
             ],
@@ -1783,19 +1942,21 @@ class HomeScreenState extends State<HomeScreen> {
   }
 }
 
-/// Flat Circular Quick Action Button Item (Gojek/Grab Style, no outer border)
-class _QuickActionCircleButton extends StatelessWidget {
+/// Quick Action Card Button Item with Rounded Card & Active Scale
+class _QuickActionCardButton extends StatelessWidget {
   final IconData icon;
-  final Color circleColor;
+  final Gradient gradient;
   final Color iconColor;
   final String title;
+  final String subtitle;
   final VoidCallback onTap;
 
-  const _QuickActionCircleButton({
+  const _QuickActionCardButton({
     required this.icon,
-    required this.circleColor,
+    required this.gradient,
     required this.iconColor,
     required this.title,
+    required this.subtitle,
     required this.onTap,
   });
 
@@ -1803,42 +1964,83 @@ class _QuickActionCircleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InteractiveScale(
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: circleColor,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 8.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24.0),
+          border: Border.all(
+            color: const Color(0xFFE8E4DC),
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 18.0,
+              offset: const Offset(0, 8),
             ),
-            child: Center(
-              child: Icon(
-                icon,
-                color: iconColor,
-                size: 24,
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 4.0,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: gradient,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Icon(
+                  icon,
+                  color: iconColor,
+                  size: 22,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 7),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(
-              fontSize: 12.0,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF0D2818),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.outfit(
+                fontSize: 12.0,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF0D2818),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 2),
+            SizedBox(
+              height: 26,
+              child: Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.outfit(
+                  fontSize: 9.5,
+                  color: const Color(0xFF6B6B6B),
+                  fontWeight: FontWeight.w400,
+                  height: 1.2,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
