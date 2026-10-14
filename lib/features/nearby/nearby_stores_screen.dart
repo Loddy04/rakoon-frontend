@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,6 +10,7 @@ import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 import 'package:rakoon_frontend/services/location_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
+import 'package:rakoon_frontend/widgets/price_freshness_label.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
 import 'package:rakoon_frontend/widgets/rakoon_location_map.dart';
 
@@ -16,12 +18,14 @@ class NearbyStoresScreen extends StatefulWidget {
   final String baseUrl;
   final double? initialLat;
   final double? initialLng;
+  final http.Client? httpClient;
 
   const NearbyStoresScreen({
     super.key,
     required this.baseUrl,
     this.initialLat,
     this.initialLng,
+    this.httpClient,
   });
 
   @override
@@ -154,6 +158,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
         lat: position.latitude,
         lng: position.longitude,
         baseUrl: widget.baseUrl,
+        client: widget.httpClient,
       );
 
       if (!mounted) return;
@@ -412,6 +417,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                               future: StoresService.getStoreProducts(
                                 storeId: store.storeId,
                                 baseUrl: widget.baseUrl,
+                                client: widget.httpClient,
                               ),
                               builder: (context, snapshot) {
                                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -552,16 +558,22 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                                                 ),
                                               ),
                                               const SizedBox(height: 1),
-                                              Text(
-                                                _formatStoreProductTimestamp(item.updatedAt),
-                                                style: GoogleFonts.outfit(
-                                                  fontSize: 9.5,
-                                                  fontWeight: FontWeight.w500,
-                                                  color: const Color(0xFF9CA3AF),
+                                              if (item.stale)
+                                                PriceFreshnessLabel(
+                                                  isStale: item.stale,
+                                                  updatedAt: item.updatedAt,
+                                                )
+                                              else
+                                                Text(
+                                                  _formatStoreProductTimestamp(item.updatedAt),
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 9.5,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: const Color(0xFF9CA3AF),
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
                                                 ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
                                             ],
                                           ),
                                         ],

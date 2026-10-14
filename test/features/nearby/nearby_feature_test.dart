@@ -11,6 +11,7 @@ import 'package:rakoon_frontend/features/nearby/nearby_stores_screen.dart';
 import 'package:rakoon_frontend/features/nearby/price_comparison_screen.dart';
 import 'package:rakoon_frontend/features/price_check/presentation/pages/price_check_catalog_page.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
+import 'package:rakoon_frontend/widgets/price_freshness_label.dart';
 import 'package:rakoon_frontend/widgets/rakoon_location_map.dart';
 
 void main() {
@@ -116,6 +117,33 @@ void main() {
               },
             ]),
             200,
+          );
+        } else if (request.url.path.contains('/stores/') && request.url.path.endsWith('/products')) {
+          return http.Response(
+            jsonEncode([
+              {
+                "id": "prod-stale-1",
+                "nama": "Minyak Goreng Sawit 2L",
+                "kategori": "Makanan Pokok",
+                "ukuran": 2.0,
+                "satuan": "L",
+                "harga": 34000.0,
+                "updated_at": "2026-01-10T00:00:00Z",
+                "stale": true,
+              },
+              {
+                "id": "prod-fresh-1",
+                "nama": "Beras Premium 5kg",
+                "kategori": "Makanan Pokok",
+                "ukuran": 5.0,
+                "satuan": "kg",
+                "harga": 68000.0,
+                "updated_at": "2026-10-10T00:00:00Z",
+                "stale": false,
+              },
+            ]),
+            200,
+            headers: {'content-type': 'application/json'},
           );
         } else if (request.url.host.contains('openstreetmap.org') || request.url.path.endsWith('.png')) {
           return http.Response.bytes(
@@ -457,13 +485,44 @@ void main() {
         });
       },
     );
+
+    testWidgets(
+      'NearbyStoresScreen displays PriceFreshnessLabel for stale store products and omits it for fresh products',
+      (WidgetTester tester) async {
+        await mockNetworkImagesFor(() async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: NearbyStoresScreen(
+                baseUrl: 'http://localhost:8000',
+                initialLat: -6.2088,
+                initialLng: 106.8456,
+                httpClient: mockClient,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // Tap store card to open detail modal
+          await tester.tap(find.text('Indomaret Sudirman'));
+          await tester.pumpAndSettle();
+
+          // Stale product shows PriceFreshnessLabel
+          expect(find.byType(PriceFreshnessLabel), findsOneWidget);
+          expect(find.text('Harga per 10 Jan 2026'), findsOneWidget);
+
+          // Both products are visible in store product list
+          expect(find.text('Minyak Goreng Sawit 2L'), findsOneWidget);
+          expect(find.text('Beras Premium 5kg'), findsOneWidget);
+        });
+      },
+    );
   });
 
   group('StoreProductItem Model Tests', () {
     test('StoreProductItem.fromJson parses stale: true and stale: false properly', () {
       final staleJson = {
         'id': 'prod-stale-1',
-        'nama': 'Minyak Goreng 2L',
+        'nama': 'Minyak Goreng Sawit 2L',
         'kategori': 'Makanan Pokok',
         'harga': 34000.0,
         'updated_at': '2026-01-10T00:00:00Z',
@@ -471,13 +530,13 @@ void main() {
       };
       final staleItem = StoreProductItem.fromJson(staleJson);
       expect(staleItem.stale, isTrue);
-      expect(staleItem.nama, 'Minyak Goreng 2L');
+      expect(staleItem.nama, 'Minyak Goreng Sawit 2L');
       expect(staleItem.harga, 34000.0);
       expect(staleItem.updatedAt, '2026-01-10T00:00:00Z');
 
       final freshJson = {
         'id': 'prod-fresh-1',
-        'nama': 'Beras 5kg',
+        'nama': 'Beras Premium 5kg',
         'kategori': 'Makanan Pokok',
         'harga': 68000.0,
         'updated_at': '2026-10-10T00:00:00Z',
