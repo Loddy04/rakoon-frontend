@@ -364,7 +364,7 @@ void main() {
       });
     });
 
-    testWidgets('HomeScreen renders Promo Toko Sekitarmu carousel banner', (tester) async {
+    testWidgets('HomeScreen renders Promo & Fitur carousel banner', (tester) async {
       await mockNetworkImagesFor(() async {
         await http.runWithClient(() async {
           await tester.pumpWidget(
@@ -378,14 +378,19 @@ void main() {
 
           await tester.pumpAndSettle();
 
-          expect(find.text('Promo Toko Sekitarmu'), findsOneWidget);
-          expect(find.text('Mitra Ritel'), findsOneWidget);
+          expect(find.text('Promo & Fitur'), findsOneWidget);
+          expect(find.text('✦ Rakoon AI & Mitra'), findsOneWidget);
+
+          // Geser ke slide banner promo (slide 1)
+          await tester.fling(find.byType(PageView), const Offset(-500, 0), 1000);
+          await tester.pumpAndSettle();
+
           expect(find.text('Promo JSM Minyak Goreng & Beras Hemat'), findsOneWidget);
         }, () => mockClient);
       });
     });
 
-    testWidgets('HomeScreen renders Promo kosong when home-banners response is empty', (tester) async {
+    testWidgets('HomeScreen renders Smart Shelf Scan when home-banners response is empty', (tester) async {
       final emptyClient = MockClient((request) async {
         if (request.url.path.endsWith('/ads/home-banners')) {
           return http.Response(jsonEncode([]), 200);
@@ -406,9 +411,9 @@ void main() {
 
           await tester.pumpAndSettle();
 
-          expect(find.text('Promo Toko Sekitarmu'), findsOneWidget);
-          expect(find.text('Promo kosong'), findsOneWidget);
-          expect(find.byKey(const Key('home_promo_empty_state')), findsOneWidget);
+          expect(find.text('Promo & Fitur'), findsOneWidget);
+          expect(find.text('✦ Rakoon AI & Mitra'), findsNothing);
+          expect(find.text('Smart Shelf Scan\nPindai Rak Belanja'), findsOneWidget);
         }, () => emptyClient);
       });
     });
@@ -506,9 +511,14 @@ void main() {
           await tester.pumpAndSettle();
 
           expect(forwardedIncludeDemo, isTrue);
-          expect(find.text('Promo Toko Sekitarmu'), findsOneWidget);
+          expect(find.text('Promo & Fitur'), findsOneWidget);
+          expect(find.text('✦ Rakoon AI & Mitra'), findsOneWidget);
+
+          // Geser ke slide banner promo demo (slide 1)
+          await tester.fling(find.byType(PageView), const Offset(-500, 0), 1000);
+          await tester.pumpAndSettle();
+
           expect(find.text('Promo JSM Minyak Goreng & Beras Super Hemat'), findsOneWidget);
-          expect(find.text('Promo kosong'), findsNothing);
         }, () => demoClient);
       });
     });
