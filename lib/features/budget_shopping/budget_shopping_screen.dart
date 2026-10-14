@@ -17,8 +17,15 @@ class SelectedBudgetItem {
 
 class BudgetShoppingScreen extends StatefulWidget {
   final String baseUrl;
+  final double? userLat;
+  final double? userLng;
 
-  const BudgetShoppingScreen({super.key, required this.baseUrl});
+  const BudgetShoppingScreen({
+    super.key,
+    required this.baseUrl,
+    this.userLat,
+    this.userLng,
+  });
 
   @override
   State<BudgetShoppingScreen> createState() => _BudgetShoppingScreenState();
@@ -299,6 +306,8 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
     try {
       final request = BudgetRecommendRequest(
         budget: budget,
+        lat: widget.userLat ?? -7.7829,
+        lng: widget.userLng ?? 110.3671,
         items: _selectedItems
             .map(
               (item) =>
@@ -1210,9 +1219,12 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 3),
-                    Row(
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 6,
+                      runSpacing: 2,
                       children: [
-                        if (product.ukuran != null) ...[
+                        if (product.ukuran != null)
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 6,
@@ -1232,16 +1244,25 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 6),
-                        ],
                         Text(
-                          formatRp(product.effectivePrice),
+                          product.estimasiHarga != null
+                              ? 'Mulai ${formatRp(product.effectivePrice)}'
+                              : 'Est. ${formatRp(product.effectivePrice)}',
                           style: const TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w800,
                             color: Color(0xFF059669),
                           ),
                         ),
+                        if (product.namaTokoTerendah != null)
+                          Text(
+                            '• ${product.namaTokoTerendah}',
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              color: Color(0xFF6B7280),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 6),

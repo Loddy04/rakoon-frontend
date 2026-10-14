@@ -19,16 +19,25 @@ class BudgetItemInput {
 class BudgetRecommendRequest {
   final double budget;
   final List<BudgetItemInput> items;
+  final double? lat;
+  final double? lng;
 
   BudgetRecommendRequest({
     required this.budget,
     required this.items,
+    this.lat,
+    this.lng,
   });
 
-  Map<String, dynamic> toJson() => {
-        'budget': budget,
-        'items': items.map((i) => i.toJson()).toList(),
-      };
+  Map<String, dynamic> toJson() {
+    final map = <String, dynamic>{
+      'budget': budget,
+      'items': items.map((i) => i.toJson()).toList(),
+    };
+    if (lat != null) map['lat'] = lat;
+    if (lng != null) map['lng'] = lng;
+    return map;
+  }
 }
 
 class BudgetItemResult {
@@ -63,6 +72,7 @@ class StoreInfoOutput {
   final String? alamat;
   final double? lat;
   final double? lng;
+  final double? distanceKm;
 
   StoreInfoOutput({
     required this.storeId,
@@ -70,6 +80,7 @@ class StoreInfoOutput {
     this.alamat,
     this.lat,
     this.lng,
+    this.distanceKm,
   });
 
   factory StoreInfoOutput.fromJson(Map<String, dynamic> json) {
@@ -79,6 +90,7 @@ class StoreInfoOutput {
       alamat: json['alamat'] as String?,
       lat: (json['lat'] as num?)?.toDouble(),
       lng: (json['lng'] as num?)?.toDouble(),
+      distanceKm: (json['distance_km'] as num?)?.toDouble(),
     );
   }
 }
