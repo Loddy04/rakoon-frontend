@@ -11,6 +11,7 @@ import 'package:rakoon_frontend/services/products_service.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/widgets/interactive_scale.dart';
+import 'package:rakoon_frontend/widgets/price_freshness_label.dart';
 import 'package:rakoon_frontend/widgets/product_card.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -1127,6 +1128,10 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                                     if (badgeWidget != null) ...[
                                       const SizedBox(height: 4),
                                       badgeWidget,
+                                    ],
+                                    if (item.stale) ...[
+                                      const SizedBox(height: 4),
+                                      PriceFreshnessLabel(isStale: true, updatedAt: item.tanggalUpdate),
                                     ],
                                   ],
                                 ),

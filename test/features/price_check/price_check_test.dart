@@ -8,6 +8,7 @@ import 'package:rakoon_frontend/features/price_check/presentation/pages/price_ch
 import 'package:rakoon_frontend/features/price_check/presentation/pages/unified_product_price_detail_page.dart';
 import 'package:rakoon_frontend/features/price_check/presentation/providers/price_check_provider.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
+import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/widgets/price_freshness_label.dart';
 
 void main() {
@@ -329,6 +330,84 @@ void main() {
       // Verify that both products render
       expect(find.text('Minyak Goreng Sawit 2L'), findsOneWidget);
       expect(find.text('Beras Premium 5kg'), findsOneWidget);
+    });
+
+    test('PriceCompareItem.fromJson parses stale and tanggal_update, missing stale = false', () {
+      final stale = PriceCompareItem.fromJson({
+        'store_id': 's1',
+        'nama_toko': 'Toko A',
+        'harga_terbaru': 3000,
+        'tanggal_update': '2026-01-10T00:00:00Z',
+        'stale': true,
+      });
+      expect(stale.stale, isTrue);
+      expect(stale.tanggalUpdate, '2026-01-10T00:00:00Z');
+      expect(PriceCompareItem.fromJson({'store_id': 's2'}).stale, isFalse);
+    });
+
+    testWidgets('UnifiedProductPriceDetailPage shows PriceFreshnessLabel only for stale compare rows', (tester) async {
+      final mockClient = MockClient((request) async {
+        final headers = {'content-type': 'application/json'};
+        if (request.url.path.contains('/price/compare/')) {
+          return http.Response(
+            jsonEncode({
+              'product_id': 'prod-001',
+              'nama_produk': 'Indomie',
+              'comparison': [
+                {
+                  'store_id': 's1',
+                  'nama_toko': 'Toko Lama',
+                  'jarak_km': 1.0,
+                  'harga_terbaru': 3000,
+                  'tanggal_update': '2026-01-10T00:00:00Z',
+                  'stale': true,
+                },
+                {
+                  'store_id': 's2',
+                  'nama_toko': 'Toko Baru',
+                  'jarak_km': 2.0,
+                  'harga_terbaru': 3200,
+                  'tanggal_update': '2026-10-10T00:00:00Z',
+                },
+              ],
+            }),
+            200,
+            headers: headers,
+          );
+        }
+        if (request.url.path.contains('price-history')) {
+          return http.Response(
+            jsonEncode({'product_id': 'prod-001', 'total': 0, 'items': [], 'trend': []}),
+            200,
+            headers: headers,
+          );
+        }
+        return http.Response('{}', 404);
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: UnifiedProductPriceDetailPage(
+            product: RecommendedProduct(
+              id: 'prod-001',
+              nama: 'Indomie',
+              kategori: 'Makanan Instan',
+              harga: 3000.0,
+              ukuran: 85.0,
+              satuan: 'g',
+              namaToko: 'Toko Lama',
+              jarakKm: 1.0,
+              updatedAt: '2026-01-10T00:00:00Z',
+            ),
+            baseUrl: 'http://localhost:8000',
+            httpClient: mockClient,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PriceFreshnessLabel, skipOffstage: false), findsOneWidget);
+      expect(find.text('Harga per 10 Jan 2026', skipOffstage: false), findsOneWidget);
     });
   });
 }
