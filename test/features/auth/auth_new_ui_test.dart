@@ -47,8 +47,8 @@ void main() {
         // Eye toggle icon
         expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
 
-        // Remember me is present, Forgot Password is removed as requested
-        expect(find.text('Remember me'), findsOneWidget);
+        // "Remember me" dihapus (tidak pernah berfungsi, P1-17); Forgot Password juga tidak ada
+        expect(find.text('Remember me'), findsNothing);
         expect(find.text('Forgot Password?'), findsNothing);
 
         // Divider & Full-width Google button
@@ -98,21 +98,12 @@ void main() {
       );
     });
 
-    testWidgets('Remember me checkbox toggles checked state', (
+    testWidgets('Login form has no non-functional "Remember me" checkbox', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(const MaterialApp(home: LoginPage()));
 
-      expect(find.byIcon(Icons.check), findsNothing);
-
-      await tester.tap(find.text('Remember me'));
-      await tester.pumpAndSettle();
-
-      expect(find.byIcon(Icons.check), findsOneWidget);
-
-      await tester.tap(find.text('Remember me'));
-      await tester.pumpAndSettle();
-
+      expect(find.text('Remember me'), findsNothing);
       expect(find.byIcon(Icons.check), findsNothing);
     });
 

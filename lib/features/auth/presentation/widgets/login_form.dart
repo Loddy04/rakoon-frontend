@@ -26,7 +26,6 @@ class _LoginFormState extends State<LoginForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _rememberMe = false;
   bool _isLoading = false;
   bool _isGoogleLoading = false;
   String? _errorMessage;
@@ -421,57 +420,7 @@ class _LoginFormState extends State<LoginForm> {
           ),
           const SizedBox(height: 12),
 
-          // Remember Me Row
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _rememberMe = !_rememberMe;
-                  });
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 17,
-                      height: 17,
-                      decoration: BoxDecoration(
-                        color: _rememberMe
-                            ? AppColors.authSageGreen
-                            : Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: _rememberMe
-                              ? AppColors.authSageGreen
-                              : const Color(0xFFD1D5DB),
-                          width: 1.5,
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: _rememberMe
-                          ? const Icon(
-                              Icons.check,
-                              size: 13,
-                              color: Colors.white,
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 7),
-                    Text(
-                      'Remember me',
-                      style: GoogleFonts.outfit(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF4B5563),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
 
           // Main Login Button
           SizedBox(

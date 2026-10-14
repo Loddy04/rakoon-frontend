@@ -90,7 +90,7 @@ class AuthService {
   static Future<void> signOut() async {
     _mockSession = null;
     _mockIsAdmin = null;
-    _cachedIsAdmin = null;
+    resetAdminCache();
     try {
       await GoogleSignIn().signOut();
     } catch (_) {
@@ -102,6 +102,7 @@ class AuthService {
   static Session? _mockSession;
   static bool? _mockIsAdmin;
   static bool? _cachedIsAdmin;
+  static String? _cachedAdminUserId;
 
   /// Set a mock session for unit/widget testing purposes
   static set mockSession(Session? session) => _mockSession = session;
@@ -109,9 +110,10 @@ class AuthService {
   /// Set mock admin status for unit/widget testing purposes
   static set mockIsAdmin(bool? isAdmin) => _mockIsAdmin = isAdmin;
 
-  /// Reset internal admin cache (useful for testing or session refresh)
+  /// Reset internal admin cache (dipanggil saat sign-out; juga berguna untuk test)
   static void resetAdminCache() {
     _cachedIsAdmin = null;
+    _cachedAdminUserId = null;
   }
 
   /// Current Session
@@ -126,31 +128,17 @@ class AuthService {
     return _client?.auth.currentUser;
   }
 
-  /// Cek apakah pengguna aktif memiliki peran Admin (berdasarkan metadata lokal atau cache verifikasi backend)
+  /// Apakah pengguna aktif admin. HANYA berasal dari hasil GET /auth/me (cache per user id);
+  /// user_metadata/app_metadata sengaja tidak dipakai karena bisa diubah pengguna sendiri.
   static bool get isAdmin {
     if (_mockIsAdmin != null) return _mockIsAdmin!;
-    if (_cachedIsAdmin != null) return _cachedIsAdmin!;
     final user = currentUser;
-    if (user == null) return false;
-
-    // 1. Cek user_metadata
-    final userMeta = user.userMetadata;
-    if (userMeta != null) {
-      if (userMeta['role'] == 'admin' || userMeta['is_admin'] == true) {
-        return true;
-      }
-    }
-
-    // 2. Cek app_metadata
-    final appMeta = user.appMetadata;
-    if (appMeta['role'] == 'admin' || appMeta['is_admin'] == true) {
-      return true;
-    }
-
-    return false;
+    if (user == null || _cachedAdminUserId != user.id) return false;
+    return _cachedIsAdmin ?? false;
   }
 
-  /// Validasi status admin dengan memanggil endpoint backend /auth/me
+  /// Validasi status admin dengan memanggil endpoint backend /auth/me.
+  /// Gagal terhubung = hasil sebelumnya untuk user yang sama dipertahankan, tanpa fallback ke metadata.
   static Future<bool> checkAdminStatus({
     String? baseUrl,
     http.Client? client,
@@ -158,27 +146,9 @@ class AuthService {
     if (_mockIsAdmin != null) return _mockIsAdmin!;
 
     final user = currentUser;
-    if (user == null) {
-      _cachedIsAdmin = false;
-      return false;
-    }
-
-    // Cek metadata lokal terlebih dahulu
-    final userMeta = user.userMetadata;
-    if (userMeta != null && (userMeta['role'] == 'admin' || userMeta['is_admin'] == true)) {
-      _cachedIsAdmin = true;
-      return true;
-    }
-
-    final appMeta = user.appMetadata;
-    if (appMeta['role'] == 'admin' || appMeta['is_admin'] == true) {
-      _cachedIsAdmin = true;
-      return true;
-    }
-
     final token = currentSession?.accessToken;
-    if (token == null) {
-      _cachedIsAdmin = false;
+    if (user == null || token == null) {
+      resetAdminCache();
       return false;
     }
 
@@ -196,22 +166,20 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final role = data['role'] as String?;
-        final isServerAdmin = role == 'admin';
-        _cachedIsAdmin = isServerAdmin;
-        return isServerAdmin;
+        _cachedIsAdmin = data['role'] == 'admin';
       } else {
         _cachedIsAdmin = false;
       }
+      _cachedAdminUserId = user.id;
     } catch (_) {
-      // Fallback ke metadata lokal
+      // Backend tidak terjangkau: biarkan cache user ini apa adanya (default bukan admin).
     } finally {
       if (client == null) {
         httpClient.close();
       }
     }
 
-    return _cachedIsAdmin ?? false;
+    return isAdmin;
   }
 
   /// Auth State Stream
