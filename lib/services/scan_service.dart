@@ -79,12 +79,22 @@ class ScanService {
   );
 
   /// Sends the photo file to the POST /scan/ endpoint
-  static Future<List<ScanResultItem>> scanPhoto(File imageFile, {String? baseUrl}) async {
+  static Future<List<ScanResultItem>> scanPhoto(
+    File imageFile, {
+    String? baseUrl,
+    http.Client? client,
+  }) async {
     final String activeBaseUrl = baseUrl ?? defaultBaseUrl;
     final uri = Uri.parse('$activeBaseUrl/scan/');
     
     // Create multipart request
     final request = http.MultipartRequest('POST', uri);
+
+    final token = AuthService.currentSession?.accessToken;
+    if (token != null) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+    request.headers['Accept'] = 'application/json';
     
     // Attach the photo file
     final stream = http.ByteStream(imageFile.openRead());
@@ -97,9 +107,11 @@ class ScanService {
     );
     request.files.add(multipartFile);
 
+    final httpClient = client ?? http.Client();
+
     // Send request
     try {
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 35));
+      final streamedResponse = await httpClient.send(request).timeout(const Duration(seconds: 35));
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
@@ -122,6 +134,10 @@ class ScanService {
         rethrow;
       }
       throw Exception('Gagal memproses gambar: $e');
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
     }
   }
 

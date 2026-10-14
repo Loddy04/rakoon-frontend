@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -600,6 +601,86 @@ void main() {
       // Bottom sheet closed and store updated
       expect(find.text('Pilih Lokasi Toko'), findsNothing);
       expect(find.text('Alfamart Gatsu'), findsOneWidget);
+    });
+
+    test('ScanService.scanPhoto sends Authorization Bearer header when authenticated', () async {
+      String? capturedAuth;
+      String? capturedAccept;
+      final mockClient = MockClient((request) async {
+        if (request.url.path.endsWith('/scan/')) {
+          capturedAuth = request.headers['Authorization'];
+          capturedAccept = request.headers['Accept'];
+          return http.Response(
+            jsonEncode({
+              'detected': [
+                {
+                  'nama_produk': 'Susu UHT 1L',
+                  'harga': 18000,
+                  'ukuran': 1.0,
+                  'satuan': 'l',
+                  'kategori': 'Susu & Olahan',
+                  'confidence': 'tinggi',
+                  'needs_verification': false,
+                }
+              ],
+            }),
+            200,
+          );
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      final tempDir = Directory.systemTemp.createTempSync();
+      final tempFile = File('${tempDir.path}/test_scan.jpg')..writeAsBytesSync([0, 1, 2]);
+
+      try {
+        final results = await ScanService.scanPhoto(
+          tempFile,
+          baseUrl: 'http://localhost:8000',
+          client: mockClient,
+        );
+
+        expect(capturedAuth, 'Bearer test-bearer-token-xyz');
+        expect(capturedAccept, 'application/json');
+        expect(results.length, 1);
+        expect(results.first.namaProduk, 'Susu UHT 1L');
+      } finally {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    test('ScanService.scanPhoto omits Authorization header when unauthenticated', () async {
+      AuthService.mockSession = null;
+      String? capturedAuth;
+      final mockClient = MockClient((request) async {
+        if (request.url.path.endsWith('/scan/')) {
+          capturedAuth = request.headers['Authorization'];
+          return http.Response(
+            jsonEncode({
+              'detected': [],
+              'message': null,
+            }),
+            200,
+          );
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      final tempDir = Directory.systemTemp.createTempSync();
+      final tempFile = File('${tempDir.path}/test_scan.jpg')..writeAsBytesSync([0, 1, 2]);
+
+      try {
+        final results = await ScanService.scanPhoto(
+          tempFile,
+          baseUrl: 'http://localhost:8000',
+          client: mockClient,
+        );
+
+        expect(capturedAuth, isNull);
+        expect(results, isEmpty);
+      } finally {
+        tempDir.deleteSync(recursive: true);
+      }
     });
   });
 }
