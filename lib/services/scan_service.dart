@@ -71,6 +71,31 @@ class ScanResultItem {
   }
 }
 
+/// Respons POST /scan/confirm. `itemsPendingReview` = harga yang masuk antrean verifikasi
+/// (di luar kisaran wajar); 0 bila backend lama tidak mengirim field-nya.
+class ConfirmScanResult {
+  final int itemsSaved;
+  final int productsCreated;
+  final int itemsPendingReview;
+  final String? message;
+
+  const ConfirmScanResult({
+    required this.itemsSaved,
+    required this.productsCreated,
+    required this.itemsPendingReview,
+    this.message,
+  });
+
+  factory ConfirmScanResult.fromJson(Map<String, dynamic> json) {
+    return ConfirmScanResult(
+      itemsSaved: (json['items_saved'] as num?)?.toInt() ?? 0,
+      productsCreated: (json['products_created'] as num?)?.toInt() ?? 0,
+      itemsPendingReview: (json['items_pending_review'] as num?)?.toInt() ?? 0,
+      message: json['message'] as String?,
+    );
+  }
+}
+
 class ScanService {
   // Default Base URL for Android / Cloud Backend
   static String defaultBaseUrl = const String.fromEnvironment(
@@ -144,7 +169,7 @@ class ScanService {
   }
 
   /// Sends the confirmed items to the POST /scan/confirm endpoint
-  static Future<Map<String, dynamic>> confirmScan({
+  static Future<ConfirmScanResult> confirmScan({
     required String storeId,
     required String userId,
     required List<ScanResultItem> items,
@@ -177,7 +202,7 @@ class ScanService {
       ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 201) {
-        return jsonDecode(response.body);
+        return ConfirmScanResult.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
       } else {
         final errorData = jsonDecode(response.body);
         final String errorDetail = errorData['detail'] ?? 'Gagal menyimpan konfirmasi';
