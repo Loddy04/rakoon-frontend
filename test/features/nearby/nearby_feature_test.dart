@@ -10,6 +10,7 @@ import 'package:rakoon_frontend/features/app_shell/presentation/pages/home_scree
 import 'package:rakoon_frontend/features/nearby/nearby_stores_screen.dart';
 import 'package:rakoon_frontend/features/nearby/price_comparison_screen.dart';
 import 'package:rakoon_frontend/features/price_check/presentation/pages/price_check_catalog_page.dart';
+import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/widgets/rakoon_location_map.dart';
 
 void main() {
@@ -456,5 +457,55 @@ void main() {
         });
       },
     );
+  });
+
+  group('StoreProductItem Model Tests', () {
+    test('StoreProductItem.fromJson parses stale: true and stale: false properly', () {
+      final staleJson = {
+        'id': 'prod-stale-1',
+        'nama': 'Minyak Goreng 2L',
+        'kategori': 'Makanan Pokok',
+        'harga': 34000.0,
+        'updated_at': '2026-01-10T00:00:00Z',
+        'stale': true,
+      };
+      final staleItem = StoreProductItem.fromJson(staleJson);
+      expect(staleItem.stale, isTrue);
+      expect(staleItem.nama, 'Minyak Goreng 2L');
+      expect(staleItem.harga, 34000.0);
+      expect(staleItem.updatedAt, '2026-01-10T00:00:00Z');
+
+      final freshJson = {
+        'id': 'prod-fresh-1',
+        'nama': 'Beras 5kg',
+        'kategori': 'Makanan Pokok',
+        'harga': 68000.0,
+        'updated_at': '2026-10-10T00:00:00Z',
+        'stale': false,
+      };
+      final freshItem = StoreProductItem.fromJson(freshJson);
+      expect(freshItem.stale, isFalse);
+    });
+
+    test('StoreProductItem.fromJson defaults stale to false when field is omitted or null', () {
+      final omittedJson = {
+        'id': 'prod-omitted-1',
+        'nama': 'Gula Pasir 1kg',
+        'kategori': 'Makanan Pokok',
+        'harga': 17500.0,
+      };
+      final omittedItem = StoreProductItem.fromJson(omittedJson);
+      expect(omittedItem.stale, isFalse);
+
+      final nullJson = {
+        'id': 'prod-null-1',
+        'nama': 'Gula Pasir 1kg',
+        'kategori': 'Makanan Pokok',
+        'harga': 17500.0,
+        'stale': null,
+      };
+      final nullItem = StoreProductItem.fromJson(nullJson);
+      expect(nullItem.stale, isFalse);
+    });
   });
 }

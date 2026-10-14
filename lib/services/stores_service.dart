@@ -263,6 +263,7 @@ class StoreProductItem {
   final double harga;
   final String? fotoUrl;
   final String? updatedAt;
+  final bool stale;
 
   StoreProductItem({
     required this.id,
@@ -273,6 +274,7 @@ class StoreProductItem {
     required this.harga,
     this.fotoUrl,
     this.updatedAt,
+    this.stale = false,
   });
 
   factory StoreProductItem.fromJson(Map<String, dynamic> json) {
@@ -285,6 +287,7 @@ class StoreProductItem {
       harga: (json['harga'] as num?)?.toDouble() ?? 0.0,
       fotoUrl: json['foto_url'] as String?,
       updatedAt: json['updated_at'] as String?,
+      stale: json['stale'] as bool? ?? false,
     );
   }
 }
