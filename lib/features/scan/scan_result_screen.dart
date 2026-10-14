@@ -1209,7 +1209,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     }
 
     try {
-      await ScanService.confirmScan(
+      final confirmResult = await ScanService.confirmScan(
         storeId: storeId,
         userId: userId,
         items: confirmedItems,
@@ -1263,6 +1263,19 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
+                  if (confirmResult.itemsPendingReview > 0) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '${confirmResult.itemsPendingReview} harga menunggu verifikasi',
+                      key: const Key('save_pending_review_notice'),
+                      style: GoogleFonts.outfit(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFFB45309),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                   const SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,

@@ -13,6 +13,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 void main() {
   late MockClient mockHttpClient;
   late List<http.Request> capturedConfirmRequests;
+  late Map<String, dynamic> confirmResponseBody;
 
   setUpAll(() async {
     SharedPreferences.setMockInitialValues({});
@@ -27,6 +28,11 @@ void main() {
 
   setUp(() {
     capturedConfirmRequests = [];
+    confirmResponseBody = {
+      'items_saved': 1,
+      'products_created': 0,
+      'message': 'Berhasil disimpan!',
+    };
     AuthService.mockSession = Session(
       accessToken: 'test-bearer-token-xyz',
       tokenType: 'bearer',
@@ -62,14 +68,7 @@ void main() {
 
       if (request.url.path.endsWith('/scan/confirm')) {
         capturedConfirmRequests.add(request);
-        return http.Response(
-          jsonEncode({
-            'items_saved': 1,
-            'products_created': 0,
-            'message': 'Berhasil disimpan!',
-          }),
-          201,
-        );
+        return http.Response(jsonEncode(confirmResponseBody), 201);
       }
 
       return http.Response('Not Found', 404);
@@ -411,6 +410,46 @@ void main() {
       await tester.tap(find.byKey(const Key('save_success_done_button')));
       await tester.pumpAndSettle();
       expect(find.byType(Dialog), findsNothing);
+    });
+
+    Future<void> saveValidItem(WidgetTester tester) async {
+      await tester.pumpWidget(buildScanResultScreen([
+        ScanResultItem(
+          namaProduk: 'Beras Premium 5kg',
+          harga: 72000.0,
+          ukuran: 5.0,
+          satuan: 'kg',
+          kategori: 'Makanan Pokok',
+          confidence: 'tinggi',
+          needsVerification: false,
+        ),
+      ]));
+      await tester.pumpAndSettle();
+      final saveButtonFinder = find.byKey(const Key('save_confirm_button'));
+      await tester.ensureVisible(saveButtonFinder);
+      await tester.tap(saveButtonFinder);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('9b. Success dialog shows "N harga menunggu verifikasi" when items_pending_review > 0', (
+      WidgetTester tester,
+    ) async {
+      confirmResponseBody['items_pending_review'] = 2;
+      await saveValidItem(tester);
+
+      expect(find.text('Simpan Berhasil'), findsOneWidget);
+      expect(find.byKey(const Key('save_pending_review_notice')), findsOneWidget);
+      expect(find.text('2 harga menunggu verifikasi'), findsOneWidget);
+    });
+
+    testWidgets('9c. Success dialog has no pending notice when items_pending_review is 0 or missing', (
+      WidgetTester tester,
+    ) async {
+      await saveValidItem(tester); // respons tanpa field items_pending_review
+
+      expect(find.text('Simpan Berhasil'), findsOneWidget);
+      expect(find.byKey(const Key('save_pending_review_notice')), findsNothing);
+      expect(find.textContaining('menunggu verifikasi'), findsNothing);
     });
 
     // 10. Rapidly tapping "Simpan Hasil Scan" does not stack multiple validation dialogs
