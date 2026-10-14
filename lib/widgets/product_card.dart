@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
+import 'package:rakoon_frontend/widgets/price_freshness_label.dart';
 
 /// Reusable ProductCard widget complying with UI_RULES.md.
 /// - InkWell root interaction for product detail navigation.
@@ -139,7 +140,17 @@ class ProductCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 1. Container Gambar Produk + Badges
-                _buildImageContainer(),
+                Stack(
+                  children: [
+                    _buildImageContainer(),
+                    if (product.stale)
+                      Positioned(
+                        left: 6,
+                        bottom: 6,
+                        child: PriceFreshnessLabel(isStale: true, updatedAt: product.updatedAt),
+                      ),
+                  ],
+                ),
                 const SizedBox(height: 8.0),
 
                 // 2. Nama Produk (SizedBox fixed height 40.0, maxLines: 2)

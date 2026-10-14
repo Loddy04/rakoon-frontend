@@ -203,6 +203,7 @@ class RecommendedProduct {
   final double? jarakKm;
   final String updatedAt;
   final String? fotoUrl;
+  final bool stale;
 
   RecommendedProduct({
     required this.id,
@@ -215,6 +216,7 @@ class RecommendedProduct {
     this.jarakKm,
     required this.updatedAt,
     this.fotoUrl,
+    this.stale = false,
   });
 
   factory RecommendedProduct.fromJson(Map<String, dynamic> json) {
@@ -229,6 +231,7 @@ class RecommendedProduct {
       jarakKm: (json['jarak_km'] as num?)?.toDouble(),
       updatedAt: json['updated_at'] as String? ?? 'Baru saja',
       fotoUrl: json['foto_url'] as String?,
+      stale: json['stale'] as bool? ?? false,
     );
   }
 }

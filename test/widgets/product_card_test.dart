@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
+import 'package:rakoon_frontend/widgets/price_freshness_label.dart';
 import 'package:rakoon_frontend/widgets/product_card.dart';
 
 void main() {
@@ -71,6 +72,34 @@ void main() {
       expect(find.text('800 m'), findsOneWidget);
       expect(find.text('15m ago'), findsNothing);
       expect(tester.takeException(), isNull);
+    });
+
+    test('RecommendedProduct.fromJson parses stale, missing = false', () {
+      final base = {'id': 'p1', 'nama': 'Beras', 'harga': 68000, 'updated_at': '2026-01-10T00:00:00Z'};
+      expect(RecommendedProduct.fromJson({...base, 'stale': true}).stale, isTrue);
+      expect(RecommendedProduct.fromJson(base).stale, isFalse);
+    });
+
+    testWidgets('ProductCard shows PriceFreshnessLabel only when stale', (tester) async {
+      RecommendedProduct build(bool stale) => RecommendedProduct(
+            id: 'p1',
+            nama: 'Beras',
+            kategori: 'Makanan Pokok',
+            harga: 68000,
+            namaToko: 'Toko A',
+            updatedAt: '2026-01-10T00:00:00Z',
+            stale: stale,
+          );
+
+      await tester.pumpWidget(
+        MaterialApp(home: Scaffold(body: Center(child: ProductCard(product: build(true))))),
+      );
+      expect(find.text('Harga per 10 Jan 2026'), findsOneWidget);
+
+      await tester.pumpWidget(
+        MaterialApp(home: Scaffold(body: Center(child: ProductCard(product: build(false))))),
+      );
+      expect(find.byType(PriceFreshnessLabel), findsNothing);
     });
   });
 }
