@@ -65,7 +65,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
 
   final _claimApplicantNameCtrl = TextEditingController();
   final _claimApplicantPhoneCtrl = TextEditingController();
-  String _claimApplicantRole = 'Pemilik';
+  final String _claimApplicantRole = 'Pemilik';
   final _claimDocUrlCtrl = TextEditingController();
   final _claimPhotoUrlCtrl = TextEditingController();
 
@@ -406,7 +406,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
                 // 5. Peran pemohon (wajib)
                 DropdownButtonFormField<String>(
                   key: const Key('new_store_applicant_role_dropdown'),
-                  value: appRole,
+                  initialValue: appRole,
                   decoration: const InputDecoration(labelText: 'Peran Pemohon *'),
                   items: const [
                     DropdownMenuItem(value: 'Pemilik', child: Text('Pemilik')),
@@ -711,8 +711,10 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
                               client: widget.httpClient,
                             );
 
-                            if (mounted) {
+                            if (ctx.mounted) {
                               Navigator.pop(ctx);
+                            }
+                            if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('Pengajuan toko baru berhasil dikirim. Menunggu verifikasi admin.'),
