@@ -848,6 +848,10 @@ class AdsService {
 
       if (response.statusCode == 200) {
         return PaymentCheckoutData.fromJson(jsonDecode(response.body));
+      } else if (response.statusCode == 409) {
+        throw Exception('Pembayaran sedang diproses, coba lagi sebentar');
+      } else if (response.statusCode == 503) {
+        throw Exception('Pembayaran belum tersedia, coba lagi nanti');
       } else {
         throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal memulai checkout pembayaran.'));
       }

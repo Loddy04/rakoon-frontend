@@ -580,6 +580,52 @@ void main() {
       expect(checkout.invoiceUrl, 'https://checkout.xendit.co/inv-mock-999');
     });
 
+    test('AdsService.initiatePayment maps 409 to friendly in-progress message without raw body', () async {
+      final client409 = MockClient((request) async {
+        return http.Response(jsonEncode({
+          "detail": "Transaksi untuk kampanye ini sedang diproses atau sudah ada."
+        }), 409);
+      });
+
+      expect(
+        () => AdsService.initiatePayment(
+          campaignId: 'ad-new-123',
+          baseUrl: 'https://api.test',
+          client: client409,
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Pembayaran sedang diproses, coba lagi sebentar'),
+          ),
+        ),
+      );
+    });
+
+    test('AdsService.initiatePayment maps 503 to friendly unavailable message without raw body', () async {
+      final client503 = MockClient((request) async {
+        return http.Response(jsonEncode({
+          "detail": "Payment gateway Xendit belum dikonfigurasi."
+        }), 503);
+      });
+
+      expect(
+        () => AdsService.initiatePayment(
+          campaignId: 'ad-new-123',
+          baseUrl: 'https://api.test',
+          client: client503,
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Pembayaran belum tersedia, coba lagi nanti'),
+          ),
+        ),
+      );
+    });
+
     test('AdsService.getPaymentStatus retrieves latest status from server', () async {
       final status = await AdsService.getPaymentStatus(
         campaignId: 'ad-new-123',
@@ -1092,6 +1138,108 @@ void main() {
 
         expect(find.text('Menunggu Pembayaran'), findsOneWidget);
         expect(find.text('Bayar Xendit'), findsOneWidget);
+      });
+
+      testWidgets('MerchantDashboardPage displays clean error for 409 conflict on pay without raw body', (tester) async {
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/ads/my-store')) {
+            return http.Response(jsonEncode({
+              'is_claimed': true,
+              'claim_status': 'verified',
+              'store_id': 'store-1',
+              'store_nama': 'Pamela 6 Supermarket',
+              'campaigns': [
+                {
+                  'id': 'ad-10',
+                  'store_id': 'store-1',
+                  'store_nama': 'Pamela 6 Supermarket',
+                  'title': 'Promo Minyak Murah',
+                  'banner_url': 'https://example.com/oil.jpg',
+                  'duration_days': 7,
+                  'price_paid': 30000,
+                  'distance_km': 0.0,
+                  'expires_at': '2026-10-18T00:00:00Z',
+                  'days_left': 7,
+                  'status': 'pending_payment',
+                  'payment_status': 'unpaid',
+                  'payment_ref': 'INV-OIL-1',
+                }
+              ],
+            }), 200);
+          } else if (request.url.path.endsWith('/ads/campaigns/ad-10/pay')) {
+            return http.Response(jsonEncode({
+              'detail': 'Transaksi untuk kampanye ini sedang diproses atau sudah ada.'
+            }), 409);
+          }
+          return http.Response('{}', 200);
+        });
+
+        await tester.pumpWidget(MaterialApp(
+          home: MerchantDashboardPage(
+            baseUrl: 'https://api.test',
+            httpClient: client,
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        final payBtn = find.text('Bayar Xendit');
+        expect(payBtn, findsOneWidget);
+        await tester.tap(payBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Pembayaran sedang diproses, coba lagi sebentar'), findsOneWidget);
+        expect(find.textContaining('detail'), findsNothing);
+      });
+
+      testWidgets('MerchantDashboardPage displays clean error for 503 unavailable on pay without raw body', (tester) async {
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/ads/my-store')) {
+            return http.Response(jsonEncode({
+              'is_claimed': true,
+              'claim_status': 'verified',
+              'store_id': 'store-1',
+              'store_nama': 'Pamela 6 Supermarket',
+              'campaigns': [
+                {
+                  'id': 'ad-10',
+                  'store_id': 'store-1',
+                  'store_nama': 'Pamela 6 Supermarket',
+                  'title': 'Promo Minyak Murah',
+                  'banner_url': 'https://example.com/oil.jpg',
+                  'duration_days': 7,
+                  'price_paid': 30000,
+                  'distance_km': 0.0,
+                  'expires_at': '2026-10-18T00:00:00Z',
+                  'days_left': 7,
+                  'status': 'pending_payment',
+                  'payment_status': 'unpaid',
+                  'payment_ref': 'INV-OIL-1',
+                }
+              ],
+            }), 200);
+          } else if (request.url.path.endsWith('/ads/campaigns/ad-10/pay')) {
+            return http.Response(jsonEncode({
+              'detail': 'Payment gateway Xendit belum dikonfigurasi.'
+            }), 503);
+          }
+          return http.Response('{}', 200);
+        });
+
+        await tester.pumpWidget(MaterialApp(
+          home: MerchantDashboardPage(
+            baseUrl: 'https://api.test',
+            httpClient: client,
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        final payBtn = find.text('Bayar Xendit');
+        expect(payBtn, findsOneWidget);
+        await tester.tap(payBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Pembayaran belum tersedia, coba lagi nanti'), findsOneWidget);
+        expect(find.textContaining('detail'), findsNothing);
       });
     });
 

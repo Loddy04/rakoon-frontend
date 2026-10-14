@@ -918,7 +918,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal memulai checkout: $e'),
+            content: Text(e.toString().replaceFirst("Exception: ", "")),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
