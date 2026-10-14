@@ -1306,6 +1306,146 @@ void main() {
         // Status badge updated
         expect(find.text('Menunggu Pembayaran'), findsNothing);
       });
+
+      testWidgets('Resuming app calls POST /ads/my-store/reconcile-payments before GET /ads/my-store', (tester) async {
+        final calls = <String>[];
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/ads/my-store/reconcile-payments')) {
+            calls.add('POST reconcile-payments');
+            return http.Response(jsonEncode({
+              'is_claimed': true,
+              'claim_status': 'verified',
+              'store_id': 'store-1',
+              'store_nama': 'Pamela 6 Supermarket',
+              'campaigns': [
+                {
+                  'id': 'ad-10',
+                  'store_id': 'store-1',
+                  'store_nama': 'Pamela 6 Supermarket',
+                  'title': 'Promo Minyak Murah',
+                  'banner_url': 'https://example.com/oil.jpg',
+                  'duration_days': 7,
+                  'price_paid': 30000,
+                  'distance_km': 0.0,
+                  'expires_at': '2026-10-18T00:00:00Z',
+                  'days_left': 7,
+                  'status': 'active',
+                  'payment_status': 'paid',
+                  'payment_ref': 'INV-OIL-1',
+                }
+              ],
+            }), 200);
+          } else if (request.url.path.endsWith('/ads/my-store')) {
+            calls.add('GET my-store');
+            return http.Response(jsonEncode({
+              'is_claimed': true,
+              'claim_status': 'verified',
+              'store_id': 'store-1',
+              'store_nama': 'Pamela 6 Supermarket',
+              'campaigns': [
+                {
+                  'id': 'ad-10',
+                  'store_id': 'store-1',
+                  'store_nama': 'Pamela 6 Supermarket',
+                  'title': 'Promo Minyak Murah',
+                  'banner_url': 'https://example.com/oil.jpg',
+                  'duration_days': 7,
+                  'price_paid': 30000,
+                  'distance_km': 0.0,
+                  'expires_at': '2026-10-18T00:00:00Z',
+                  'days_left': 7,
+                  'status': 'pending_payment',
+                  'payment_status': 'unpaid',
+                  'payment_ref': 'INV-OIL-1',
+                }
+              ],
+            }), 200);
+          }
+          return http.Response('{}', 200);
+        });
+
+        await tester.pumpWidget(MaterialApp(
+          home: MerchantDashboardPage(
+            baseUrl: 'https://api.test',
+            httpClient: client,
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        expect(calls, ['GET my-store']);
+
+        // Resume app
+        final state = tester.state(find.byType(MerchantDashboardPage)) as WidgetsBindingObserver;
+        state.didChangeAppLifecycleState(AppLifecycleState.resumed);
+        await tester.pumpAndSettle();
+
+        // Reconcile was called before GET my-store
+        expect(calls, ['GET my-store', 'POST reconcile-payments', 'GET my-store']);
+      });
+
+      testWidgets('Tapping Cek Status calls reconcile-payment first, and safely falls back to GET on reconcile failure', (tester) async {
+        final calls = <String>[];
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/ads/my-store')) {
+            return http.Response(jsonEncode({
+              'is_claimed': true,
+              'claim_status': 'verified',
+              'store_id': 'store-1',
+              'store_nama': 'Pamela 6 Supermarket',
+              'campaigns': [
+                {
+                  'id': 'ad-20',
+                  'store_id': 'store-1',
+                  'store_nama': 'Pamela 6 Supermarket',
+                  'title': 'Promo Susu Segar',
+                  'banner_url': 'https://example.com/milk.jpg',
+                  'duration_days': 3,
+                  'price_paid': 15000,
+                  'distance_km': 0.0,
+                  'expires_at': '2026-10-18T00:00:00Z',
+                  'days_left': 3,
+                  'status': 'pending_payment',
+                  'payment_status': 'unpaid',
+                  'payment_ref': 'INV-MILK-1',
+                }
+              ],
+            }), 200);
+          } else if (request.url.path.endsWith('/ads/campaigns/ad-20/reconcile-payment')) {
+            calls.add('POST reconcile-payment');
+            // Simulate reconcile failure (e.g. 500 or 503)
+            return http.Response('Internal Server Error', 500);
+          } else if (request.url.path.endsWith('/ads/campaigns/ad-20/payment-status')) {
+            calls.add('GET payment-status');
+            return http.Response(jsonEncode({
+              'campaign_id': 'ad-20',
+              'campaign_status': 'pending_payment',
+              'payment_status': 'unpaid',
+              'transaction_status': 'PENDING',
+              'amount': 15000,
+            }), 200);
+          }
+          return http.Response('{}', 200);
+        });
+
+        await tester.pumpWidget(MaterialApp(
+          home: MerchantDashboardPage(
+            baseUrl: 'https://api.test',
+            httpClient: client,
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        final checkBtn = find.text('Cek Status');
+        expect(checkBtn, findsOneWidget);
+
+        await tester.tap(checkBtn);
+        await tester.pumpAndSettle();
+
+        // Reconcile was called first, then GET payment-status
+        expect(calls, ['POST reconcile-payment', 'GET payment-status']);
+        // Shows status from GET without raw reconcile error
+        expect(find.text('Status: Menunggu Pembayaran (PENDING)'), findsOneWidget);
+      });
     });
   });
 }
