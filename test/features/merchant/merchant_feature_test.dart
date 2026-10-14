@@ -10,6 +10,7 @@ import 'package:rakoon_frontend/services/ads_service.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/features/merchant/presentation/pages/merchant_dashboard_page.dart';
 import 'package:rakoon_frontend/features/merchant/presentation/pages/create_ad_campaign_page.dart';
+import 'package:rakoon_frontend/features/merchant/presentation/pages/edit_ad_campaign_page.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/home_screen.dart';
 
 void main() {
@@ -298,7 +299,7 @@ void main() {
         expect(find.text('Mitra Toko Rakoon'), findsOneWidget);
         expect(find.text('Pamela 6 Supermarket'), findsOneWidget);
         expect(find.text('Toko Terverifikasi'), findsOneWidget);
-        expect(find.text('Kelola Foto Produk'), findsOneWidget);
+        expect(find.text('Kelola Foto Produk'), findsNothing);
         expect(find.text('Promo JSM Minyak Goreng & Beras Hemat'), findsOneWidget);
         expect(find.textContaining('Sisa 5 Hari'), findsOneWidget);
       });
@@ -364,6 +365,7 @@ void main() {
               storeName: 'Pamela 6 Supermarket',
               baseUrl: 'https://api.test',
               httpClient: mockClient,
+              initialBannerUrl: 'https://example.com/flyer1.jpg',
             ),
           ),
         );
@@ -1020,13 +1022,13 @@ void main() {
             storeName: 'Pamela 6 Supermarket',
             baseUrl: 'https://api.test',
             httpClient: client,
+            initialBannerUrl: 'https://example.com/banner.jpg',
           ),
         ));
         await tester.pumpAndSettle();
 
         // Fill form
-        await tester.enterText(find.byType(TextField).at(0), 'Promo Susu Hemat');
-        await tester.enterText(find.byType(TextField).at(1), 'https://example.com/banner.jpg');
+        await tester.enterText(find.byType(TextField).first, 'Promo Susu Hemat');
         await tester.pumpAndSettle();
 
         // Tap review button
@@ -1588,6 +1590,215 @@ void main() {
         expect(calls, ['POST reconcile-payment', 'GET payment-status']);
         // Shows status from GET without raw reconcile error
         expect(find.text('Status: Menunggu Pembayaran (PENDING)'), findsOneWidget);
+      });
+
+      testWidgets('MerchantDashboardPage displays Kelola Foto Produk for Admin user', (tester) async {
+        AuthService.mockIsAdmin = true;
+        addTearDown(() => AuthService.mockIsAdmin = null);
+
+        await mockNetworkImagesFor(() async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: MerchantDashboardPage(
+                baseUrl: 'https://api.test',
+                httpClient: mockClient,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Kelola Foto Produk'), findsOneWidget);
+        });
+      });
+
+      testWidgets('Tapping campaign card in MerchantDashboardPage navigates to EditAdCampaignPage', (tester) async {
+        await mockNetworkImagesFor(() async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: MerchantDashboardPage(
+                baseUrl: 'https://api.test',
+                httpClient: mockClient,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final campaignCard = find.byKey(const Key('campaign_item_ad-1'));
+          expect(campaignCard, findsOneWidget);
+
+          await tester.tap(campaignCard);
+          await tester.pumpAndSettle();
+
+          expect(find.byType(EditAdCampaignPage), findsOneWidget);
+          expect(find.text('Edit Iklan Promo'), findsOneWidget);
+          expect(find.text('Simpan Perubahan'), findsOneWidget);
+        });
+      });
+
+      testWidgets('EditAdCampaignPage disables form and displays renewal button when campaign is expired', (tester) async {
+        final expiredCampaign = HomePromoBanner(
+          id: 'ad-expired',
+          storeId: 'store-1',
+          storeNama: 'Pamela 6 Supermarket',
+          title: 'Promo Telur Kadaluarsa',
+          bannerUrl: 'https://example.com/expired.jpg',
+          durationDays: 3,
+          pricePaid: 15000,
+          distanceKm: 0.0,
+          expiresAt: '2026-10-01T00:00:00Z',
+          daysLeft: 0,
+          status: 'expired',
+        );
+
+        await mockNetworkImagesFor(() async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: EditAdCampaignPage(
+                campaign: expiredCampaign,
+                storeName: 'Pamela 6 Supermarket',
+                baseUrl: 'https://api.test',
+                httpClient: mockClient,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Detail Iklan (Kedaluwarsa)'), findsOneWidget);
+          expect(find.text('Masa Tayang Iklan Telah Berakhir'), findsOneWidget);
+
+          // TextField is disabled
+          final titleField = tester.widget<TextField>(find.byType(TextField));
+          expect(titleField.enabled, isFalse);
+
+          // Save button does not exist; renewal button exists
+          expect(find.text('Simpan Perubahan'), findsNothing);
+          expect(find.byKey(const Key('renew_ad_subscription_button')), findsOneWidget);
+        });
+      });
+
+      testWidgets('EditAdCampaignPage displays confirmation dialog on delete click and cancels when Batal is clicked', (tester) async {
+        final mockClient = MockClient((request) async {
+          return http.Response('{}', 200);
+        });
+
+        const activeCampaign = HomePromoBanner(
+          id: 'ad-to-keep',
+          storeId: 'store-1',
+          storeNama: 'Pamela 6 Supermarket',
+          title: 'Promo Susu',
+          bannerUrl: 'https://example.com/susu.jpg',
+          durationDays: 7,
+          pricePaid: 30000,
+          distanceKm: 0.0,
+          expiresAt: '2026-10-25T00:00:00Z',
+          daysLeft: 7,
+          status: 'active',
+        );
+
+        await mockNetworkImagesFor(() async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: EditAdCampaignPage(
+                campaign: activeCampaign,
+                storeName: 'Pamela 6 Supermarket',
+                baseUrl: 'https://api.test',
+                httpClient: mockClient,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // Scroll to delete button
+          await tester.ensureVisible(find.byKey(const Key('btn_delete_ad_campaign')));
+          await tester.tap(find.byKey(const Key('btn_delete_ad_campaign')));
+          await tester.pumpAndSettle();
+
+          // Dialog appears with non-refundable disclaimer
+          expect(find.text('Hapus Iklan Promo?'), findsOneWidget);
+          expect(find.textContaining('tidak akan mengembalikan uang jika masa berlaku masih ada'), findsOneWidget);
+
+          // Tap Batal
+          await tester.tap(find.text('Batal'));
+          await tester.pumpAndSettle();
+
+          // Dialog dismissed, still on page
+          expect(find.text('Hapus Iklan Promo?'), findsNothing);
+          expect(find.text('Edit Iklan Promo'), findsOneWidget);
+        });
+      });
+
+      testWidgets('EditAdCampaignPage executes delete and pops back when Ya, Hapus Iklan is confirmed', (tester) async {
+        bool deleteCalled = false;
+        final mockClient = MockClient((request) async {
+          if (request.method == 'DELETE' && request.url.path.endsWith('/ads/campaigns/ad-to-delete')) {
+            deleteCalled = true;
+            return http.Response(jsonEncode({
+              'status': 'success',
+              'message': 'Kampanye iklan berhasil dihapus.',
+            }), 200);
+          }
+          return http.Response('{}', 200);
+        });
+
+        const activeCampaign = HomePromoBanner(
+          id: 'ad-to-delete',
+          storeId: 'store-1',
+          storeNama: 'Pamela 6 Supermarket',
+          title: 'Promo Roti',
+          bannerUrl: 'https://example.com/roti.jpg',
+          durationDays: 7,
+          pricePaid: 30000,
+          distanceKm: 0.0,
+          expiresAt: '2026-10-25T00:00:00Z',
+          daysLeft: 7,
+          status: 'active',
+        );
+
+        await mockNetworkImagesFor(() async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Builder(
+                builder: (context) => Scaffold(
+                  body: ElevatedButton(
+                    onPressed: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditAdCampaignPage(
+                            campaign: activeCampaign,
+                            storeName: 'Pamela 6 Supermarket',
+                            baseUrl: 'https://api.test',
+                            httpClient: mockClient,
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text('Open Edit Page'),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // Open page
+          await tester.tap(find.text('Open Edit Page'));
+          await tester.pumpAndSettle();
+
+          // Tap delete button
+          await tester.ensureVisible(find.byKey(const Key('btn_delete_ad_campaign')));
+          await tester.tap(find.byKey(const Key('btn_delete_ad_campaign')));
+          await tester.pumpAndSettle();
+
+          // Confirm delete
+          expect(find.byKey(const Key('btn_confirm_delete_ad')), findsOneWidget);
+          await tester.tap(find.byKey(const Key('btn_confirm_delete_ad')));
+          await tester.pumpAndSettle();
+
+          expect(deleteCalled, isTrue);
+          expect(find.text('Iklan berhasil dihapus.'), findsOneWidget);
+          expect(find.text('Open Edit Page'), findsOneWidget);
+        });
       });
     });
   });

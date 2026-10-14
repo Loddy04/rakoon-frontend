@@ -823,6 +823,125 @@ class AdsService {
     }
   }
 
+  /// Mengubah judul atau banner URL kampanye iklan yang masih aktif
+  static Future<HomePromoBanner> updateCampaign({
+    required String campaignId,
+    String? title,
+    String? bannerUrl,
+    String? baseUrl,
+    http.Client? client,
+  }) async {
+    final token = AuthService.currentSession?.accessToken;
+    if (token == null) {
+      throw Exception('Silakan masuk akun terlebih dahulu.');
+    }
+
+    final effectiveBase = _resolveBaseUrl(baseUrl);
+    final httpClient = client ?? http.Client();
+
+    try {
+      final body = <String, dynamic>{};
+      if (title != null) body['title'] = title;
+      if (bannerUrl != null) body['banner_url'] = bannerUrl;
+
+      final response = await httpClient.patch(
+        Uri.parse('$effectiveBase/ads/campaigns/$campaignId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        return HomePromoBanner.fromJson(jsonDecode(response.body));
+      } else {
+        throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal memperbarui materi iklan.'));
+      }
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
+  }
+
+  /// Memperbarui langganan kampanye iklan kedaluwarsa dengan sistem pembayaran yang sudah ada
+  static Future<PaymentCheckoutData> renewCampaign({
+    required String campaignId,
+    int? durationDays,
+    String? baseUrl,
+    http.Client? client,
+  }) async {
+    final token = AuthService.currentSession?.accessToken;
+    if (token == null) {
+      throw Exception('Silakan masuk akun terlebih dahulu.');
+    }
+
+    final effectiveBase = _resolveBaseUrl(baseUrl);
+    final httpClient = client ?? http.Client();
+
+    try {
+      final body = <String, dynamic>{};
+      if (durationDays != null) body['duration_days'] = durationDays;
+
+      final response = await httpClient.post(
+        Uri.parse('$effectiveBase/ads/campaigns/$campaignId/renew'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        return PaymentCheckoutData.fromJson(jsonDecode(response.body));
+      } else {
+        throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal memperbarui langganan iklan.'));
+      }
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
+  }
+
+  /// Menghapus kampanye iklan promo milik toko mitra (non-refundable)
+  static Future<bool> deleteCampaign({
+    required String campaignId,
+    String? baseUrl,
+    http.Client? client,
+  }) async {
+    final token = AuthService.currentSession?.accessToken;
+    if (token == null) {
+      throw Exception('Silakan masuk akun terlebih dahulu.');
+    }
+
+    final effectiveBase = _resolveBaseUrl(baseUrl);
+    final httpClient = client ?? http.Client();
+
+    try {
+      final response = await httpClient.delete(
+        Uri.parse('$effectiveBase/ads/campaigns/$campaignId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal menghapus kampanye iklan.'));
+      }
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
+  }
+
   /// Memulai proses pembayaran kampanye iklan via Xendit Sandbox
   static Future<PaymentCheckoutData> initiatePayment({
     required String campaignId,

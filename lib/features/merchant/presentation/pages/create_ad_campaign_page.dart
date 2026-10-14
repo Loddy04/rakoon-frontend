@@ -2,13 +2,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:rakoon_frontend/services/ads_service.dart';
+import 'package:rakoon_frontend/features/merchant/presentation/pages/merchant_dashboard_page.dart' show FilePickerFn;
 
 class CreateAdCampaignPage extends StatefulWidget {
   final String storeId;
   final String storeName;
   final String? baseUrl;
   final http.Client? httpClient;
+  final FilePickerFn? photoPicker;
+  final String? initialBannerUrl;
 
   const CreateAdCampaignPage({
     super.key,
@@ -16,6 +20,8 @@ class CreateAdCampaignPage extends StatefulWidget {
     required this.storeName,
     this.baseUrl,
     this.httpClient,
+    this.photoPicker,
+    this.initialBannerUrl,
   });
 
   @override
@@ -24,39 +30,96 @@ class CreateAdCampaignPage extends StatefulWidget {
 
 class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
   final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _imageUrlController = TextEditingController();
+  Uint8List? _bannerBytes;
+  String? _bannerFilename;
+  String? _uploadedBannerUrl;
+  bool _isUploadingBanner = false;
 
   int _selectedDurationDays = 7;
   bool _isOpeningCheckout = false;
-
-  // Presets untuk kemudahan demo / juri tanpa perlu upload manual
-  final List<Map<String, String>> _sampleBanners = [
-    {
-      "label": "Flyer Promo JSM Sembako",
-      "url": "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80",
-    },
-    {
-      "label": "Flyer Diskon Susu & Makanan Segar",
-      "url": "https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=800&q=80",
-    },
-    {
-      "label": "Flyer Aneka Snack & Minuman Dingin",
-      "url": "https://images.unsplash.com/photo-1588964895597-cfccd6e2dbf9?auto=format&fit=crop&w=800&q=80",
-    },
-  ];
 
   @override
   void initState() {
     super.initState();
     _titleController.text = 'Promo JSM Akhir Pekan ${widget.storeName}';
-    _imageUrlController.text = _sampleBanners.first["url"]!;
+    _uploadedBannerUrl = widget.initialBannerUrl;
   }
 
   @override
   void dispose() {
     _titleController.dispose();
-    _imageUrlController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickBannerImage() async {
+    try {
+      if (widget.photoPicker != null) {
+        final picked = await widget.photoPicker!(allowedExtensions: ['jpg', 'jpeg', 'png', 'webp']);
+        if (picked != null) {
+          setState(() {
+            _bannerBytes = picked.bytes;
+            _bannerFilename = picked.name;
+          });
+          await _uploadBanner();
+        }
+        return;
+      }
+
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 85,
+      );
+
+      if (picked != null) {
+        final bytes = await picked.readAsBytes();
+        setState(() {
+          _bannerBytes = bytes;
+          _bannerFilename = picked.name;
+        });
+        await _uploadBanner();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memilih gambar: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _uploadBanner() async {
+    if (_bannerBytes == null) return;
+    setState(() => _isUploadingBanner = true);
+    try {
+      final url = await AdsService.uploadBannerImage(
+        bytes: _bannerBytes!,
+        filename: _bannerFilename ?? 'flyer_promo.jpg',
+        baseUrl: widget.baseUrl,
+        client: widget.httpClient,
+      );
+      if (mounted) {
+        setState(() {
+          _uploadedBannerUrl = url;
+          _isUploadingBanner = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploadingBanner = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengunggah foto flyer: ${e.toString().replaceFirst("Exception: ", "")}'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
   }
 
   int get _selectedPrice {
@@ -87,10 +150,10 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
       return;
     }
 
-    if (_imageUrlController.text.trim().isEmpty) {
+    if (_uploadedBannerUrl == null || _uploadedBannerUrl!.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('URL foto flyer iklan tidak boleh kosong.'),
+          content: Text('Silakan pilih dan unggah foto flyer promo terlebih dahulu.'),
           backgroundColor: Color(0xFFDC2626),
         ),
       );
@@ -276,7 +339,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                                       final created = await AdsService.createCampaign(
                                         storeId: widget.storeId,
                                         title: _titleController.text.trim(),
-                                        bannerUrl: _imageUrlController.text.trim(),
+                                        bannerUrl: _uploadedBannerUrl!,
                                         durationDays: _selectedDurationDays,
                                         paymentMethod: 'QRIS',
                                         paymentRef: genRef,
@@ -842,84 +905,12 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Pilih template flyer ritel siap pakai atau masukkan URL foto flyer toko Anda:',
+              'Unggah foto brosur atau flyer promo toko Anda dari galeri:',
               style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6B7280)),
-            ),
-            const SizedBox(height: 10),
-
-            // Preset flyer options
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _sampleBanners.map((sample) {
-                  final isSelected = _imageUrlController.text == sample["url"];
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 10.0),
-                    child: ChoiceChip(
-                      label: Text(
-                        sample["label"]!,
-                        style: GoogleFonts.outfit(
-                          fontSize: 12,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: isSelected ? Colors.white : const Color(0xFF374151),
-                        ),
-                      ),
-                      selected: isSelected,
-                      selectedColor: const Color(0xFF0D2818),
-                      backgroundColor: Colors.white,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            _imageUrlController.text = sample["url"]!;
-                          });
-                        }
-                      },
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            TextField(
-              controller: _imageUrlController,
-              onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                hintText: 'https://... (URL Gambar Flyer)',
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                ),
-              ),
-              style: GoogleFonts.outfit(fontSize: 13),
             ),
             const SizedBox(height: 12),
 
-            // Preview Flyer
-            if (_imageUrlController.text.isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: Image.network(
-                    _imageUrlController.text.trim(),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(
-                      color: const Color(0xFFE5E7EB),
-                      child: const Center(
-                        child: Text('Gagal memuat pratinjau gambar.'),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+            _buildPhotoUploadSection(),
             const SizedBox(height: 24),
 
             // Pilihan Durasi & Biaya
@@ -1048,4 +1039,193 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
       ),
     );
   }
+
+  Widget _buildPhotoUploadSection() {
+    if (_bannerBytes == null && _uploadedBannerUrl == null) {
+      return InkWell(
+        key: const Key('pick_banner_image_button'),
+        onTap: _isUploadingBanner ? null : _pickBannerImage,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          height: 140,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFF166534),
+              width: 1.2,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFECFDF5),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.cloud_upload_outlined,
+                  size: 28,
+                  color: Color(0xFF166534),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Pilih Foto Flyer Promo',
+                style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0D2818),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'JPG, PNG, atau WebP dari Galeri',
+                style: GoogleFonts.outfit(
+                  fontSize: 11.5,
+                  color: const Color(0xFF6B7280),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Stack(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: _bannerBytes != null
+                    ? Image.memory(
+                        _bannerBytes!,
+                        fit: BoxFit.cover,
+                      )
+                    : Image.network(
+                        _uploadedBannerUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => Container(
+                          color: const Color(0xFFE5E7EB),
+                          child: const Center(
+                            child: Text('Gagal memuat pratinjau gambar.'),
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+            if (_isUploadingBanner)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(color: Colors.white),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Mengunggah flyer...',
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: _uploadedBannerUrl != null
+                    ? const Color(0xFFECFDF5)
+                    : const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: _uploadedBannerUrl != null
+                      ? const Color(0xFFA7F3D0)
+                      : const Color(0xFFFDE68A),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _uploadedBannerUrl != null
+                        ? Icons.check_circle_rounded
+                        : Icons.schedule_rounded,
+                    size: 14,
+                    color: _uploadedBannerUrl != null
+                        ? const Color(0xFF059669)
+                        : const Color(0xFFB45309),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _uploadedBannerUrl != null ? 'Foto Terunggah' : 'Mengunggah...',
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: _uploadedBannerUrl != null
+                          ? const Color(0xFF059669)
+                          : const Color(0xFFB45309),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: _isUploadingBanner ? null : _pickBannerImage,
+                  icon: const Icon(Icons.refresh_rounded, size: 16),
+                  label: const Text('Ganti Foto'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF166534),
+                    textStyle: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: _isUploadingBanner
+                      ? null
+                      : () {
+                          setState(() {
+                            _bannerBytes = null;
+                            _bannerFilename = null;
+                            _uploadedBannerUrl = null;
+                          });
+                        },
+                  icon: const Icon(Icons.delete_outline_rounded, size: 16),
+                  label: const Text('Hapus'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFDC2626),
+                    textStyle: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }
+
