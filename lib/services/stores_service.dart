@@ -156,15 +156,24 @@ class StoresService {
   }
 
   /// Fetches products sold at a specific store.
+  static const int storeProductsPageSize = 100;
+
   static Future<List<StoreProductItem>> getStoreProducts({
     required String storeId,
     required String baseUrl,
+    int limit = storeProductsPageSize,
+    int offset = 0,
     http.Client? client,
   }) async {
     final cleanBase = baseUrl.endsWith('/')
         ? baseUrl.substring(0, baseUrl.length - 1)
         : baseUrl;
-    final url = Uri.parse('$cleanBase/stores/$storeId/products');
+    final url = Uri.parse('$cleanBase/stores/$storeId/products').replace(
+      queryParameters: {
+        'limit': '$limit',
+        if (offset > 0) 'offset': '$offset',
+      },
+    );
 
     final httpClient = client ?? http.Client();
     try {
@@ -173,8 +182,11 @@ class StoresService {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((e) => StoreProductItem.fromJson(e as Map<String, dynamic>)).toList();
       }
+      if (offset > 0) throw Exception('store products page failed: ${response.statusCode}');
       return [];
     } catch (_) {
+      // Follow-up pages must surface failure so an empty list is not mistaken for "no more".
+      if (offset > 0) rethrow;
       return [];
     } finally {
       if (client == null) {

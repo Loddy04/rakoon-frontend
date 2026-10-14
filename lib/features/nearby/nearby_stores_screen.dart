@@ -243,8 +243,50 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
         String searchQuery = '';
         final searchController = TextEditingController();
 
+        // Infinite scroll state: a full page (== limit) means there may be more.
+        final products = <StoreProductItem>[];
+        var hasMore = false;
+        var loadingMore = false;
+        String? moreError;
+        StateSetter? setSheet;
+
+        final firstPage = StoresService.getStoreProducts(
+          storeId: store.storeId,
+          baseUrl: widget.baseUrl,
+          client: widget.httpClient,
+        ).then((items) {
+          products.addAll(items);
+          hasMore = items.length >= StoresService.storeProductsPageSize;
+          return items;
+        });
+
+        Future<void> loadMore() async {
+          if (loadingMore || !hasMore) return;
+          loadingMore = true;
+          moreError = null;
+          if (modalContext.mounted) setSheet?.call(() {});
+          try {
+            final items = await StoresService.getStoreProducts(
+              storeId: store.storeId,
+              baseUrl: widget.baseUrl,
+              offset: products.length,
+              client: widget.httpClient,
+            );
+            products.addAll(items);
+            hasMore = items.length >= StoresService.storeProductsPageSize;
+          } catch (_) {
+            moreError = 'Gagal memuat produk berikutnya. Periksa koneksi lalu coba lagi.';
+          }
+          loadingMore = false;
+          if (!modalContext.mounted) return;
+          setSheet?.call(() {});
+          // The search box filters loaded items only, so keep fetching while it is in use.
+          if (searchQuery.isNotEmpty && hasMore && moreError == null) loadMore();
+        }
+
         return StatefulBuilder(
           builder: (context, setModalState) {
+            setSheet = setModalState;
             return SafeArea(
               child: ConstrainedBox(
                 constraints: BoxConstraints(
@@ -266,7 +308,14 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                       ),
                     ),
                     Flexible(
-                      child: SingleChildScrollView(
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: (n) {
+                          if (n.metrics.axis == Axis.vertical && n.metrics.extentAfter < 400) {
+                            loadMore();
+                          }
+                          return false;
+                        },
+                        child: SingleChildScrollView(
                         padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -376,6 +425,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                                   setModalState(() {
                                     searchQuery = val.trim();
                                   });
+                                  if (searchQuery.isNotEmpty) loadMore();
                                 },
                                 style: GoogleFonts.outfit(
                                   fontSize: 13,
@@ -414,11 +464,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
 
                             // FutureBuilder for store products
                             FutureBuilder<List<StoreProductItem>>(
-                              future: StoresService.getStoreProducts(
-                                storeId: store.storeId,
-                                baseUrl: widget.baseUrl,
-                                client: widget.httpClient,
-                              ),
+                              future: firstPage,
                               builder: (context, snapshot) {
                                 if (snapshot.connectionState == ConnectionState.waiting) {
                                   return const Padding(
@@ -432,7 +478,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                                   );
                                 }
 
-                                final items = snapshot.data ?? [];
+                                final items = products;
                                 if (items.isEmpty) {
                                   return Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -462,7 +508,8 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                                   );
                                 }
 
-                                return ListView.separated(
+                                return Column(children: [
+                                ListView.separated(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
                                   itemCount: filtered.length,
@@ -580,11 +627,36 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
                                       ),
                                     );
                                   },
-                                );
+                                ),
+                                if (moreError != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          moreError!,
+                                          textAlign: TextAlign.center,
+                                          style: GoogleFonts.outfit(color: const Color(0xFF6B7280), fontSize: 12),
+                                        ),
+                                        TextButton(onPressed: loadMore, child: const Text('Coba lagi')),
+                                      ],
+                                    ),
+                                  )
+                                else if (loadingMore)
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 12),
+                                    child: SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF059669)),
+                                    ),
+                                  ),
+                                ]);
                               },
                             ),
                           ],
                         ),
+                      ),
                       ),
                     ),
 
