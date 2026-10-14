@@ -1,9 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:camera/camera.dart';
+import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
+import 'package:rakoon_frontend/features/auth/presentation/widgets/login_bottom_sheet.dart';
 import 'package:rakoon_frontend/features/scan/scan_result_screen.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 
@@ -12,6 +15,9 @@ class ScanCameraScreen extends StatefulWidget {
   final VoidCallback? onClose;
   final bool isActive;
   final CameraController? customCameraController;
+  final http.Client? httpClient;
+  final ImagePicker? imagePicker;
+  final File? initialImageFile;
 
   const ScanCameraScreen({
     super.key,
@@ -19,6 +25,9 @@ class ScanCameraScreen extends StatefulWidget {
     this.onClose,
     this.isActive = true,
     this.customCameraController,
+    this.httpClient,
+    this.imagePicker,
+    this.initialImageFile,
   });
 
   @override
@@ -27,7 +36,7 @@ class ScanCameraScreen extends StatefulWidget {
 
 class _ScanCameraScreenState extends State<ScanCameraScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
-  final ImagePicker _picker = ImagePicker();
+  late final ImagePicker _picker;
   File? _imageFile;
   bool _isScanning = false;
   String? _errorMessage;
@@ -47,6 +56,8 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
   @override
   void initState() {
     super.initState();
+    _picker = widget.imagePicker ?? ImagePicker();
+    _imageFile = widget.initialImageFile;
     WidgetsBinding.instance.addObserver(this);
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
@@ -276,6 +287,26 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
   Future<void> _scanPhoto() async {
     if (_imageFile == null) return;
 
+    if (AuthService.currentSession == null) {
+      final bool? loginSuccess = await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: const LoginBottomSheet(),
+        ),
+      );
+
+      if (loginSuccess != true && AuthService.currentSession == null) {
+        return;
+      }
+    }
+
+    if (!mounted) return;
+
     setState(() {
       _isScanning = true;
       _errorMessage = null;
@@ -285,6 +316,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
       final items = await ScanService.scanPhoto(
         _imageFile!,
         baseUrl: widget.baseUrl,
+        client: widget.httpClient,
       );
 
       if (!mounted) return;

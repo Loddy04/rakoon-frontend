@@ -1,10 +1,33 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/app_shell.dart';
+import 'package:rakoon_frontend/features/auth/presentation/widgets/login_bottom_sheet.dart';
 import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
+import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+class MockImagePicker extends ImagePicker {
+  final XFile? fileToReturn;
+  MockImagePicker({this.fileToReturn});
+
+  @override
+  Future<XFile?> pickImage({
+    required ImageSource source,
+    double? maxWidth,
+    double? maxHeight,
+    int? imageQuality,
+    CameraDevice preferredCameraDevice = CameraDevice.rear,
+    bool requestFullMetadata = true,
+  }) async {
+    return fileToReturn;
+  }
+}
 
 void main() {
   setUpAll(() async {
@@ -243,6 +266,145 @@ void main() {
       expect(content.contains('_initializeCamera'), isTrue);
       expect(content.contains('_cameraController!.value.aspectRatio > 1.0'), isTrue);
       expect(content.contains('1.0 / _cameraController!.value.aspectRatio'), isTrue);
+    });
+  });
+
+  group('ScanCameraScreen Authentication Guard Tests', () {
+    late Directory tempDir;
+    late File mockPhotoFile;
+
+    setUp(() {
+      AuthService.mockSession = null;
+      tempDir = Directory.systemTemp.createTempSync();
+      mockPhotoFile = File('${tempDir.path}/test_shelf.jpg')..writeAsBytesSync([1, 2, 3]);
+    });
+
+    tearDown(() {
+      AuthService.mockSession = null;
+      try {
+        if (tempDir.existsSync()) {
+          tempDir.deleteSync(recursive: true);
+        }
+      } catch (_) {}
+    });
+
+    testWidgets('Unauthenticated user tapping scan displays LoginBottomSheet, aborts if dismissed', (tester) async {
+      bool scanEndpointCalled = false;
+      final client = MockClient((request) async {
+        if (request.url.path.endsWith('/scan/')) {
+          scanEndpointCalled = true;
+          return http.Response('{"detected": []}', 200);
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      final mockPicker = MockImagePicker(fileToReturn: XFile(mockPhotoFile.path));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ScanCameraScreen(
+            baseUrl: 'http://localhost:8000',
+            httpClient: client,
+            imagePicker: mockPicker,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap gallery button in fallback view
+      final galleryBtn = find.byKey(const Key('gallery_picker_fallback_btn'));
+      expect(galleryBtn, findsOneWidget);
+      await tester.tap(galleryBtn);
+      await tester.pumpAndSettle();
+
+      // LoginBottomSheet is shown because session is null
+      expect(find.byType(LoginBottomSheet), findsOneWidget);
+      expect(scanEndpointCalled, isFalse);
+
+      // Dismiss login sheet
+      final BuildContext sheetCtx = tester.element(find.byType(LoginBottomSheet));
+      Navigator.pop(sheetCtx, false);
+      await tester.pumpAndSettle();
+
+      // Scan was aborted, no request sent
+      expect(find.byType(LoginBottomSheet), findsNothing);
+      expect(scanEndpointCalled, isFalse);
+    });
+
+    testWidgets('Unauthenticated user logging in via LoginBottomSheet continues scan successfully', (tester) async {
+      bool scanEndpointCalled = false;
+      String? capturedAuthHeader;
+      final client = MockClient((request) async {
+        if (request.url.path.endsWith('/scan/')) {
+          scanEndpointCalled = true;
+          capturedAuthHeader = request.headers['Authorization'];
+          return http.Response(
+            jsonEncode({
+              'detected': [
+                {
+                  'nama_produk': 'Beras Ramos 5kg',
+                  'harga': 68000,
+                  'ukuran': 5.0,
+                  'satuan': 'kg',
+                  'kategori': 'Makanan Pokok',
+                  'confidence': 'tinggi',
+                  'needs_verification': false,
+                }
+              ],
+            }),
+            200,
+          );
+        }
+        if (request.url.path.endsWith('/stores/nearby')) {
+          return http.Response('{"stores": []}', 200);
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      final mockPicker = MockImagePicker(fileToReturn: XFile(mockPhotoFile.path));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ScanCameraScreen(
+            baseUrl: 'http://localhost:8000',
+            httpClient: client,
+            imagePicker: mockPicker,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap gallery button
+      await tester.tap(find.byKey(const Key('gallery_picker_fallback_btn')));
+      await tester.pumpAndSettle();
+
+      // Login sheet appears
+      expect(find.byType(LoginBottomSheet), findsOneWidget);
+      expect(scanEndpointCalled, isFalse);
+
+      // Simulate successful login
+      AuthService.mockSession = Session(
+        accessToken: 'authenticated-user-token-123',
+        tokenType: 'bearer',
+        user: User(
+          id: 'user-scan-123',
+          appMetadata: {},
+          userMetadata: {},
+          aud: 'authenticated',
+          createdAt: DateTime.now().toIso8601String(),
+          email: 'user@rakoon.app',
+        ),
+      );
+
+      final BuildContext sheetCtx = tester.element(find.byType(LoginBottomSheet));
+      Navigator.pop(sheetCtx, true);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(seconds: 1));
+
+      // Scan resumed and completed
+      expect(scanEndpointCalled, isTrue);
+      expect(capturedAuthHeader, 'Bearer authenticated-user-token-123');
     });
   });
 }

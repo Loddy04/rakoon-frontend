@@ -97,12 +97,10 @@ class ScanService {
     request.headers['Accept'] = 'application/json';
     
     // Attach the photo file
-    final stream = http.ByteStream(imageFile.openRead());
-    final length = await imageFile.length();
-    final multipartFile = http.MultipartFile(
+    final bytes = imageFile.readAsBytesSync();
+    final multipartFile = http.MultipartFile.fromBytes(
       'file',
-      stream,
-      length,
+      bytes,
       filename: imageFile.path.split('/').last,
     );
     request.files.add(multipartFile);
