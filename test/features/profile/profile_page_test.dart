@@ -113,8 +113,9 @@ void main() {
       expect(find.text('Siti Rahmawati'), findsOneWidget);
       expect(find.text('siti.rahma@rakoon.co'), findsOneWidget);
       expect(find.text('SR'), findsOneWidget); // User initials in avatar
-      expect(find.text('Akun Terverifikasi'), findsOneWidget);
-      expect(find.text('Status Sinkronisasi'), findsOneWidget);
+      // P1-17: tidak ada lencana "Akun Terverifikasi" tanpa email_confirmed_at, dan tidak ada kartu sinkronisasi statis.
+      expect(find.text('Akun Terverifikasi'), findsNothing);
+      expect(find.text('Status Sinkronisasi'), findsNothing);
 
       // Ensure sensitive tokens/UUIDs are NEVER leaked to UI
       expect(find.text('mock-user-uuid-98765-secret'), findsNothing);
@@ -122,6 +123,56 @@ void main() {
 
       expect(find.byKey(const Key('profile_logout_button')), findsOneWidget);
       expect(find.byKey(const Key('signin_invitation_button')), findsNothing);
+    });
+
+    testWidgets('shows "Akun Terverifikasi" only when the email is confirmed (P1-17)', (
+      WidgetTester tester,
+    ) async {
+      AuthService.mockSession = Session(
+        accessToken: 'mock-token',
+        refreshToken: 'mock-refresh-token',
+        expiresIn: 3600,
+        tokenType: 'bearer',
+        user: User(
+          id: 'confirmed-user',
+          appMetadata: {},
+          userMetadata: {'full_name': 'Dewi Konfirmasi'},
+          aud: 'authenticated',
+          email: 'dewi@rakoon.co',
+          emailConfirmedAt: '2026-01-02T00:00:00Z',
+          createdAt: DateTime.now().toIso8601String(),
+        ),
+      );
+
+      await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Akun Terverifikasi'), findsOneWidget);
+    });
+
+    testWidgets('admin claims in user metadata do not show admin UI (P1-14)', (
+      WidgetTester tester,
+    ) async {
+      AuthService.mockSession = Session(
+        accessToken: 'mock-token',
+        refreshToken: 'mock-refresh-token',
+        expiresIn: 3600,
+        tokenType: 'bearer',
+        user: User(
+          id: 'claims-user',
+          appMetadata: {'role': 'admin'},
+          userMetadata: {'role': 'admin', 'is_admin': true, 'name': 'Penyusup'},
+          aud: 'authenticated',
+          email: 'penyusup@rakoon.co',
+          createdAt: DateTime.now().toIso8601String(),
+        ),
+      );
+
+      await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('profile_admin_badge')), findsNothing);
+      expect(find.byKey(const Key('admin_panel_tile')), findsNothing);
     });
 
     testWidgets('falls back gracefully when metadata is missing (extracts email prefix)', (

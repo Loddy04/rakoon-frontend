@@ -89,6 +89,27 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      _handleAppResumed();
+    }
+  }
+
+  Future<void> _handleAppResumed() async {
+    final hasPending = _myStoreData?.campaigns.any(
+      (c) => c.status == 'pending_payment' || c.paymentStatus == 'unpaid',
+    ) ?? true;
+
+    if (hasPending) {
+      try {
+        await AdsService.reconcileMyStorePayments(
+          baseUrl: widget.baseUrl,
+          client: widget.httpClient,
+        );
+      } catch (_) {
+        // Kegagalan rekonsiliasi tidak boleh memblokir atau menampilkan error mentah
+      }
+    }
+
+    if (mounted) {
       _loadData(silent: true);
     }
   }
@@ -897,7 +918,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal memulai checkout: $e'),
+            content: Text(e.toString().replaceFirst("Exception: ", "")),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
@@ -906,6 +927,18 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
   }
 
   Future<void> _handleCheckPaymentStatus(HomePromoBanner c, {bool showToastOnPending = true}) async {
+    if (c.status == 'pending_payment' || c.paymentStatus == 'unpaid') {
+      try {
+        await AdsService.reconcileCampaignPayment(
+          campaignId: c.id,
+          baseUrl: widget.baseUrl,
+          client: widget.httpClient,
+        );
+      } catch (_) {
+        // Kegagalan rekonsiliasi tidak boleh menampilkan error mentah; tampilkan status terakhir dari GET
+      }
+    }
+
     try {
       final statusData = await AdsService.getPaymentStatus(
         campaignId: c.id,

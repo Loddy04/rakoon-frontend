@@ -164,6 +164,113 @@ void main() {
         client: client,
       );
       expect(isAdmin, isTrue);
+      expect(AuthService.isAdmin, isTrue);
+    });
+
+    Session sessionFor(String id, {Map<String, dynamic>? appMeta, Map<String, dynamic>? userMeta}) {
+      return Session(
+        accessToken: 'mock-access-token',
+        tokenType: 'bearer',
+        user: User(
+          id: id,
+          appMetadata: appMeta ?? {},
+          userMetadata: userMeta ?? {},
+          aud: 'authenticated',
+          createdAt: '2026-01-01',
+        ),
+      );
+    }
+
+    http.Client meClient(String role, {List<String>? calls}) {
+      return MockClient((request) async {
+        calls?.add(request.url.path);
+        if (request.url.path.contains('/auth/me')) {
+          return http.Response(
+            jsonEncode({'user_id': 'u', 'email': 'user@example.com', 'role': role}),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        return http.Response('Not Found', 404);
+      });
+    }
+
+    setUp(() => AuthService.resetAdminCache());
+
+    test('isAdmin ignores admin claims in user_metadata and app_metadata (P1-14)', () {
+      AuthService.mockSession = sessionFor(
+        'user-with-claims',
+        appMeta: {'role': 'admin', 'is_admin': true},
+        userMeta: {'role': 'admin', 'is_admin': true},
+      );
+      expect(AuthService.isAdmin, isFalse);
+    });
+
+    test('checkAdminStatus always asks the backend and never trusts local metadata', () async {
+      AuthService.mockSession = sessionFor(
+        'user-with-claims',
+        appMeta: {'role': 'admin'},
+        userMeta: {'role': 'admin', 'is_admin': true},
+      );
+      final calls = <String>[];
+
+      final isAdmin = await AuthService.checkAdminStatus(
+        baseUrl: 'http://localhost:8000',
+        client: meClient('user', calls: calls),
+      );
+
+      expect(calls.where((p) => p.contains('/auth/me')), hasLength(1));
+      expect(isAdmin, isFalse);
+      expect(AuthService.isAdmin, isFalse);
+    });
+
+    test('checkAdminStatus does not fall back to metadata when the backend is unreachable', () async {
+      AuthService.mockSession = sessionFor(
+        'user-with-claims',
+        appMeta: {'role': 'admin'},
+        userMeta: {'role': 'admin'},
+      );
+      final failing = MockClient((request) async => throw http.ClientException('offline'));
+
+      final isAdmin = await AuthService.checkAdminStatus(
+        baseUrl: 'http://localhost:8000',
+        client: failing,
+      );
+
+      expect(isAdmin, isFalse);
+      expect(AuthService.isAdmin, isFalse);
+    });
+
+    test('checkAdminStatus treats a non-200 backend answer as not admin', () async {
+      AuthService.mockSession = sessionFor('some-user');
+      final unauthorized = MockClient((request) async => http.Response('Unauthorized', 401));
+
+      expect(
+        await AuthService.checkAdminStatus(baseUrl: 'http://localhost:8000', client: unauthorized),
+        isFalse,
+      );
+      expect(AuthService.isAdmin, isFalse);
+    });
+
+    test('admin cache belongs to one user: switching account drops admin without sign-out', () async {
+      AuthService.mockSession = sessionFor('admin-user');
+      expect(
+        await AuthService.checkAdminStatus(baseUrl: 'http://localhost:8000', client: meClient('admin')),
+        isTrue,
+      );
+      expect(AuthService.isAdmin, isTrue);
+
+      AuthService.mockSession = sessionFor('other-user');
+      expect(AuthService.isAdmin, isFalse);
+    });
+
+    test('resetAdminCache clears a cached admin result', () async {
+      AuthService.mockSession = sessionFor('admin-user');
+      await AuthService.checkAdminStatus(baseUrl: 'http://localhost:8000', client: meClient('admin'));
+      expect(AuthService.isAdmin, isTrue);
+
+      AuthService.resetAdminCache();
+      expect(AuthService.isAdmin, isFalse);
     });
   });
 

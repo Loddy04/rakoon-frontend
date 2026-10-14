@@ -654,7 +654,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Gagal memulai checkout: ${e.toString().replaceFirst("Exception: ", "")}'),
+                      content: Text(e.toString().replaceFirst("Exception: ", "")),
                       backgroundColor: const Color(0xFFDC2626),
                     ),
                   );

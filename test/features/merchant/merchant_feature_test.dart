@@ -178,7 +178,50 @@ void main() {
             }),
             200,
           );
-} else if (path.endsWith('/stores/nearby')) {
+        } else if (path.endsWith('/reconcile-payment')) {
+          return http.Response(
+            jsonEncode({
+              "campaign_id": "ad-new-123",
+              "campaign_status": "active",
+              "payment_status": "paid",
+              "transaction_status": "PAID",
+              "external_id": "INV-20261010-ABCD1234",
+              "xendit_invoice_id": "xinv-mock-999",
+              "invoice_url": "https://checkout.xendit.co/inv-mock-999",
+              "amount": 30000,
+              "currency": "IDR",
+            }),
+            200,
+          );
+        } else if (path.endsWith('/reconcile-payments')) {
+          return http.Response(
+            jsonEncode({
+              "is_claimed": true,
+              "store_id": "store-pamela-6",
+              "store_nama": "Pamela 6 Supermarket",
+              "store_alamat": "Jl. Raya Condongcatur No. 12, Sleman",
+              "campaigns": [
+                {
+                  "id": "ad-1",
+                  "store_id": "store-pamela-6",
+                  "store_nama": "Pamela 6 Supermarket",
+                  "store_alamat": "Jl. Raya Condongcatur No. 12, Sleman",
+                  "title": "Promo JSM Minyak Goreng & Beras Hemat",
+                  "banner_url": "https://example.com/flyer1.jpg",
+                  "duration_days": 7,
+                  "price_paid": 30000,
+                  "distance_km": 1.2,
+                  "expires_at": "2026-10-15T00:00:00Z",
+                  "days_left": 5,
+                  "status": "active",
+                  "payment_status": "paid",
+                  "payment_ref": "INV-20261010-ABCD1234"
+                }
+              ]
+            }),
+            200,
+          );
+        } else if (path.endsWith('/stores/nearby')) {
           return http.Response(
             jsonEncode({
               "source": "live",
@@ -532,6 +575,52 @@ void main() {
       expect(checkout.invoiceUrl, 'https://checkout.xendit.co/inv-mock-999');
     });
 
+    test('AdsService.initiatePayment maps 409 to friendly in-progress message without raw body', () async {
+      final client409 = MockClient((request) async {
+        return http.Response(jsonEncode({
+          "detail": "Transaksi untuk kampanye ini sedang diproses atau sudah ada."
+        }), 409);
+      });
+
+      expect(
+        () => AdsService.initiatePayment(
+          campaignId: 'ad-new-123',
+          baseUrl: 'https://api.test',
+          client: client409,
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Pembayaran sedang diproses, coba lagi sebentar'),
+          ),
+        ),
+      );
+    });
+
+    test('AdsService.initiatePayment maps 503 to friendly unavailable message without raw body', () async {
+      final client503 = MockClient((request) async {
+        return http.Response(jsonEncode({
+          "detail": "Payment gateway Xendit belum dikonfigurasi."
+        }), 503);
+      });
+
+      expect(
+        () => AdsService.initiatePayment(
+          campaignId: 'ad-new-123',
+          baseUrl: 'https://api.test',
+          client: client503,
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Pembayaran belum tersedia, coba lagi nanti'),
+          ),
+        ),
+      );
+    });
+
     test('AdsService.getPaymentStatus retrieves latest status from server', () async {
       final status = await AdsService.getPaymentStatus(
         campaignId: 'ad-new-123',
@@ -544,6 +633,72 @@ void main() {
       expect(status.paymentStatus, 'unpaid');
       expect(status.transactionStatus, 'PENDING');
       expect(status.amount, 30000);
+    });
+
+    test('AdsService.reconcileCampaignPayment sends POST with Authorization and parses status', () async {
+      String? capturedAuthHeader;
+      String? capturedMethod;
+      final checkClient = MockClient((request) async {
+        if (request.url.path.endsWith('/ads/campaigns/ad-new-123/reconcile-payment')) {
+          capturedMethod = request.method;
+          capturedAuthHeader = request.headers['Authorization'];
+          return http.Response(
+            jsonEncode({
+              "campaign_id": "ad-new-123",
+              "campaign_status": "active",
+              "payment_status": "paid",
+              "transaction_status": "PAID",
+              "amount": 30000,
+            }),
+            200,
+          );
+        }
+        return http.Response('{}', 404);
+      });
+
+      final status = await AdsService.reconcileCampaignPayment(
+        campaignId: 'ad-new-123',
+        baseUrl: 'https://api.test',
+        client: checkClient,
+      );
+
+      expect(capturedMethod, 'POST');
+      expect(capturedAuthHeader, 'Bearer test-merchant-token');
+      expect(status.campaignId, 'ad-new-123');
+      expect(status.paymentStatus, 'paid');
+      expect(status.transactionStatus, 'PAID');
+    });
+
+    test('AdsService.reconcileMyStorePayments sends POST with Authorization and parses store data', () async {
+      String? capturedAuthHeader;
+      String? capturedMethod;
+      final checkClient = MockClient((request) async {
+        if (request.url.path.endsWith('/ads/my-store/reconcile-payments')) {
+          capturedMethod = request.method;
+          capturedAuthHeader = request.headers['Authorization'];
+          return http.Response(
+            jsonEncode({
+              "is_claimed": true,
+              "store_id": "store-pamela-6",
+              "store_nama": "Pamela 6 Supermarket",
+              "campaigns": [],
+            }),
+            200,
+          );
+        }
+        return http.Response('{}', 404);
+      });
+
+      final store = await AdsService.reconcileMyStorePayments(
+        baseUrl: 'https://api.test',
+        client: checkClient,
+      );
+
+      expect(capturedMethod, 'POST');
+      expect(capturedAuthHeader, 'Bearer test-merchant-token');
+      expect(store.isClaimed, isTrue);
+      expect(store.storeId, 'store-pamela-6');
+      expect(store.storeNama, 'Pamela 6 Supermarket');
     });
 
     group('Store Claim Rejection Reason & Re-claim Flow Tests', () {
@@ -979,6 +1134,108 @@ void main() {
         expect(find.text('Menunggu Pembayaran'), findsOneWidget);
         expect(find.text('Bayar Xendit'), findsOneWidget);
       });
+
+      testWidgets('MerchantDashboardPage displays clean error for 409 conflict on pay without raw body', (tester) async {
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/ads/my-store')) {
+            return http.Response(jsonEncode({
+              'is_claimed': true,
+              'claim_status': 'verified',
+              'store_id': 'store-1',
+              'store_nama': 'Pamela 6 Supermarket',
+              'campaigns': [
+                {
+                  'id': 'ad-10',
+                  'store_id': 'store-1',
+                  'store_nama': 'Pamela 6 Supermarket',
+                  'title': 'Promo Minyak Murah',
+                  'banner_url': 'https://example.com/oil.jpg',
+                  'duration_days': 7,
+                  'price_paid': 30000,
+                  'distance_km': 0.0,
+                  'expires_at': '2026-10-18T00:00:00Z',
+                  'days_left': 7,
+                  'status': 'pending_payment',
+                  'payment_status': 'unpaid',
+                  'payment_ref': 'INV-OIL-1',
+                }
+              ],
+            }), 200);
+          } else if (request.url.path.endsWith('/ads/campaigns/ad-10/pay')) {
+            return http.Response(jsonEncode({
+              'detail': 'Transaksi untuk kampanye ini sedang diproses atau sudah ada.'
+            }), 409);
+          }
+          return http.Response('{}', 200);
+        });
+
+        await tester.pumpWidget(MaterialApp(
+          home: MerchantDashboardPage(
+            baseUrl: 'https://api.test',
+            httpClient: client,
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        final payBtn = find.text('Bayar Xendit');
+        expect(payBtn, findsOneWidget);
+        await tester.tap(payBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Pembayaran sedang diproses, coba lagi sebentar'), findsOneWidget);
+        expect(find.textContaining('detail'), findsNothing);
+      });
+
+      testWidgets('MerchantDashboardPage displays clean error for 503 unavailable on pay without raw body', (tester) async {
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/ads/my-store')) {
+            return http.Response(jsonEncode({
+              'is_claimed': true,
+              'claim_status': 'verified',
+              'store_id': 'store-1',
+              'store_nama': 'Pamela 6 Supermarket',
+              'campaigns': [
+                {
+                  'id': 'ad-10',
+                  'store_id': 'store-1',
+                  'store_nama': 'Pamela 6 Supermarket',
+                  'title': 'Promo Minyak Murah',
+                  'banner_url': 'https://example.com/oil.jpg',
+                  'duration_days': 7,
+                  'price_paid': 30000,
+                  'distance_km': 0.0,
+                  'expires_at': '2026-10-18T00:00:00Z',
+                  'days_left': 7,
+                  'status': 'pending_payment',
+                  'payment_status': 'unpaid',
+                  'payment_ref': 'INV-OIL-1',
+                }
+              ],
+            }), 200);
+          } else if (request.url.path.endsWith('/ads/campaigns/ad-10/pay')) {
+            return http.Response(jsonEncode({
+              'detail': 'Payment gateway Xendit belum dikonfigurasi.'
+            }), 503);
+          }
+          return http.Response('{}', 200);
+        });
+
+        await tester.pumpWidget(MaterialApp(
+          home: MerchantDashboardPage(
+            baseUrl: 'https://api.test',
+            httpClient: client,
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        final payBtn = find.text('Bayar Xendit');
+        expect(payBtn, findsOneWidget);
+        await tester.tap(payBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Pembayaran belum tersedia, coba lagi nanti'), findsOneWidget);
+        expect(find.textContaining('detail'), findsNothing);
+      });
     });
 
     group('Store Claim Error Handling & FormatException Prevention Tests', () {
@@ -1191,6 +1448,146 @@ void main() {
         expect(find.text('Pembayaran berhasil diverifikasi! Iklan telah aktif.'), findsOneWidget);
         // Status badge updated
         expect(find.text('Menunggu Pembayaran'), findsNothing);
+      });
+
+      testWidgets('Resuming app calls POST /ads/my-store/reconcile-payments before GET /ads/my-store', (tester) async {
+        final calls = <String>[];
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/ads/my-store/reconcile-payments')) {
+            calls.add('POST reconcile-payments');
+            return http.Response(jsonEncode({
+              'is_claimed': true,
+              'claim_status': 'verified',
+              'store_id': 'store-1',
+              'store_nama': 'Pamela 6 Supermarket',
+              'campaigns': [
+                {
+                  'id': 'ad-10',
+                  'store_id': 'store-1',
+                  'store_nama': 'Pamela 6 Supermarket',
+                  'title': 'Promo Minyak Murah',
+                  'banner_url': 'https://example.com/oil.jpg',
+                  'duration_days': 7,
+                  'price_paid': 30000,
+                  'distance_km': 0.0,
+                  'expires_at': '2026-10-18T00:00:00Z',
+                  'days_left': 7,
+                  'status': 'active',
+                  'payment_status': 'paid',
+                  'payment_ref': 'INV-OIL-1',
+                }
+              ],
+            }), 200);
+          } else if (request.url.path.endsWith('/ads/my-store')) {
+            calls.add('GET my-store');
+            return http.Response(jsonEncode({
+              'is_claimed': true,
+              'claim_status': 'verified',
+              'store_id': 'store-1',
+              'store_nama': 'Pamela 6 Supermarket',
+              'campaigns': [
+                {
+                  'id': 'ad-10',
+                  'store_id': 'store-1',
+                  'store_nama': 'Pamela 6 Supermarket',
+                  'title': 'Promo Minyak Murah',
+                  'banner_url': 'https://example.com/oil.jpg',
+                  'duration_days': 7,
+                  'price_paid': 30000,
+                  'distance_km': 0.0,
+                  'expires_at': '2026-10-18T00:00:00Z',
+                  'days_left': 7,
+                  'status': 'pending_payment',
+                  'payment_status': 'unpaid',
+                  'payment_ref': 'INV-OIL-1',
+                }
+              ],
+            }), 200);
+          }
+          return http.Response('{}', 200);
+        });
+
+        await tester.pumpWidget(MaterialApp(
+          home: MerchantDashboardPage(
+            baseUrl: 'https://api.test',
+            httpClient: client,
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        expect(calls, ['GET my-store']);
+
+        // Resume app
+        final state = tester.state(find.byType(MerchantDashboardPage)) as WidgetsBindingObserver;
+        state.didChangeAppLifecycleState(AppLifecycleState.resumed);
+        await tester.pumpAndSettle();
+
+        // Reconcile was called before GET my-store
+        expect(calls, ['GET my-store', 'POST reconcile-payments', 'GET my-store']);
+      });
+
+      testWidgets('Tapping Cek Status calls reconcile-payment first, and safely falls back to GET on reconcile failure', (tester) async {
+        final calls = <String>[];
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/ads/my-store')) {
+            return http.Response(jsonEncode({
+              'is_claimed': true,
+              'claim_status': 'verified',
+              'store_id': 'store-1',
+              'store_nama': 'Pamela 6 Supermarket',
+              'campaigns': [
+                {
+                  'id': 'ad-20',
+                  'store_id': 'store-1',
+                  'store_nama': 'Pamela 6 Supermarket',
+                  'title': 'Promo Susu Segar',
+                  'banner_url': 'https://example.com/milk.jpg',
+                  'duration_days': 3,
+                  'price_paid': 15000,
+                  'distance_km': 0.0,
+                  'expires_at': '2026-10-18T00:00:00Z',
+                  'days_left': 3,
+                  'status': 'pending_payment',
+                  'payment_status': 'unpaid',
+                  'payment_ref': 'INV-MILK-1',
+                }
+              ],
+            }), 200);
+          } else if (request.url.path.endsWith('/ads/campaigns/ad-20/reconcile-payment')) {
+            calls.add('POST reconcile-payment');
+            // Simulate reconcile failure (e.g. 500 or 503)
+            return http.Response('Internal Server Error', 500);
+          } else if (request.url.path.endsWith('/ads/campaigns/ad-20/payment-status')) {
+            calls.add('GET payment-status');
+            return http.Response(jsonEncode({
+              'campaign_id': 'ad-20',
+              'campaign_status': 'pending_payment',
+              'payment_status': 'unpaid',
+              'transaction_status': 'PENDING',
+              'amount': 15000,
+            }), 200);
+          }
+          return http.Response('{}', 200);
+        });
+
+        await tester.pumpWidget(MaterialApp(
+          home: MerchantDashboardPage(
+            baseUrl: 'https://api.test',
+            httpClient: client,
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        final checkBtn = find.text('Cek Status');
+        expect(checkBtn, findsOneWidget);
+
+        await tester.tap(checkBtn);
+        await tester.pumpAndSettle();
+
+        // Reconcile was called first, then GET payment-status
+        expect(calls, ['POST reconcile-payment', 'GET payment-status']);
+        // Shows status from GET without raw reconcile error
+        expect(find.text('Status: Menunggu Pembayaran (PENDING)'), findsOneWidget);
       });
     });
   });

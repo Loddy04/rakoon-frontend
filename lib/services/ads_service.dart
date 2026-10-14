@@ -848,6 +848,10 @@ class AdsService {
 
       if (response.statusCode == 200) {
         return PaymentCheckoutData.fromJson(jsonDecode(response.body));
+      } else if (response.statusCode == 409) {
+        throw Exception('Pembayaran sedang diproses, coba lagi sebentar');
+      } else if (response.statusCode == 503) {
+        throw Exception('Pembayaran belum tersedia, coba lagi nanti');
       } else {
         throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal memulai checkout pembayaran.'));
       }
@@ -892,6 +896,76 @@ class AdsService {
       }
     }
   }
+
+  /// Merekonsiliasi status verifikasi pembayaran kampanye terkini dengan Xendit
+  static Future<PaymentStatusData> reconcileCampaignPayment({
+    required String campaignId,
+    String? baseUrl,
+    http.Client? client,
+  }) async {
+    final token = AuthService.currentSession?.accessToken;
+    if (token == null) {
+      throw Exception('Silakan masuk akun terlebih dahulu.');
+    }
+
+    final effectiveBase = _resolveBaseUrl(baseUrl);
+    final httpClient = client ?? http.Client();
+
+    try {
+      final response = await httpClient.post(
+        Uri.parse('$effectiveBase/ads/campaigns/$campaignId/reconcile-payment'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return PaymentStatusData.fromJson(jsonDecode(response.body));
+      } else {
+        throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal merekonsiliasi status pembayaran.'));
+      }
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
+  }
+
+  /// Merekonsiliasi pembayaran kampanye toko milik pengguna dengan Xendit
+  static Future<MyStoreData> reconcileMyStorePayments({
+    String? baseUrl,
+    http.Client? client,
+  }) async {
+    final token = AuthService.currentSession?.accessToken;
+    if (token == null) {
+      return const MyStoreData(isClaimed: false);
+    }
+
+    final effectiveBase = _resolveBaseUrl(baseUrl);
+    final httpClient = client ?? http.Client();
+
+    try {
+      final response = await httpClient.post(
+        Uri.parse('$effectiveBase/ads/my-store/reconcile-payments'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return MyStoreData.fromJson(jsonDecode(response.body));
+      } else {
+        throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal merekonsiliasi pembayaran toko.'));
+      }
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
+  }
+
   /// Mengambil daftar klaim toko pending yang membutuhkan verifikasi admin
   static Future<List<PendingStoreClaimData>> getPendingClaims({
     String? baseUrl,
