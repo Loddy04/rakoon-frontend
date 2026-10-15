@@ -564,6 +564,47 @@ void main() {
       });
     });
 
+    testWidgets('HomeScreen renders public banners that carry no price_paid or payment_ref', (tester) async {
+      final publicClient = MockClient((request) async {
+        if (request.url.path.endsWith('/ads/home-banners')) {
+          return http.Response(
+            jsonEncode([
+              {
+                "id": "ad-public-1",
+                "store_id": "store-1",
+                "store_nama": "Manna Kampus Babarsari",
+                "title": "Promo Publik Tanpa Data Pembayaran",
+                "banner_url": "https://example.com/public1.jpg",
+                "duration_days": 7,
+                "distance_km": 0.7,
+                "expires_at": "2026-10-18T08:55:33Z",
+                "days_left": 5,
+                "status": "active",
+                "payment_method": "QRIS",
+                "payment_status": "paid"
+              }
+            ]),
+            200,
+          );
+        }
+        return mockClient.send(request).then(http.Response.fromStream);
+      });
+
+      await mockNetworkImagesFor(() async {
+        await http.runWithClient(() async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: HomeScreen(baseUrl: 'https://api.test', httpClient: publicClient),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Promo Publik Tanpa Data Pembayaran'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        }, () => publicClient);
+      });
+    });
+
     test('AdsService.initiatePayment requests official checkout URL', () async {
       final checkout = await AdsService.initiatePayment(
         campaignId: 'ad-new-123',
