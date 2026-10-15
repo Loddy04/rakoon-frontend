@@ -89,12 +89,18 @@ class PriceHistoryResponse {
   final List<PriceHistoryItem> items;
   final List<PriceTrendPoint> trend;
 
+  /// Count of ALL matching entries on the server; `items` holds only the newest page.
+  final int? total;
+
   const PriceHistoryResponse({
     required this.productId,
     required this.productName,
     required this.items,
     required this.trend,
+    this.total,
   });
+
+  int get totalEntries => total ?? items.length;
 
   factory PriceHistoryResponse.fromJson(Map<String, dynamic> json) {
     final rawProdId = json['product_id']?.toString() ?? '';
@@ -115,12 +121,14 @@ class PriceHistoryResponse {
               ?.map((e) => PriceTrendPoint.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      total: (json['total'] as num?)?.toInt(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'product_id': productId,
+      if (total != null) 'total': total,
       'product_name': productName,
       'items': items.map((e) => e.toJson()).toList(),
       'trend': trend.map((e) => e.toJson()).toList(),

@@ -137,7 +137,10 @@ void main() {
               {"store_id": "10", "store_name": "Indomaret", "price": 10000, "recorded_at": "2026-08-01T12:00:00Z"},
               {"store_id": "10", "store_name": "Indomaret", "price": 12000, "recorded_at": "2026-08-02T12:00:00Z"}
             ],
-            "trend": []
+            "trend": [
+              {"date": "2026-08-01", "store_id": "10", "price": 10000},
+              {"date": "2026-08-02", "store_id": "10", "price": 12000}
+            ]
           }''', 200);
       });
 
@@ -166,7 +169,10 @@ void main() {
               {"store_id": "10", "store_name": "Indomaret", "price": 12000, "recorded_at": "2026-08-01T12:00:00Z"},
               {"store_id": "10", "store_name": "Indomaret", "price": 10000, "recorded_at": "2026-08-02T12:00:00Z"}
             ],
-            "trend": []
+            "trend": [
+              {"date": "2026-08-01", "store_id": "10", "price": 12000},
+              {"date": "2026-08-02", "store_id": "10", "price": 10000}
+            ]
           }''', 200);
       });
 
@@ -193,7 +199,10 @@ void main() {
               {"store_id": "10", "store_name": "Indomaret", "price": 10000, "recorded_at": "2026-08-01T12:00:00Z"},
               {"store_id": "10", "store_name": "Indomaret", "price": 10000, "recorded_at": "2026-08-02T12:00:00Z"}
             ],
-            "trend": []
+            "trend": [
+              {"date": "2026-08-01", "store_id": "10", "price": 10000},
+              {"date": "2026-08-02", "store_id": "10", "price": 10000}
+            ]
           }''', 200);
       });
 

@@ -368,7 +368,18 @@ class _PriceHistoryPageState extends State<PriceHistoryPage> {
                         ProductHeaderCard(
                           productName: response.productName,
                           items: response.items,
+                          trend: response.trend,
                         ),
+                        if (response.totalEntries > response.items.length) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Menampilkan ${response.items.length} entri terbaru dari ${response.totalEntries}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? const Color(0xFF94A3B8) : AppColors.muted,
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 16),
                         // Date Range Selector (Wrapped to prevent overflow on small viewports)
                         SingleChildScrollView(

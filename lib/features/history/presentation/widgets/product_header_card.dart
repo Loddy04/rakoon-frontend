@@ -8,10 +8,14 @@ class ProductHeaderCard extends StatelessWidget {
   final String productName;
   final List<PriceHistoryItem> items;
 
+  /// Backend trend (computed over ALL entries); items may be only the newest page.
+  final List<PriceTrendPoint> trend;
+
   const ProductHeaderCard({
     super.key,
     required this.productName,
     required this.items,
+    this.trend = const [],
   });
 
   @override
@@ -28,16 +32,16 @@ class ProductHeaderCard extends StatelessWidget {
         ? prices.reduce((a, b) => a > b ? a : b)
         : 0.0;
 
-    // Calculate trend from valid prices chronologically
-    final validItems = items.where((e) => e.price > 0).toList();
-    validItems.sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
+    // Direction comes from the backend trend, not from the (possibly truncated) items.
+    final validTrend = trend.where((e) => e.price > 0).toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
 
     String trendStatus = 'Belum cukup data';
     IconData trendIcon = Icons.info_outline;
 
-    if (validItems.length >= 2) {
-      final double oldestPrice = validItems.first.price;
-      final double latestPrice = validItems.last.price;
+    if (validTrend.length >= 2) {
+      final double oldestPrice = validTrend.first.price;
+      final double latestPrice = validTrend.last.price;
 
       if (latestPrice > oldestPrice) {
         trendStatus = 'Harga naik';
