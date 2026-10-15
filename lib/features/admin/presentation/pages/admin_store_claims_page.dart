@@ -276,7 +276,7 @@ class _AdminStoreClaimsPageState extends State<AdminStoreClaimsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menolak: $e'),
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
@@ -759,9 +759,15 @@ class _RejectClaimDialogState extends State<_RejectClaimDialog> {
     super.dispose();
   }
 
+  bool get _isValid {
+    final len = _reasonController.text.trim().length;
+    return len >= 3 && len <= 500;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isNewStore = widget.claim.claimType == 'new_store';
+    final trimmed = _reasonController.text.trim();
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Row(
@@ -788,8 +794,14 @@ class _RejectClaimDialogState extends State<_RejectClaimDialog> {
           TextField(
             key: const Key('reject_reason_input'),
             controller: _reasonController,
+            maxLength: 500,
+            maxLines: 3,
+            minLines: 1,
+            onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
-              hintText: 'Alasan penolakan (opsional)',
+              hintText: 'Alasan penolakan (wajib, 3-500 karakter)',
+              helperText: 'Alasan penolakan wajib diisi (3-500 karakter)',
+              helperStyle: GoogleFonts.outfit(fontSize: 11, color: const Color(0xFF6B7280)),
               hintStyle: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF9CA3AF)),
               filled: true,
               fillColor: const Color(0xFFF9FAFB),
@@ -814,10 +826,15 @@ class _RejectClaimDialogState extends State<_RejectClaimDialog> {
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFDC2626),
             foregroundColor: Colors.white,
+            disabledBackgroundColor: const Color(0xFFE5E7EB),
+            disabledForegroundColor: const Color(0xFF9CA3AF),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          onPressed: () => Navigator.pop(context, _reasonController.text.trim()),
-          child: Text('Tolak Klaim', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+          onPressed: _isValid ? () => Navigator.pop(context, trimmed) : null,
+          child: Text(
+            isNewStore ? 'Tolak Pengajuan' : 'Tolak Klaim',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.w700),
+          ),
         ),
       ],
     );

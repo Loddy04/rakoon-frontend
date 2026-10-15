@@ -1406,6 +1406,9 @@ class AdsService {
               detailStr.toLowerCase().contains('internal server error')) {
             return 'Terjadi kesalahan pada server. Silakan coba lagi.';
           }
+          if (statusCode == 422 || detail is List || detailStr.startsWith('[{')) {
+            return 'Alasan penolakan tidak valid atau belum diisi dengan benar.';
+          }
           return detailStr;
         }
       }
@@ -1416,6 +1419,10 @@ class AdsService {
     // 2. Respons server error (5xx) non-JSON
     if (statusCode >= 500) {
       return 'Terjadi kesalahan pada server. Silakan coba lagi.';
+    }
+
+    if (statusCode == 422) {
+      return 'Alasan penolakan tidak valid atau belum diisi dengan benar.';
     }
 
     if (statusCode == 401) {

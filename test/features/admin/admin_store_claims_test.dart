@@ -313,8 +313,19 @@ void main() {
       expect(find.text('Tolak Klaim Toko?'), findsOneWidget);
       expect(find.byKey(const Key('reject_reason_input')), findsOneWidget);
 
-      // Enter optional reason
+      // Verify reject button is disabled initially when reason is empty
+      final initialButton = tester.widget<ElevatedButton>(find.byKey(const Key('confirm_reject_button')));
+      expect(initialButton.onPressed, isNull);
+
+      // Enter less than 3 characters (e.g. 'ab'): still disabled
+      await tester.enterText(find.byKey(const Key('reject_reason_input')), 'ab');
+      await tester.pump();
+      expect(tester.widget<ElevatedButton>(find.byKey(const Key('confirm_reject_button'))).onPressed, isNull);
+
+      // Enter valid reason (>= 3 chars)
       await tester.enterText(find.byKey(const Key('reject_reason_input')), 'Foto bukti tidak sesuai');
+      await tester.pump();
+      expect(tester.widget<ElevatedButton>(find.byKey(const Key('confirm_reject_button'))).onPressed, isNotNull);
 
       // Tap confirm reject
       await tester.tap(find.byKey(const Key('confirm_reject_button')));
@@ -326,6 +337,64 @@ void main() {
       // Toko Berkah Mandiri removed from pending list
       expect(find.text('Toko Berkah Mandiri'), findsNothing);
       expect(find.text('Warung Bu Siti'), findsOneWidget);
+    });
+
+    testWidgets('Rejecting claim handles 422 with friendly message without raw validation body', (tester) async {
+      final client = MockClient((request) async {
+        if (request.url.path.endsWith('/ads/pending-claims')) {
+          return http.Response(
+            jsonEncode([
+              {
+                'user_id': 'user-123',
+                'store_id': 'store-456',
+                'store_nama': 'Toko Berkah Mandiri',
+                'store_alamat': 'Jl. Kaliurang KM 5 No. 10, Sleman',
+                'user_nama': 'Pak Bambang',
+                'user_email': 'bambang@gmail.com',
+                'status': 'pending',
+                'created_at': '2026-10-10T10:00:00Z',
+                'has_verified_owner': false,
+              },
+            ]),
+            200,
+          );
+        } else if (request.url.path.endsWith('/ads/reject-claim')) {
+          return http.Response(
+            jsonEncode({
+              'detail': [
+                {
+                  'loc': ['body', 'reason'],
+                  'msg': 'String should have at least 3 characters',
+                  'type': 'string_too_short',
+                }
+              ]
+            }),
+            422,
+          );
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AdminStoreClaimsPage(
+            baseUrl: 'http://localhost:8000',
+            httpClient: client,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('reject_claim_store-456')));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('reject_reason_input')), 'Alasan');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('confirm_reject_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Alasan penolakan tidak valid atau belum diisi dengan benar.'), findsOneWidget);
+      expect(find.textContaining('string_too_short'), findsNothing);
     });
 
     testWidgets('Displays conflict warning and disables approve button when store has verified owner', (tester) async {
