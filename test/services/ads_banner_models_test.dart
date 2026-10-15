@@ -48,4 +48,33 @@ void main() {
       expect(banner.paymentRef, isNull);
     });
   });
+
+  group('PendingStoreClaimData coordinates (admin queue)', () {
+    final base = {
+      'user_id': 'u1',
+      'store_nama': 'Warung Baru',
+      'status': 'pending',
+      'created_at': '2026-10-15T00:00:00Z',
+      'claim_type': 'new_store',
+    };
+
+    test('parses latitude and longitude of a new-store submission', () {
+      final claim = PendingStoreClaimData.fromJson({...base, 'latitude': 3.5952, 'longitude': 98.6722});
+      expect(claim.latitude, 3.5952);
+      expect(claim.longitude, 98.6722);
+    });
+
+    test('integer-valued coordinates parse as double', () {
+      final claim = PendingStoreClaimData.fromJson({...base, 'latitude': 3, 'longitude': 98});
+      expect(claim.latitude, 3.0);
+      expect(claim.longitude, 98.0);
+    });
+
+    test('missing or null coordinates are null (legacy rows and existing-store claims)', () {
+      expect(PendingStoreClaimData.fromJson(base).latitude, isNull);
+      final nulls = PendingStoreClaimData.fromJson({...base, 'latitude': null, 'longitude': null});
+      expect(nulls.latitude, isNull);
+      expect(nulls.longitude, isNull);
+    });
+  });
 }

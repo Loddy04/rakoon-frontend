@@ -214,6 +214,8 @@ class PendingStoreClaimData {
   final String? applicantRole;
   final String? businessEntityName;
   final String? storeCategory;
+  final double? latitude;
+  final double? longitude;
   final String? documentUrl;
   final String? storePhotoUrl;
 
@@ -234,6 +236,8 @@ class PendingStoreClaimData {
     this.applicantRole,
     this.businessEntityName,
     this.storeCategory,
+    this.latitude,
+    this.longitude,
     this.documentUrl,
     this.storePhotoUrl,
   });
@@ -256,6 +260,8 @@ class PendingStoreClaimData {
       applicantRole: json['applicant_role'] as String?,
       businessEntityName: json['business_entity_name'] as String?,
       storeCategory: json['store_category'] as String?,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       documentUrl: json['document_url'] as String?,
       storePhotoUrl: json['store_photo_url'] as String?,
     );
