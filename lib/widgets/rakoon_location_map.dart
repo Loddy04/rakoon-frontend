@@ -36,6 +36,9 @@ class RakoonLocationMap extends StatelessWidget {
     this.selectedStoreId,
     this.onMarkerTap,
     this.onMapTap,
+    this.onPointSelected,
+    this.pickedPoint,
+    this.showUserMarker = true,
     this.height = 260,
     this.heroTag = 'rakoon_map_recenter',
     this.margin,
@@ -51,6 +54,15 @@ class RakoonLocationMap extends StatelessWidget {
   final String? selectedStoreId;
   final void Function(String storeId)? onMarkerTap;
   final VoidCallback? onMapTap;
+
+  /// Dipanggil dengan koordinat titik yang diketuk (mode pemilihan titik, mis. lokasi toko baru).
+  final void Function(double lat, double lng)? onPointSelected;
+
+  /// Titik pilihan pengguna yang digambar sebagai pin; null = tidak ada pin.
+  final LatLng? pickedPoint;
+
+  /// False bila userLat/userLng hanya titik pandang awal, bukan posisi GPS sebenarnya.
+  final bool showUserMarker;
 
   /// Fixed pixel height of the map container.
   final double height;
@@ -103,6 +115,7 @@ class RakoonLocationMap extends StatelessWidget {
                 initialZoom: 14.0,
                 onTap: (tapPosition, point) {
                   onMapTap?.call();
+                  onPointSelected?.call(point.latitude, point.longitude);
                 },
               ),
               children: [
@@ -112,8 +125,9 @@ class RakoonLocationMap extends StatelessWidget {
                 ),
                 MarkerLayer(
                   markers: [
-                    _buildUserMarker(),
+                    if (showUserMarker) _buildUserMarker(),
                     ...markers.map(_buildStoreMarker),
+                    if (pickedPoint != null) _buildPickedPointMarker(pickedPoint!),
                   ],
                 ),
               ],
@@ -174,6 +188,24 @@ class RakoonLocationMap extends StatelessWidget {
               size: 20.0,
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Marker _buildPickedPointMarker(LatLng point) {
+    return Marker(
+      point: point,
+      width: 40.0,
+      height: 40.0,
+      alignment: Alignment.topCenter, // ujung pin tepat di titik terpilih
+      child: Semantics(
+        label: 'Titik toko yang dipilih',
+        child: const Icon(
+          Icons.location_on,
+          key: Key('picked_point_pin'),
+          color: Color(0xFFDC2626),
+          size: 40.0,
         ),
       ),
     );

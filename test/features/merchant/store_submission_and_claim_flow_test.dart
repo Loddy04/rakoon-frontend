@@ -284,6 +284,13 @@ void main() {
       expect(find.text('tampak_depan.png'), findsOneWidget);
 
       // Submit form
+      // Pilih titik toko di peta (flutter_map menunggu ~250 ms untuk membedakan double tap)
+      final locationMap = find.byKey(const Key('new_store_location_map'));
+      await tester.ensureVisible(locationMap);
+      await tester.tap(locationMap);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
       final submitConfirmBtn = find.byKey(const Key('btn_confirm_submit_new_store'));
       await tester.ensureVisible(submitConfirmBtn);
       await tester.tap(submitConfirmBtn);
@@ -588,6 +595,13 @@ void main() {
       final pickPhotoBtn = find.byKey(const Key('btn_pick_store_photo'));
       await tester.ensureVisible(pickPhotoBtn);
       await tester.tap(pickPhotoBtn);
+      await tester.pumpAndSettle();
+
+      // Pilih titik toko di peta (flutter_map menunggu ~250 ms untuk membedakan double tap)
+      final locationMap = find.byKey(const Key('new_store_location_map'));
+      await tester.ensureVisible(locationMap);
+      await tester.tap(locationMap);
+      await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
       final submitBtn = find.byKey(const Key('btn_confirm_submit_new_store'));

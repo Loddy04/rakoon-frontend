@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/services/ads_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
+import 'package:rakoon_frontend/services/location_service.dart';
+import 'package:rakoon_frontend/widgets/rakoon_location_map.dart';
 import 'package:rakoon_frontend/features/admin/presentation/pages/admin_store_claims_page.dart';
 import 'package:rakoon_frontend/features/admin/presentation/pages/admin_product_photo_page.dart';
 import 'package:rakoon_frontend/features/merchant/presentation/pages/create_ad_campaign_page.dart';
@@ -279,6 +283,31 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
     bool isSubmitting = false;
     String? formError;
 
+    // Lokasi toko dipilih pemohon di peta; tidak ada titik bawaan. Pusat peta hanya titik pandang awal.
+    final mapController = MapController();
+    LatLng mapCenter = const LatLng(-7.7829, 110.4083);
+    bool hasGps = false;
+    bool locating = true;
+    bool locationRequested = false;
+    bool sheetOpen = true;
+    LatLng? pickedPoint;
+
+    void requestLocation(StateSetter setModalState) {
+      if (locationRequested) return;
+      locationRequested = true;
+      LocationService.getCurrentLocation().timeout(const Duration(seconds: 6)).then((pos) {
+        if (!sheetOpen) return;
+        setModalState(() {
+          mapCenter = LatLng(pos.latitude, pos.longitude);
+          hasGps = true;
+          locating = false;
+        });
+      }).catchError((_) {
+        if (!sheetOpen) return;
+        setModalState(() => locating = false);
+      });
+    }
+
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -287,7 +316,9 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) => Padding(
+        builder: (ctx, setModalState) {
+          requestLocation(setModalState);
+          return Padding(
           padding: EdgeInsets.only(
             left: 20,
             right: 20,
@@ -376,6 +407,47 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
                   decoration: const InputDecoration(
                     labelText: 'Alamat Lengkap Toko *',
                     hintText: 'Jl. Malioboro No. 45, Yogyakarta',
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // 3b. Titik lokasi toko di peta (wajib)
+                Text(
+                  'Lokasi Toko di Peta *',
+                  style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 6),
+                if (locating)
+                  const SizedBox(
+                    height: 200,
+                    child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                  )
+                else
+                  RakoonLocationMap(
+                    key: const Key('new_store_location_map'),
+                    userLat: mapCenter.latitude,
+                    userLng: mapCenter.longitude,
+                    mapController: mapController,
+                    height: 200,
+                    margin: EdgeInsets.zero,
+                    heroTag: 'new_store_location_map_recenter',
+                    showUserMarker: hasGps,
+                    pickedPoint: pickedPoint,
+                    onPointSelected: (lat, lng) {
+                      setModalState(() {
+                        pickedPoint = LatLng(lat, lng);
+                        if (formError != null) formError = null;
+                      });
+                    },
+                  ),
+                const SizedBox(height: 6),
+                Text(
+                  pickedPoint == null
+                      ? 'Ketuk peta untuk menandai posisi toko.'
+                      : 'Titik dipilih: ${pickedPoint!.latitude.toStringAsFixed(5)}, ${pickedPoint!.longitude.toStringAsFixed(5)}',
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    color: pickedPoint == null ? const Color(0xFF6B7280) : const Color(0xFF166534),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -664,6 +736,12 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
                           final address = addressCtrl.text.trim();
                           final appName = appNameCtrl.text.trim();
                           final phone = appPhoneCtrl.text.trim();
+                          if (pickedPoint == null) {
+                            setModalState(() {
+                              formError = 'Pilih lokasi toko di peta terlebih dahulu.';
+                            });
+                            return;
+                          }
                           if (name.isEmpty ||
                               address.isEmpty ||
                               appName.isEmpty ||
@@ -710,6 +788,8 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
                               applicantName: appName,
                               applicantPhone: phone,
                               applicantRole: appRole,
+                              latitude: pickedPoint!.latitude,
+                              longitude: pickedPoint!.longitude,
                               documentUrl: uploadedDocUrl,
                               storePhotoUrl: uploadedPhotoUrl,
                               baseUrl: widget.baseUrl,
@@ -770,9 +850,12 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
               ],
             ),
           ),
-        ),
+        );
+        },
       ),
     );
+    sheetOpen = false;
+    mapController.dispose();
   }
 
   Future<void> _handleOpenCheckout(BuildContext dialogCtx, String? url) async {
