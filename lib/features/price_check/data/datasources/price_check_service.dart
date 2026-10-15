@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/features/history/data/models/price_history_item.dart';
 import 'package:rakoon_frontend/features/price_check/data/models/product_catalog_model.dart';
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 
 class PriceCheckService {
@@ -38,7 +39,7 @@ class PriceCheckService {
     final httpClient = client ?? http.Client();
 
     try {
-      final response = await httpClient.get(uri).timeout(const Duration(seconds: 10));
+      final response = await mapNetworkErrors(() => httpClient.get(uri).timeout(const Duration(seconds: 10)));
 
       if (response.statusCode == 200) {
         final List<dynamic> decoded = jsonDecode(response.body) as List<dynamic>;
@@ -46,13 +47,12 @@ class PriceCheckService {
             .map((e) => CatalogProduct.fromJson(e as Map<String, dynamic>))
             .toList();
       }
-      if (offset > 0) throw Exception('catalog page failed: ${response.statusCode}');
-    } catch (_) {
-      // Follow-up pages must surface failure so an empty list is not mistaken for "no more".
-      if (offset > 0) rethrow;
+      throwIfServerError(response);
+      // A failure must never look like an empty catalog / "no more pages".
+      throw Exception('catalog failed: ${response.statusCode}');
+    } finally {
+      if (client == null) httpClient.close();
     }
-
-    return [];
   }
 
   static Future<PriceHistoryResponse?> getPriceHistory({
@@ -73,14 +73,18 @@ class PriceCheckService {
     final httpClient = client ?? http.Client();
 
     try {
-      final response = await httpClient.get(uri).timeout(const Duration(seconds: 10));
+      final response = await mapNetworkErrors(() => httpClient.get(uri).timeout(const Duration(seconds: 10)));
+      throwIfServerError(response);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decoded = jsonDecode(response.body) as Map<String, dynamic>;
         return PriceHistoryResponse.fromJson(decoded);
       }
-    } catch (_) {
-      // Return null on failure
+    } catch (e) {
+      // Offline / server errors surface to the caller; anything else (e.g. no history) is null.
+      if (friendlyApiError(e) != null) rethrow;
+    } finally {
+      if (client == null) httpClient.close();
     }
 
     return null;
@@ -111,12 +115,13 @@ class PriceCheckService {
     final httpClient = client ?? http.Client();
 
     try {
-      final response = await httpClient.get(uri).timeout(const Duration(seconds: 10));
+      final response = await mapNetworkErrors(() => httpClient.get(uri).timeout(const Duration(seconds: 10)));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decoded = jsonDecode(response.body) as Map<String, dynamic>;
         return PriceCompareResponse.fromJson(decoded);
       } else {
+        throwIfServerError(response);
         throw Exception('Gagal memuat perbandingan harga (HTTP ${response.statusCode})');
       }
     } finally {

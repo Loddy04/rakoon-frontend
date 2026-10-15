@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 
 class BudgetItemInput {
   final String productId;
@@ -215,21 +216,23 @@ class BudgetShoppingService {
     final Uri url = Uri.parse('$cleanUrl/budget-shopping/recommend');
 
     try {
-      final response = await http
+      final response = await mapNetworkErrors(() => http
           .post(
             url,
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode(request.toJson()),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 10)));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> json = jsonDecode(response.body);
         return BudgetRecommendResponse.fromJson(json);
       } else {
-        throw Exception('Gagal mendapatkan rekomendasi budget (HTTP ${response.statusCode}): ${response.body}');
+        throwIfServerError(response);
+        throw Exception('Gagal mendapatkan rekomendasi budget (HTTP ${response.statusCode})');
       }
     } catch (e) {
+      if (friendlyApiError(e) != null) rethrow;
       throw Exception('Gagal menghubungi server backend: $e');
     }
   }

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/services/api_error_messages.dart';
 
@@ -254,25 +253,23 @@ class RecommendationService {
     final httpClient = client ?? http.Client();
 
     try {
-      final response = await httpClient.post(
+      final response = await mapNetworkErrors(() => httpClient.post(
         uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'items': candidates.map((e) => e.toJson()).toList(),
         }),
-      ).timeout(const Duration(seconds: 15));
+      ).timeout(const Duration(seconds: 15)));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
         return RecommendationResponse.fromJson(data);
       } else {
+        throwIfServerError(response);
         final Map<String, dynamic> errorData = jsonDecode(response.body);
         final String detail = errorData['detail'] ?? 'Gagal memproses rekomendasi.';
         throw Exception(detail);
       }
-    } on SocketException {
-      throw const SocketException(
-          'Tidak dapat terhubung ke server FastAPI. Periksa koneksi atau Base URL backend.');
     } catch (e) {
       if (e is Exception) {
         rethrow;
@@ -309,7 +306,7 @@ class RecommendationService {
     final httpClient = client ?? http.Client();
 
     try {
-      final response = await httpClient.get(uri).timeout(const Duration(seconds: 10));
+      final response = await mapNetworkErrors(() => httpClient.get(uri).timeout(const Duration(seconds: 10)));
 
       if (response.statusCode == 200) {
         final List<dynamic> decoded = jsonDecode(response.body) as List<dynamic>;
@@ -318,61 +315,10 @@ class RecommendationService {
             .toList();
       }
       throwIfInvalidRequest(response);
-    } on InvalidRequestException {
-      rethrow;
-    } catch (_) {
-      // Fallback
+      throwIfServerError(response);
+      throw Exception('recommended products failed: ${response.statusCode}');
+    } finally {
+      if (client == null) httpClient.close();
     }
-
-    return [
-      RecommendedProduct(
-        id: 'rec-1',
-        nama: 'INDOMIE GORENG 85G',
-        kategori: 'Makanan Instan',
-        harga: 3100,
-        ukuran: 85,
-        satuan: 'g',
-        namaToko: 'MANNA KAMPUS BABARSARI',
-        jarakKm: 0.8,
-        updatedAt: '15 mnt lalu',
-        fotoUrl: null,
-      ),
-      RecommendedProduct(
-        id: 'rec-2',
-        nama: 'BIMOLI MINYAK GORENG 2L',
-        kategori: 'Makanan Pokok',
-        harga: 34500,
-        ukuran: 2,
-        satuan: 'l',
-        namaToko: 'INDOMARET BABARSARI',
-        jarakKm: 0.5,
-        updatedAt: '1 jam lalu',
-        fotoUrl: null,
-      ),
-      RecommendedProduct(
-        id: 'rec-3',
-        nama: 'ULTRA MILK FULL CREAM 1000ML',
-        kategori: 'Susu & Olahan',
-        harga: 18200,
-        ukuran: 1000,
-        satuan: 'ml',
-        namaToko: 'ALFAMART SETURAN',
-        jarakKm: 1.2,
-        updatedAt: '2 jam lalu',
-        fotoUrl: null,
-      ),
-      RecommendedProduct(
-        id: 'rec-4',
-        nama: 'SANIA MINYAK GORENG 2L',
-        kategori: 'Makanan Pokok',
-        harga: 33900,
-        ukuran: 2,
-        satuan: 'l',
-        namaToko: 'SUPERINDO BABARSARI',
-        jarakKm: 1.5,
-        updatedAt: '3 jam lalu',
-        fotoUrl: null,
-      ),
-    ];
   }
 }

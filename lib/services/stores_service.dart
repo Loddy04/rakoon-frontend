@@ -97,22 +97,22 @@ class StoresService {
 
     try {
       final httpClient = client ?? http.Client();
-      final response = await httpClient.get(uri).timeout(
+      final response = await mapNetworkErrors(() => httpClient.get(uri).timeout(
         const Duration(seconds: 12),
-      );
+      ));
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body) as Map<String, dynamic>;
         return NearbyStoresResponse.fromJson(decoded);
       } else {
         throwIfInvalidRequest(response);
+        throwIfServerError(response);
         throw Exception(
           'HTTP ${response.statusCode}: Gagal menghubungi server backend.',
         );
       }
-    } on InvalidRequestException {
-      rethrow;
     } catch (e) {
+      if (friendlyApiError(e) != null) rethrow;
       throw Exception(
         'Gagal memuat toko terdekat. Pastikan server backend Anda berjalan ($cleanBaseUrl). Detail: $e',
       );
@@ -140,22 +140,22 @@ class StoresService {
     );
 
     try {
-      final response = await http.get(uri).timeout(
+      final response = await mapNetworkErrors(() => http.get(uri).timeout(
         const Duration(seconds: 12),
-      );
+      ));
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body) as Map<String, dynamic>;
         return PriceCompareResponse.fromJson(decoded);
       } else {
         throwIfInvalidRequest(response);
+        throwIfServerError(response);
         throw Exception(
           'HTTP ${response.statusCode}: Gagal mengambil data perbandingan harga.',
         );
       }
-    } on InvalidRequestException {
-      rethrow;
     } catch (e) {
+      if (friendlyApiError(e) != null) rethrow;
       throw Exception(
         'Gagal memuat perbandingan harga produk. Detail: $e',
       );
@@ -184,17 +184,14 @@ class StoresService {
 
     final httpClient = client ?? http.Client();
     try {
-      final response = await httpClient.get(url);
+      final response = await mapNetworkErrors(() => httpClient.get(url));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((e) => StoreProductItem.fromJson(e as Map<String, dynamic>)).toList();
       }
-      if (offset > 0) throw Exception('store products page failed: ${response.statusCode}');
-      return [];
-    } catch (_) {
-      // Follow-up pages must surface failure so an empty list is not mistaken for "no more".
-      if (offset > 0) rethrow;
-      return [];
+      throwIfServerError(response);
+      // A failure must never look like an empty list / "no more pages".
+      throw Exception('store products failed: ${response.statusCode}');
     } finally {
       if (client == null) {
         httpClient.close();
