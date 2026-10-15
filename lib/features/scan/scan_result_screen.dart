@@ -272,6 +272,45 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     );
   }
 
+  void _showAppSnackBar({
+    required String message,
+    bool isError = true,
+  }) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: isError ? const Color(0xFFDC2626) : const Color(0xFF00875A),
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: GoogleFonts.outfit(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
   void _evaluateBestValue() {
     final List<RecommendationCandidate> candidates = [];
     for (int i = 0; i < _items.length; i++) {
@@ -1285,11 +1324,9 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     final user = AuthService.currentUser;
     if (user == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sesi login tidak valid, silakan login ulang.'),
-            backgroundColor: Color(0xFFEF4444),
-          ),
+        _showAppSnackBar(
+          message: 'Sesi login tidak valid, silakan login ulang.',
+          isError: true,
         );
       }
       return;
@@ -1943,6 +1980,9 @@ class _EditProductBottomSheetState extends State<_EditProductBottomSheet> {
   late final TextEditingController sizeController;
   late String selectedCategory;
   late String selectedUnit;
+  String? _nameError;
+  String? _priceError;
+  String? _sizeError;
 
   static const List<String> standardUnits = ['gr', 'kg', 'ml', 'L', 'pcs'];
 
@@ -1998,28 +2038,32 @@ class _EditProductBottomSheetState extends State<_EditProductBottomSheet> {
     final priceText = priceController.text.trim();
     final sizeText = sizeController.text.trim();
 
+    String? nameErr;
+    String? priceErr;
+    String? sizeErr;
+
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nama produk tidak boleh kosong.')),
-      );
-      return;
+      nameErr = 'Nama produk wajib diisi';
     }
 
     final cleanPriceText = priceText.replaceAll('.', '').replaceAll(',', '').replaceAll(' ', '');
     final parsedPrice = double.tryParse(cleanPriceText);
-    if (parsedPrice == null || parsedPrice <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Harga harus lebih besar dari 0.')),
-      );
-      return;
+    if (cleanPriceText.isEmpty || parsedPrice == null || parsedPrice <= 0 || parsedPrice.isNaN || parsedPrice.isInfinite) {
+      priceErr = 'Harga wajib diisi (lebih dari Rp 0)';
     }
 
     final cleanSizeText = sizeText.replaceAll(',', '.').trim();
     final parsedSize = double.tryParse(cleanSizeText);
-    if (parsedSize == null || parsedSize <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ukuran harus lebih besar dari 0.')),
-      );
+    if (cleanSizeText.isEmpty || parsedSize == null || parsedSize <= 0 || parsedSize.isNaN || parsedSize.isInfinite) {
+      sizeErr = 'Ukuran wajib diisi';
+    }
+
+    if (nameErr != null || priceErr != null || sizeErr != null) {
+      setState(() {
+        _nameError = nameErr;
+        _priceError = priceErr;
+        _sizeError = sizeErr;
+      });
       return;
     }
 
@@ -2107,10 +2151,23 @@ class _EditProductBottomSheetState extends State<_EditProductBottomSheet> {
                 TextField(
                   key: const Key('edit_name_field'),
                   controller: nameController,
+                  onChanged: (val) {
+                    if (_nameError != null) {
+                      setState(() {
+                        _nameError = null;
+                      });
+                    }
+                  },
                   style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF0D2818)),
                   decoration: InputDecoration(
                     hintText: 'Contoh: Indomie Goreng',
                     hintStyle: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF9CA3AF)),
+                    errorText: _nameError,
+                    errorStyle: GoogleFonts.outfit(
+                      fontSize: 12,
+                      color: const Color(0xFFEF4444),
+                      fontWeight: FontWeight.w500,
+                    ),
                     filled: true,
                     fillColor: const Color(0xFFF9FAFB),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -2120,11 +2177,24 @@ class _EditProductBottomSheetState extends State<_EditProductBottomSheet> {
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      borderSide: BorderSide(
+                        color: _nameError != null ? const Color(0xFFEF4444) : const Color(0xFFE5E7EB),
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
+                      borderSide: BorderSide(
+                        color: _nameError != null ? const Color(0xFFEF4444) : const Color(0xFF00875A),
+                        width: 1.5,
+                      ),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.2),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
                     ),
                   ),
                 ),
@@ -2194,6 +2264,13 @@ class _EditProductBottomSheetState extends State<_EditProductBottomSheet> {
                   key: const Key('edit_price_field'),
                   controller: priceController,
                   keyboardType: TextInputType.number,
+                  onChanged: (val) {
+                    if (_priceError != null) {
+                      setState(() {
+                        _priceError = null;
+                      });
+                    }
+                  },
                   style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF0D2818)),
                   decoration: InputDecoration(
                     hintText: '0',
@@ -2204,6 +2281,12 @@ class _EditProductBottomSheetState extends State<_EditProductBottomSheet> {
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF0D2818),
                     ),
+                    errorText: _priceError,
+                    errorStyle: GoogleFonts.outfit(
+                      fontSize: 12,
+                      color: const Color(0xFFEF4444),
+                      fontWeight: FontWeight.w500,
+                    ),
                     filled: true,
                     fillColor: const Color(0xFFF9FAFB),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -2213,11 +2296,24 @@ class _EditProductBottomSheetState extends State<_EditProductBottomSheet> {
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      borderSide: BorderSide(
+                        color: _priceError != null ? const Color(0xFFEF4444) : const Color(0xFFE5E7EB),
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
+                      borderSide: BorderSide(
+                        color: _priceError != null ? const Color(0xFFEF4444) : const Color(0xFF00875A),
+                        width: 1.5,
+                      ),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.2),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
                     ),
                   ),
                 ),
@@ -2246,10 +2342,23 @@ class _EditProductBottomSheetState extends State<_EditProductBottomSheet> {
                             key: const Key('edit_size_field'),
                             controller: sizeController,
                             keyboardType: TextInputType.number,
+                            onChanged: (val) {
+                              if (_sizeError != null) {
+                                setState(() {
+                                  _sizeError = null;
+                                });
+                              }
+                            },
                             style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF0D2818)),
                             decoration: InputDecoration(
                               hintText: 'Contoh: 200',
                               hintStyle: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF9CA3AF)),
+                              errorText: _sizeError,
+                              errorStyle: GoogleFonts.outfit(
+                                fontSize: 12,
+                                color: const Color(0xFFEF4444),
+                                fontWeight: FontWeight.w500,
+                              ),
                               filled: true,
                               fillColor: const Color(0xFFF9FAFB),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -2259,11 +2368,24 @@ class _EditProductBottomSheetState extends State<_EditProductBottomSheet> {
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                                borderSide: BorderSide(
+                                  color: _sizeError != null ? const Color(0xFFEF4444) : const Color(0xFFE5E7EB),
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
+                                borderSide: BorderSide(
+                                  color: _sizeError != null ? const Color(0xFFEF4444) : const Color(0xFF00875A),
+                                  width: 1.5,
+                                ),
+                              ),
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.2),
+                              ),
+                              focusedErrorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
                               ),
                             ),
                           ),
@@ -2330,7 +2452,41 @@ class _EditProductBottomSheetState extends State<_EditProductBottomSheet> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 18),
+
+                // Warning Box jika ada error validasi
+                if (_nameError != null || _priceError != null || _sizeError != null) ...[
+                  Container(
+                    key: const Key('edit_validation_warning_box'),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFECACA), width: 1),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          color: Color(0xFFDC2626),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Mohon periksa kembali kolom yang belum terisi dengan benar.',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFFDC2626),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
 
                 // Tombol Simpan Perubahan
                 SizedBox(
@@ -2382,6 +2538,9 @@ class _AddProductBottomSheetState extends State<_AddProductBottomSheet> {
   final sizeController = TextEditingController();
   String selectedCategory = 'Makanan Pokok';
   String selectedUnit = 'gr';
+  String? _nameError;
+  String? _priceError;
+  String? _sizeError;
   static const List<String> standardUnits = ['gr', 'kg', 'ml', 'L', 'pcs'];
 
   @override
@@ -2397,28 +2556,32 @@ class _AddProductBottomSheetState extends State<_AddProductBottomSheet> {
     final priceText = priceController.text.trim();
     final sizeText = sizeController.text.trim();
 
+    String? nameErr;
+    String? priceErr;
+    String? sizeErr;
+
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nama produk tidak boleh kosong.')),
-      );
-      return;
+      nameErr = 'Nama produk wajib diisi';
     }
 
     final cleanPriceText = priceText.replaceAll('.', '').replaceAll(',', '').replaceAll(' ', '');
     final parsedPrice = double.tryParse(cleanPriceText);
-    if (parsedPrice == null || parsedPrice <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Harga harus lebih besar dari 0.')),
-      );
-      return;
+    if (cleanPriceText.isEmpty || parsedPrice == null || parsedPrice <= 0 || parsedPrice.isNaN || parsedPrice.isInfinite) {
+      priceErr = 'Harga wajib diisi (lebih dari Rp 0)';
     }
 
     final cleanSizeText = sizeText.replaceAll(',', '.').trim();
     final parsedSize = double.tryParse(cleanSizeText);
-    if (parsedSize == null || parsedSize <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ukuran harus lebih besar dari 0.')),
-      );
+    if (cleanSizeText.isEmpty || parsedSize == null || parsedSize <= 0 || parsedSize.isNaN || parsedSize.isInfinite) {
+      sizeErr = 'Ukuran wajib diisi';
+    }
+
+    if (nameErr != null || priceErr != null || sizeErr != null) {
+      setState(() {
+        _nameError = nameErr;
+        _priceError = priceErr;
+        _sizeError = sizeErr;
+      });
       return;
     }
 
@@ -2510,10 +2673,23 @@ class _AddProductBottomSheetState extends State<_AddProductBottomSheet> {
                 TextField(
                   key: const Key('add_name_field'),
                   controller: nameController,
+                  onChanged: (val) {
+                    if (_nameError != null) {
+                      setState(() {
+                        _nameError = null;
+                      });
+                    }
+                  },
                   style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF0D2818)),
                   decoration: InputDecoration(
                     hintText: 'Contoh: Indomie Goreng',
                     hintStyle: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF9CA3AF)),
+                    errorText: _nameError,
+                    errorStyle: GoogleFonts.outfit(
+                      fontSize: 12,
+                      color: const Color(0xFFEF4444),
+                      fontWeight: FontWeight.w500,
+                    ),
                     filled: true,
                     fillColor: const Color(0xFFF9FAFB),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -2523,11 +2699,24 @@ class _AddProductBottomSheetState extends State<_AddProductBottomSheet> {
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      borderSide: BorderSide(
+                        color: _nameError != null ? const Color(0xFFEF4444) : const Color(0xFFE5E7EB),
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
+                      borderSide: BorderSide(
+                        color: _nameError != null ? const Color(0xFFEF4444) : const Color(0xFF00875A),
+                        width: 1.5,
+                      ),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.2),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
                     ),
                   ),
                 ),
@@ -2597,6 +2786,13 @@ class _AddProductBottomSheetState extends State<_AddProductBottomSheet> {
                   key: const Key('add_price_field'),
                   controller: priceController,
                   keyboardType: TextInputType.number,
+                  onChanged: (val) {
+                    if (_priceError != null) {
+                      setState(() {
+                        _priceError = null;
+                      });
+                    }
+                  },
                   style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF0D2818)),
                   decoration: InputDecoration(
                     hintText: '0',
@@ -2607,6 +2803,12 @@ class _AddProductBottomSheetState extends State<_AddProductBottomSheet> {
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF0D2818),
                     ),
+                    errorText: _priceError,
+                    errorStyle: GoogleFonts.outfit(
+                      fontSize: 12,
+                      color: const Color(0xFFEF4444),
+                      fontWeight: FontWeight.w500,
+                    ),
                     filled: true,
                     fillColor: const Color(0xFFF9FAFB),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -2616,11 +2818,24 @@ class _AddProductBottomSheetState extends State<_AddProductBottomSheet> {
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      borderSide: BorderSide(
+                        color: _priceError != null ? const Color(0xFFEF4444) : const Color(0xFFE5E7EB),
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
+                      borderSide: BorderSide(
+                        color: _priceError != null ? const Color(0xFFEF4444) : const Color(0xFF00875A),
+                        width: 1.5,
+                      ),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.2),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
                     ),
                   ),
                 ),
@@ -2649,10 +2864,23 @@ class _AddProductBottomSheetState extends State<_AddProductBottomSheet> {
                             key: const Key('add_size_field'),
                             controller: sizeController,
                             keyboardType: TextInputType.number,
+                            onChanged: (val) {
+                              if (_sizeError != null) {
+                                setState(() {
+                                  _sizeError = null;
+                                });
+                              }
+                            },
                             style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF0D2818)),
                             decoration: InputDecoration(
                               hintText: 'Contoh: 200',
                               hintStyle: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF9CA3AF)),
+                              errorText: _sizeError,
+                              errorStyle: GoogleFonts.outfit(
+                                fontSize: 12,
+                                color: const Color(0xFFEF4444),
+                                fontWeight: FontWeight.w500,
+                              ),
                               filled: true,
                               fillColor: const Color(0xFFF9FAFB),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -2662,11 +2890,24 @@ class _AddProductBottomSheetState extends State<_AddProductBottomSheet> {
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                                borderSide: BorderSide(
+                                  color: _sizeError != null ? const Color(0xFFEF4444) : const Color(0xFFE5E7EB),
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
+                                borderSide: BorderSide(
+                                  color: _sizeError != null ? const Color(0xFFEF4444) : const Color(0xFF00875A),
+                                  width: 1.5,
+                                ),
+                              ),
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.2),
+                              ),
+                              focusedErrorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
                               ),
                             ),
                           ),
@@ -2733,7 +2974,41 @@ class _AddProductBottomSheetState extends State<_AddProductBottomSheet> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 18),
+
+                // Warning Box jika ada error validasi
+                if (_nameError != null || _priceError != null || _sizeError != null) ...[
+                  Container(
+                    key: const Key('add_validation_warning_box'),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFECACA), width: 1),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          color: Color(0xFFDC2626),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Mohon periksa kembali kolom yang belum terisi dengan benar.',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFFDC2626),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
 
                 // Tombol Tambah Produk
                 SizedBox(
