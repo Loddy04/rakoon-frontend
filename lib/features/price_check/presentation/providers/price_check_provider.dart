@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/features/history/data/models/price_history_item.dart';
 import 'package:rakoon_frontend/features/price_check/data/datasources/price_check_service.dart';
 import 'package:rakoon_frontend/features/price_check/data/models/product_catalog_model.dart';
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 
 enum PriceCheckStatus { initial, loading, success, error }
@@ -23,6 +24,7 @@ class PriceCheckProvider extends ChangeNotifier {
 
   // Product detail state
   PriceCheckStatus _detailStatus = PriceCheckStatus.initial;
+  String? _detailErrorMessage;
   PriceHistoryResponse? _historyResponse;
   PriceCompareResponse? _comparisonResponse;
   String _selectedRange = '1m';
@@ -50,6 +52,7 @@ class PriceCheckProvider extends ChangeNotifier {
   String get selectedCategory => _selectedCategory;
 
   PriceCheckStatus get detailStatus => _detailStatus;
+  String? get detailErrorMessage => _detailErrorMessage;
   PriceHistoryResponse? get historyResponse => _historyResponse;
   PriceCompareResponse? get comparisonResponse => _comparisonResponse;
   String get selectedRange => _selectedRange;
@@ -106,7 +109,7 @@ class PriceCheckProvider extends ChangeNotifier {
     } catch (e) {
       if (_isDisposed || generation != _generation) return;
       _status = PriceCheckStatus.error;
-      _errorMessage = 'Gagal memuat katalog: $e';
+      _errorMessage = friendlyApiError(e) ?? 'Gagal memuat katalog. Coba lagi.';
     } finally {
       if (!_isDisposed) notifyListeners();
     }
@@ -133,9 +136,9 @@ class PriceCheckProvider extends ChangeNotifier {
       if (_isDisposed || generation != _generation) return;
       _products = [..._products, ...items];
       _hasMore = items.length >= pageSize;
-    } catch (_) {
+    } catch (e) {
       if (_isDisposed || generation != _generation) return;
-      _loadMoreError = 'Gagal memuat produk berikutnya. Periksa koneksi lalu coba lagi.';
+      _loadMoreError = friendlyApiError(e) ?? 'Gagal memuat produk berikutnya. Periksa koneksi lalu coba lagi.';
     } finally {
       if (!_isDisposed && generation == _generation) {
         _isLoadingMore = false;
@@ -164,6 +167,7 @@ class PriceCheckProvider extends ChangeNotifier {
   }) async {
     _selectedRange = range;
     _detailStatus = PriceCheckStatus.loading;
+    _detailErrorMessage = null;
     notifyListeners();
 
     try {
@@ -189,6 +193,7 @@ class PriceCheckProvider extends ChangeNotifier {
     } catch (e) {
       if (_isDisposed) return;
       _detailStatus = PriceCheckStatus.error;
+      _detailErrorMessage = friendlyApiError(e);
     } finally {
       if (!_isDisposed) notifyListeners();
     }

@@ -119,8 +119,8 @@ void main() {
         tester.view.devicePixelRatio = 1.0;
 
         await tester.pumpWidget(
-          const MaterialApp(
-            home: PriceCheckCatalogPage(),
+          MaterialApp(
+            home: PriceCheckCatalogPage(httpClient: MockClient((_) async => http.Response('[]', 200))),
           ),
         );
         await tester.pumpAndSettle();

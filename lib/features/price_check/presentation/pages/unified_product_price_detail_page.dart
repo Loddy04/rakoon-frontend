@@ -1039,7 +1039,7 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Terjadi kesalahan saat memuat data toko. Silakan coba lagi.',
+                            _priceCheckProvider.detailErrorMessage ?? 'Terjadi kesalahan saat memuat data toko. Silakan coba lagi.',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.outfit(
                               fontSize: 12,

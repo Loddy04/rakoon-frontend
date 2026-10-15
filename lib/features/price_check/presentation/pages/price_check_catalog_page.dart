@@ -335,6 +335,9 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
                         child: CircularProgressIndicator(color: Color(0xFF0D2818)),
                       );
                     }
+                    if (_priceCheckProvider.status == PriceCheckStatus.error) {
+                      return _buildErrorState();
+                    }
 
                     return CustomScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
@@ -415,6 +418,37 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
                   ),
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.wifi_off_rounded, size: 40, color: Color(0xFF6B7280)),
+            const SizedBox(height: 12),
+            Text(
+              _priceCheckProvider.errorMessage ?? 'Gagal memuat katalog. Coba lagi.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF374151)),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              key: const Key('retry_catalog_button'),
+              onPressed: () => _priceCheckProvider.fetchCatalog(baseUrl: widget.baseUrl, client: widget.httpClient),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0D2818),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text('Coba lagi', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
             ),
           ],
         ),
