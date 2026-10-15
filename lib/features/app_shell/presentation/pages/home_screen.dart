@@ -9,6 +9,7 @@ import 'package:rakoon_frontend/features/price_check/presentation/pages/unified_
 import 'package:rakoon_frontend/features/scan/presentation/pages/scan_history_screen.dart';
 import 'package:rakoon_frontend/features/scan/presentation/pages/scan_session_detail_screen.dart';
 import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/services/location_service.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
@@ -167,7 +168,7 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _scansError = 'Gagal memuat riwayat scan.';
+          _scansError = friendlyApiError(e) ?? 'Gagal memuat riwayat scan.';
           _isLoadingScans = false;
         });
       }
@@ -848,6 +849,30 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             }
 
                             final catalogProducts = _catalogProvider.products;
+                            if (catalogProducts.isEmpty &&
+                                _catalogProvider.status == PriceCheckStatus.error) {
+                              return Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      _catalogProvider.errorMessage ?? 'Gagal memuat katalog. Coba lagi.',
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.outfit(
+                                        color: const Color(0xFF6B6B6B),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    TextButton(
+                                      key: const Key('retry_home_catalog_button'),
+                                      onPressed: fetchRecommendations,
+                                      child: const Text('Coba lagi'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
                             if (catalogProducts.isEmpty) {
                               return Container(
                                 margin: const EdgeInsets.symmetric(vertical: 8),
@@ -1726,7 +1751,8 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
             const SizedBox(height: 8),
             Text(
-              'Gagal memuat riwayat scan.',
+              _scansError!,
+              textAlign: TextAlign.center,
               style: GoogleFonts.outfit(
                 color: const Color(0xFF0D2818),
                 fontSize: 15,

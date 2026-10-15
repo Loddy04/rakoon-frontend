@@ -40,6 +40,8 @@ void main() {
           baseUrl: 'http://localhost:8000',
           client: c,
         ),
+    'getRecentScans': (c) => ScanService.getRecentScans(baseUrl: 'http://localhost:8000', client: c),
+    'getScanSessionDetail': (c) => ScanService.getScanSessionDetail(sessionId: 's1', baseUrl: 'http://localhost:8000', client: c),
   };
   final failures = <String, Object Function()>{
     'SocketException': () => const SocketException('Failed host lookup: secret.host'),

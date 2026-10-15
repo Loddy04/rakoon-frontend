@@ -252,13 +252,13 @@ class ScanService {
 
     try {
       final httpClient = client ?? http.Client();
-      final response = await httpClient.get(
+      final response = await mapNetworkErrors(() => httpClient.get(
         uri,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 10)));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body) as List<dynamic>;
@@ -266,10 +266,9 @@ class ScanService {
             .map((item) => RecentScan.fromJson(item as Map<String, dynamic>))
             .toList();
       } else {
+        throwIfServerError(response);
         throw Exception('HTTP ${response.statusCode}: Gagal memuat riwayat scan.');
       }
-    } on SocketException {
-      throw const SocketException('Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
     } catch (e) {
       if (e is Exception) {
         rethrow;
@@ -295,13 +294,13 @@ class ScanService {
 
     try {
       final httpClient = client ?? http.Client();
-      final response = await httpClient.get(
+      final response = await mapNetworkErrors(() => httpClient.get(
         uri,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 10)));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data =
@@ -310,10 +309,9 @@ class ScanService {
       } else if (response.statusCode == 404) {
         throw Exception('Sesi scan tidak ditemukan atau Anda tidak memiliki akses.');
       } else {
+        throwIfServerError(response);
         throw Exception('HTTP ${response.statusCode}: Gagal memuat detail sesi scan.');
       }
-    } on SocketException {
-      throw const SocketException('Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
     } catch (e) {
       if (e is Exception) {
         rethrow;

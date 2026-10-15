@@ -230,7 +230,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('recent_scans_error')), findsOneWidget);
-      expect(find.text('Gagal memuat riwayat scan.'), findsOneWidget);
+      expect(find.text('Server sedang bermasalah, coba lagi nanti'), findsOneWidget);
       expect(find.byKey(const Key('retry_recent_scans_button')), findsOneWidget);
 
       // Tap retry with working backend

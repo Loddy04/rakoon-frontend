@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
 
 enum RecommendationStatus { initial, loading, success, error }
@@ -59,7 +60,7 @@ class RecommendationProvider extends ChangeNotifier {
     } catch (e) {
       if (_isDisposed) return;
       _status = RecommendationStatus.error;
-      _errorMessage = 'Gagal memuat rekomendasi: $e';
+      _errorMessage = friendlyApiError(e) ?? 'Gagal memuat rekomendasi. Coba lagi.';
     } finally {
       if (!_isDisposed) {
         notifyListeners();
