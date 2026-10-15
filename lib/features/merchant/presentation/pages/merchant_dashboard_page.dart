@@ -619,8 +619,9 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
                         : () async {
                             final photo = await _pickPhotoFile();
                             if (photo != null) {
-                              if (photo.sizeInBytes > 5 * 1024 * 1024) {
-                                setModalState(() => formError = 'Ukuran foto toko melebihi batas 5 MB.');
+                              final photoError = validateClaimPhotoFile(photo);
+                              if (photoError != null) {
+                                setModalState(() => formError = photoError);
                                 return;
                               }
                               setModalState(() {
@@ -697,8 +698,9 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
                               : () async {
                                   final photo = await _pickPhotoFile();
                                   if (photo != null) {
-                                    if (photo.sizeInBytes > 5 * 1024 * 1024) {
-                                      setModalState(() => formError = 'Ukuran foto toko melebihi batas 5 MB.');
+                                    final photoError = validateClaimPhotoFile(photo);
+                                    if (photoError != null) {
+                                      setModalState(() => formError = photoError);
                                       return;
                                     }
                                     setModalState(() {

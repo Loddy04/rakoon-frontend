@@ -6,6 +6,23 @@ const List<String> claimDocumentExtensions = ['pdf', 'jpg', 'jpeg'];
 const List<String> claimPhotoExtensions = ['jpg', 'jpeg', 'png'];
 const int claimMaxFileBytes = 5 * 1024 * 1024;
 
+String? _validateClaimFile(PickedFileData file, List<String> allowed, String wrongFormatMessage) {
+  final name = file.name.toLowerCase();
+  final dot = name.lastIndexOf('.');
+  final ext = dot >= 0 ? name.substring(dot + 1) : '';
+  if (!allowed.contains(ext)) return wrongFormatMessage;
+  if (file.sizeInBytes > claimMaxFileBytes) return 'Ukuran berkas terlalu besar (maksimum 5 MB).';
+  return null;
+}
+
+/// Pesan kesalahan untuk foto toko (JPEG/PNG, maks 5 MB), atau null bila boleh diunggah.
+String? validateClaimPhotoFile(PickedFileData file) =>
+    _validateClaimFile(file, claimPhotoExtensions, 'Foto harus berformat JPEG atau PNG.');
+
+/// Pesan kesalahan untuk dokumen legalitas (PDF/JPEG, maks 5 MB), atau null bila boleh diunggah.
+String? validateClaimDocumentFile(PickedFileData file) =>
+    _validateClaimFile(file, claimDocumentExtensions, 'Dokumen harus berformat PDF atau JPEG.');
+
 class ClaimFormValues {
   final String applicantName;
   final String applicantPhone;
@@ -81,20 +98,10 @@ class _ClaimStoreFormState extends State<ClaimStoreForm> {
 
   static String _cleanError(Object e) => e.toString().replaceFirst('Exception: ', '');
 
-  /// Mengembalikan pesan kesalahan, atau null bila berkas boleh diunggah.
-  static String? _validate(PickedFileData file, List<String> allowed, String wrongFormatMessage) {
-    final name = file.name.toLowerCase();
-    final dot = name.lastIndexOf('.');
-    final ext = dot >= 0 ? name.substring(dot + 1) : '';
-    if (!allowed.contains(ext)) return wrongFormatMessage;
-    if (file.sizeInBytes > claimMaxFileBytes) return 'Ukuran berkas terlalu besar (maksimum 5 MB).';
-    return null;
-  }
-
   Future<void> _pickDocument() async {
     final file = await widget.pickDocument();
     if (file == null || !mounted) return;
-    final error = _validate(file, claimDocumentExtensions, 'Dokumen harus berformat PDF atau JPEG.');
+    final error = validateClaimDocumentFile(file);
     if (error != null) {
       setState(() {
         _documentError = error;
@@ -126,7 +133,7 @@ class _ClaimStoreFormState extends State<ClaimStoreForm> {
   Future<void> _pickPhoto() async {
     final file = await widget.pickPhoto();
     if (file == null || !mounted) return;
-    final error = _validate(file, claimPhotoExtensions, 'Foto harus berformat JPEG atau PNG.');
+    final error = validateClaimPhotoFile(file);
     if (error != null) {
       setState(() {
         _photoError = error;
