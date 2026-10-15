@@ -1,6 +1,11 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:http/http.dart' as http;
 
 const String invalidRequestMessage = 'Lokasi atau jumlah data tidak valid, coba lagi';
+const String noConnectionMessage = 'Tidak ada koneksi internet. Periksa data seluler atau Wi-Fi, lalu coba lagi.';
+const String serverErrorMessage = 'Server sedang bermasalah, coba lagi nanti';
 
 /// Thrown for HTTP 422 (lat/lng/radius/limit out of bounds). Never carries the response body.
 class InvalidRequestException implements Exception {
@@ -11,6 +16,49 @@ class InvalidRequestException implements Exception {
   String toString() => message;
 }
 
+/// Thrown when the request never got an answer (offline, DNS, connection drop, client timeout).
+class NoConnectionException implements Exception {
+  final String message;
+  const NoConnectionException([this.message = noConnectionMessage]);
+
+  @override
+  String toString() => message;
+}
+
+/// Thrown for HTTP 5xx and 408. Never carries the response body.
+class ServerErrorException implements Exception {
+  final String message;
+  const ServerErrorException([this.message = serverErrorMessage]);
+
+  @override
+  String toString() => message;
+}
+
 void throwIfInvalidRequest(http.Response response) {
   if (response.statusCode == 422) throw const InvalidRequestException();
+}
+
+void throwIfServerError(http.Response response) {
+  if (response.statusCode >= 500 || response.statusCode == 408) throw const ServerErrorException();
+}
+
+/// Runs [body]; network-level failures become [NoConnectionException], everything else passes through.
+Future<T> mapNetworkErrors<T>(Future<T> Function() body) async {
+  try {
+    return await body();
+  } on SocketException {
+    throw const NoConnectionException();
+  } on TimeoutException {
+    throw const NoConnectionException();
+  } on http.ClientException {
+    throw const NoConnectionException();
+  }
+}
+
+/// The user-facing message for known API exceptions, or null for anything else (never show raw errors).
+String? friendlyApiError(Object error) {
+  if (error is NoConnectionException || error is ServerErrorException || error is InvalidRequestException) {
+    return error.toString();
+  }
+  return null;
 }
