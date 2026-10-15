@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/ads_service.dart';
 import 'package:rakoon_frontend/features/merchant/presentation/pages/merchant_dashboard_page.dart' show FilePickerFn;
 
@@ -114,7 +115,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
         setState(() => _isUploadingBanner = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal mengunggah foto flyer: ${e.toString().replaceFirst("Exception: ", "")}'),
+            content: Text('Gagal mengunggah foto flyer: ${userMessage(e)}'),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
@@ -358,7 +359,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                                       if (mounted) {
                                         setModalState(() {
                                           isProcessing = false;
-                                          errorMessage = 'Gagal membuat kampanye iklan: ${e.toString().replaceFirst("Exception: ", "")}';
+                                          errorMessage = 'Gagal membuat kampanye iklan: ${userMessage(e)}';
                                         });
                                       }
                                     }
@@ -717,7 +718,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(e.toString().replaceFirst("Exception: ", "")),
+                      content: Text(userMessage(e)),
                       backgroundColor: const Color(0xFFDC2626),
                     ),
                   );

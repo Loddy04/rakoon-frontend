@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/features/merchant/presentation/pages/merchant_dashboard_page.dart' show PickedFileData;
 
 const List<String> claimDocumentExtensions = ['pdf', 'jpg', 'jpeg'];
@@ -96,7 +97,7 @@ class _ClaimStoreFormState extends State<ClaimStoreForm> {
       _documentPath != null &&
       _photoPath != null;
 
-  static String _cleanError(Object e) => e.toString().replaceFirst('Exception: ', '');
+  static String _cleanError(Object e) => userMessage(e);
 
   Future<void> _pickDocument() async {
     final file = await widget.pickDocument();

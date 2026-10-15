@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/services/admin_product_service.dart';
 import 'package:rakoon_frontend/services/products_service.dart';
@@ -87,7 +88,7 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+          _errorMessage = userMessage(e);
           _isLoading = false;
         });
       }
@@ -860,7 +861,7 @@ class _EditPhotoSheetState extends State<_EditPhotoSheet> with SingleTickerProvi
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+          _errorMessage = userMessage(e);
           _isSaving = false;
         });
       }

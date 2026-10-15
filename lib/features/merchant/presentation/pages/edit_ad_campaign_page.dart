@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/ads_service.dart';
 import 'package:rakoon_frontend/features/merchant/presentation/pages/merchant_dashboard_page.dart' show FilePickerFn;
 
@@ -141,7 +142,7 @@ class _EditAdCampaignPageState extends State<EditAdCampaignPage> {
         setState(() => _isUploadingBanner = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal mengunggah foto flyer: ${e.toString().replaceFirst("Exception: ", "")}'),
+            content: Text('Gagal mengunggah foto flyer: ${userMessage(e)}'),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
@@ -188,7 +189,7 @@ class _EditAdCampaignPageState extends State<EditAdCampaignPage> {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal memperbarui iklan: ${e.toString().replaceFirst("Exception: ", "")}'),
+            content: Text('Gagal memperbarui iklan: ${userMessage(e)}'),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
@@ -279,7 +280,7 @@ class _EditAdCampaignPageState extends State<EditAdCampaignPage> {
         setState(() => _isDeleting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menghapus iklan: ${e.toString().replaceFirst("Exception: ", "")}'),
+            content: Text('Gagal menghapus iklan: ${userMessage(e)}'),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
@@ -405,7 +406,7 @@ class _EditAdCampaignPageState extends State<EditAdCampaignPage> {
                                 if (mounted) {
                                   setModalState(() {
                                     isRenewing = false;
-                                    renewError = 'Gagal memperbarui langganan: ${e.toString().replaceFirst("Exception: ", "")}';
+                                    renewError = 'Gagal memperbarui langganan: ${userMessage(e)}';
                                   });
                                 }
                               }
