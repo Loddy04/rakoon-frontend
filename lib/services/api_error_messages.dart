@@ -62,3 +62,37 @@ String? friendlyApiError(Object error) {
   }
   return null;
 }
+
+const String genericErrorMessage = 'Terjadi kesalahan, coba lagi';
+
+const List<String> _technicalMarkers = [
+  'SocketException',
+  'ClientException',
+  'TimeoutException',
+  'FormatException',
+  'Detail:',
+  'http://',
+  'https://',
+  'Traceback',
+  "type '",
+];
+
+/// Text safe to show to a user: strips "Exception: " and swaps anything technical for a generic message.
+String userMessage(Object error) {
+  final raw = error.toString();
+  final text = raw.replaceFirst('Exception: ', '').trim();
+  if (text.isEmpty || _technicalMarkers.any(raw.contains)) return genericErrorMessage;
+  return text;
+}
+
+/// Wraps a client so network-level failures surface as [NoConnectionException].
+class FriendlyHttpClient extends http.BaseClient {
+  final http.Client _inner;
+  FriendlyHttpClient(this._inner);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) => mapNetworkErrors(() => _inner.send(request));
+
+  @override
+  void close() => _inner.close();
+}
