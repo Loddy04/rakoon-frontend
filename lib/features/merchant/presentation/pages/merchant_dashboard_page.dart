@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/services/ads_service.dart';
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/services/location_service.dart';
@@ -159,7 +160,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
       if (mounted) {
         setState(() {
           if (!silent) {
-            _errorMessage = 'Gagal memuat data toko: ${e.toString().replaceFirst("Exception: ", "")}';
+            _errorMessage = 'Gagal memuat data toko: ${userMessage(e)}';
           }
           _isLoading = false;
         });
@@ -813,12 +814,12 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
                           } catch (e) {
                             setModalState(() {
                               isSubmitting = false;
-                              formError = e.toString().replaceFirst("Exception: ", "");
+                              formError = userMessage(e);
                             });
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Gagal mengajukan toko: ${e.toString().replaceFirst("Exception: ", "")}'),
+                                  content: Text('Gagal mengajukan toko: ${userMessage(e)}'),
                                   backgroundColor: const Color(0xFFDC2626),
                                 ),
                               );
@@ -987,7 +988,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString().replaceFirst("Exception: ", "")),
+            content: Text(userMessage(e)),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
@@ -1036,7 +1037,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal memeriksa status: ${e.toString().replaceFirst("Exception: ", "")}'),
+            content: Text('Gagal memeriksa status: ${userMessage(e)}'),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );

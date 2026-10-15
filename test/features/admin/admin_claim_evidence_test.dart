@@ -72,6 +72,7 @@ void main() {
   late List<Uri> evidenceRequests;
   late List<Uri> launched;
   int evidenceStatus = 200;
+  bool evidenceBodyIsGarbage = false;
 
   Future<void> openPage(WidgetTester tester, List<Map<String, dynamic>> claims) async {
     final client = MockClient((request) async {
@@ -81,6 +82,7 @@ void main() {
       }
       if (path.endsWith('/ads/claim-evidence-url')) {
         evidenceRequests.add(request.url);
+        if (evidenceBodyIsGarbage) return http.Response('<html>FormatException at http://db.internal</html>', 200);
         if (evidenceStatus != 200) {
           return http.Response(jsonEncode({'detail': 'psycopg2 secret'}), evidenceStatus);
         }
@@ -105,6 +107,7 @@ void main() {
     evidenceRequests = [];
     launched = [];
     evidenceStatus = 200;
+    evidenceBodyIsGarbage = false;
   });
 
   testWidgets('document and photo each get a "Lihat bukti" button for claims and submissions', (tester) async {
@@ -148,5 +151,17 @@ void main() {
 
     expect(evidenceRequests, isEmpty);
     expect(find.textContaining('tidak dapat dibuka'), findsOneWidget);
+  });
+
+  testWidgets('an unexpected exception shows the generic message, never the exception text', (tester) async {
+    evidenceBodyIsGarbage = true;
+    await openPage(tester, [claim()]);
+    await tester.tap(find.byKey(const Key('view_document_claim-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gagal membuka bukti: Terjadi kesalahan, coba lagi'), findsOneWidget);
+    expect(find.textContaining('FormatException'), findsNothing);
+    expect(find.textContaining('http://'), findsNothing);
+    expect(launched, isEmpty);
   });
 }

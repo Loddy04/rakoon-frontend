@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/services/ads_service.dart';
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/widgets/rakoon_location_map.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -58,7 +59,7 @@ class _AdminStoreClaimsPageState extends State<AdminStoreClaimsPage> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+          _errorMessage = userMessage(e);
           _isLoading = false;
         });
       }
@@ -89,7 +90,7 @@ class _AdminStoreClaimsPageState extends State<AdminStoreClaimsPage> {
       final opened = await AdsService.launchCheckoutUrl(url, customLauncher: widget.evidenceLauncher);
       if (!opened) _showSnack('Gagal membuka bukti: browser tidak dapat dibuka.');
     } catch (e) {
-      _showSnack('Gagal membuka bukti: ${e.toString().replaceFirst('Exception: ', '')}');
+      _showSnack('Gagal membuka bukti: ${userMessage(e)}');
     }
   }
 
@@ -276,7 +277,7 @@ class _AdminStoreClaimsPageState extends State<AdminStoreClaimsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            content: Text(userMessage(e)),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
