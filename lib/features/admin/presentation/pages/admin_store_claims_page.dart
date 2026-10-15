@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/services/ads_service.dart';
+import 'package:rakoon_frontend/widgets/rakoon_location_map.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AdminStoreClaimsPage extends StatefulWidget {
@@ -129,7 +132,16 @@ class _AdminStoreClaimsPageState extends State<AdminStoreClaimsPage> {
 
   Future<void> _handleApprove(PendingStoreClaimData claim) async {
     final isNewStore = claim.claimType == 'new_store';
-    final confirmed = await showDialog<bool>(
+    _ApproveNewStoreResult? newStoreApproval;
+    if (isNewStore) {
+      newStoreApproval = await showDialog<_ApproveNewStoreResult>(
+        context: context,
+        builder: (ctx) => _ApproveNewStoreDialog(claim: claim),
+      );
+    }
+    final confirmed = isNewStore
+        ? newStoreApproval != null
+        : await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -177,6 +189,8 @@ class _AdminStoreClaimsPageState extends State<AdminStoreClaimsPage> {
       if (isNewStore) {
         await AdsService.verifyNewStore(
           submissionId: claim.submissionId ?? claim.storeId,
+          latitude: newStoreApproval?.latitude,
+          longitude: newStoreApproval?.longitude,
           baseUrl: widget.baseUrl,
           client: widget.httpClient,
         );
@@ -804,6 +818,149 @@ class _RejectClaimDialogState extends State<_RejectClaimDialog> {
           ),
           onPressed: () => Navigator.pop(context, _reasonController.text.trim()),
           child: Text('Tolak Klaim', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+        ),
+      ],
+    );
+  }
+}
+
+/// Hasil dialog persetujuan toko baru; latitude/longitude hanya terisi bila admin menetapkan/mengoreksi titik.
+class _ApproveNewStoreResult {
+  final double? latitude;
+  final double? longitude;
+  const _ApproveNewStoreResult({this.latitude, this.longitude});
+}
+
+class _ApproveNewStoreDialog extends StatefulWidget {
+  final PendingStoreClaimData claim;
+
+  const _ApproveNewStoreDialog({required this.claim});
+
+  @override
+  State<_ApproveNewStoreDialog> createState() => _ApproveNewStoreDialogState();
+}
+
+class _ApproveNewStoreDialogState extends State<_ApproveNewStoreDialog> {
+  final MapController _mapController = MapController();
+  late LatLng? _point;
+  bool _corrected = false;
+  late bool _editing;
+
+  bool get _hasOriginalPoint => widget.claim.latitude != null && widget.claim.longitude != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _point = _hasOriginalPoint ? LatLng(widget.claim.latitude!, widget.claim.longitude!) : null;
+    // Pengajuan lama tanpa koordinat: admin wajib menentukan titik sebelum menyetujui.
+    _editing = !_hasOriginalPoint;
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final claim = widget.claim;
+    final applicant = claim.applicantName ?? claim.userNama ?? claim.userEmail ?? claim.userId;
+    final center = _point ?? const LatLng(-7.7829, 110.4083); // hanya titik pandang awal peta
+
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Row(
+        children: [
+          const Icon(Icons.check_circle_rounded, color: Color(0xFF166534), size: 24),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('Setujui Toko Baru?', style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 16)),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: 360,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Toko baru "${claim.storeNama}" akan diaktifkan ke katalog publik Rakoon dan diverifikasi untuk pemohon "$applicant".',
+                style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF374151)),
+              ),
+              const SizedBox(height: 12),
+              RakoonLocationMap(
+                key: const Key('approve_location_map'),
+                userLat: center.latitude,
+                userLng: center.longitude,
+                mapController: _mapController,
+                height: 180,
+                margin: EdgeInsets.zero,
+                heroTag: 'approve_location_map_recenter',
+                showUserMarker: false,
+                pickedPoint: _point,
+                onPointSelected: _editing
+                    ? (lat, lng) => setState(() {
+                          _point = LatLng(lat, lng);
+                          _corrected = true;
+                        })
+                    : null,
+              ),
+              const SizedBox(height: 6),
+              if (_point != null)
+                Text(
+                  'Titik toko: ${_point!.latitude.toStringAsFixed(5)}, ${_point!.longitude.toStringAsFixed(5)}',
+                  key: const Key('approve_point_text'),
+                  style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF166534)),
+                )
+              else
+                Text(
+                  'Pengajuan ini belum memiliki koordinat. Ketuk peta untuk menentukan titik toko sebelum menyetujui.',
+                  style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFFB45309)),
+                ),
+              if (_hasOriginalPoint && !_editing)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    key: const Key('correct_point_button'),
+                    onPressed: () => setState(() => _editing = true),
+                    icon: const Icon(Icons.edit_location_alt_outlined, size: 16),
+                    label: const Text('Koreksi titik'),
+                  ),
+                )
+              else if (_editing && _hasOriginalPoint)
+                Text(
+                  'Ketuk peta untuk memindahkan titik.',
+                  style: GoogleFonts.outfit(fontSize: 11.5, color: const Color(0xFF6B7280)),
+                ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          key: const Key('cancel_approve_button'),
+          onPressed: () => Navigator.pop(context),
+          child: Text('Batal', style: GoogleFonts.outfit(color: const Color(0xFF6B7280))),
+        ),
+        ElevatedButton(
+          key: const Key('confirm_approve_button'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF166534),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          onPressed: _point == null
+              ? null
+              : () => Navigator.pop(
+                    context,
+                    _corrected || !_hasOriginalPoint
+                        ? _ApproveNewStoreResult(latitude: _point!.latitude, longitude: _point!.longitude)
+                        : const _ApproveNewStoreResult(),
+                  ),
+          child: Text('Setujui', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
         ),
       ],
     );

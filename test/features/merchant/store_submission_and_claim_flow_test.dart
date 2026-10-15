@@ -392,6 +392,8 @@ void main() {
                 'store_nama': 'Toko Ritel Baru',
                 'store_alamat': 'Jl. Wonosari KM 7',
                 'store_category': 'Supermarket',
+                'latitude': -7.85,
+                'longitude': 110.35,
                 'applicant_name': 'Siti Rahma',
                 'applicant_phone': '0877889900',
                 'applicant_role': 'Manajer Cabang',

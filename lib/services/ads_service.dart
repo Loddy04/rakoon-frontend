@@ -1253,8 +1253,11 @@ class AdsService {
   }
 
   /// Menyetujui pengajuan toko baru (Admin only)
+  /// [latitude]/[longitude] = koreksi titik oleh admin; keduanya dikirim bersamaan atau tidak sama sekali.
   static Future<Map<String, dynamic>> verifyNewStore({
     required String submissionId,
+    double? latitude,
+    double? longitude,
     String? baseUrl,
     http.Client? client,
   }) async {
@@ -1276,6 +1279,10 @@ class AdsService {
         },
         body: jsonEncode({
           'submission_id': submissionId,
+          if (latitude != null && longitude != null) ...{
+            'latitude': latitude,
+            'longitude': longitude,
+          },
         }),
       );
 
