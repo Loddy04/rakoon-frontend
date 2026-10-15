@@ -700,7 +700,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 350));
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('Gagal mencari produk'), findsOneWidget);
+        expect(find.text('Server sedang bermasalah, coba lagi nanti'), findsOneWidget);
       }, () => mockClient);
     });
 

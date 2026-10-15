@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 
 /// Dart representation of a Product model from the backend.
 class Product {
@@ -86,9 +87,9 @@ class ProductsService {
 
     try {
       final httpClient = client ?? http.Client();
-      final response = await httpClient.get(uri).timeout(
+      final response = await mapNetworkErrors(() => httpClient.get(uri).timeout(
         const Duration(seconds: 10),
-      );
+      ));
 
       if (response.statusCode == 200) {
         final List<dynamic> decoded = jsonDecode(response.body) as List<dynamic>;
@@ -96,14 +97,14 @@ class ProductsService {
             .map((e) => Product.fromJson(e as Map<String, dynamic>))
             .toList();
       } else {
+        throwIfServerError(response);
         throw Exception(
           'HTTP ${response.statusCode}: Gagal mengambil daftar produk.',
         );
       }
     } catch (e) {
-      throw Exception(
-        'Gagal memuat daftar produk. Detail: $e',
-      );
+      if (friendlyApiError(e) != null) rethrow;
+      throw Exception('Gagal memuat daftar produk.');
     }
   }
 

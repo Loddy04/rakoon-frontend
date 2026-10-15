@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/products_service.dart';
 import 'package:rakoon_frontend/services/budget_shopping_service.dart';
 import 'package:rakoon_frontend/core/utils/brand_assets.dart';
@@ -192,7 +193,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
 
       setState(() {
         _isSearching = false;
-        _errorMessage = 'Gagal memuat produk default: $e';
+        _errorMessage = friendlyApiError(e) ?? 'Gagal memuat produk default.';
       });
     }
   }
@@ -234,7 +235,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
 
       setState(() {
         _isSearching = false;
-        _errorMessage = 'Gagal mencari produk: $e';
+        _errorMessage = friendlyApiError(e) ?? 'Gagal mencari produk.';
       });
     }
   }
@@ -337,7 +338,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
       if (!mounted) return;
       setState(() {
         _isEvaluating = false;
-        _errorMessage = e.toString();
+        _errorMessage = friendlyApiError(e) ?? 'Gagal menghitung rekomendasi budget. Coba lagi.';
       });
     }
   }
