@@ -7,7 +7,6 @@ import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/features/auth/presentation/pages/login_page.dart';
 import 'package:rakoon_frontend/features/auth/presentation/pages/register_page.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
-import 'package:rakoon_frontend/main.dart';
 import 'package:rakoon_frontend/features/debug/integration_dashboard_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -408,7 +407,7 @@ void main() {
       });
     });
 
-    group('AppShell and AuthStateGate Tests', () {
+    group('AppShell Tests', () {
       late Session mockSession;
 
       setUp(() {
@@ -430,31 +429,6 @@ void main() {
       tearDown(() {
         AuthService.mockSession = null;
       });
-
-      testWidgets('AuthStateGate redirects to LoginPage when session is null', (
-        WidgetTester tester,
-      ) async {
-        AuthService.mockSession = null;
-
-        await tester.pumpWidget(const MaterialApp(home: AuthStateGate()));
-        await tester.pumpAndSettle();
-
-        expect(find.byType(LoginPage), findsOneWidget);
-        expect(find.byType(AppShell), findsNothing);
-      });
-
-      testWidgets(
-        'AuthStateGate redirects to AppShell when session is non-null',
-        (WidgetTester tester) async {
-          AuthService.mockSession = mockSession;
-
-          await tester.pumpWidget(const MaterialApp(home: AuthStateGate()));
-          await tester.pumpAndSettle();
-
-          expect(find.byType(AppShell), findsOneWidget);
-          expect(find.byType(LoginPage), findsNothing);
-        },
-      );
 
       testWidgets('AppShell tab switching works', (WidgetTester tester) async {
         AuthService.mockSession = mockSession;

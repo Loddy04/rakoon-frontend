@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rakoon_frontend/core/config/app_config.dart';
-import 'package:rakoon_frontend/features/app_shell/presentation/pages/app_shell.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/splash_screen.dart';
-import 'package:rakoon_frontend/features/auth/presentation/pages/login_page.dart';
-import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 
 void main() async {
@@ -147,26 +144,6 @@ class ConfigErrorScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-// TODO: Remove or refactor AuthStateGate in Task A6, as it is a mandatory auth gate that conflicts with progressive login production plans.
-class AuthStateGate extends StatelessWidget {
-  const AuthStateGate({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<AuthState>(
-      stream: AuthService.authStateChanges,
-      builder: (context, snapshot) {
-        final session = AuthService.currentSession;
-        if (session != null) {
-          return const AppShell();
-        } else {
-          return const LoginPage();
-        }
-      },
     );
   }
 }
