@@ -18,6 +18,7 @@ class ScanCameraScreen extends StatefulWidget {
   final http.Client? httpClient;
   final ImagePicker? imagePicker;
   final File? initialImageFile;
+  final bool initialCameraPermissionDenied;
 
   const ScanCameraScreen({
     super.key,
@@ -28,6 +29,7 @@ class ScanCameraScreen extends StatefulWidget {
     this.httpClient,
     this.imagePicker,
     this.initialImageFile,
+    this.initialCameraPermissionDenied = false,
   });
 
   @override
@@ -45,7 +47,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
   List<CameraDescription> _cameras = [];
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
-  bool _isCameraPermissionDenied = false;
+  late bool _isCameraPermissionDenied;
   bool _isCameraInitializing = false;
   int _initToken = 0;
 
@@ -58,6 +60,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     super.initState();
     _picker = widget.imagePicker ?? ImagePicker();
     _imageFile = widget.initialImageFile;
+    _isCameraPermissionDenied = widget.initialCameraPermissionDenied;
     WidgetsBinding.instance.addObserver(this);
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
@@ -163,6 +166,9 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
             setState(() {
               _isCameraInitializing = false;
               _isCameraInitialized = false;
+              if (e is CameraException && e.code == 'CameraAccessDenied') {
+                _isCameraPermissionDenied = true;
+              }
             });
           }
           return;
@@ -172,6 +178,9 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
       setState(() {
         _isCameraInitializing = false;
         _isCameraInitialized = false;
+        if (widget.initialCameraPermissionDenied) {
+          _isCameraPermissionDenied = true;
+        }
       });
       return;
     }
@@ -548,7 +557,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
             const SizedBox(height: 16),
             Text(
               _isCameraPermissionDenied
-                  ? 'Izin Kamera Ditolak'
+                  ? 'Izin kamera diperlukan untuk scan'
                   : _isCameraInitializing
                       ? 'Memulai kamera...'
                       : 'Kamera Tidak Tersedia',
@@ -557,7 +566,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
             const SizedBox(height: 8),
             Text(
               _isCameraPermissionDenied
-                  ? 'Aktifkan izin kamera di pengaturan perangkat untuk memindai.'
+                  ? 'Aktifkan izin kamera untuk memindai harga produk di rak.'
                   : _isCameraInitializing
                       ? 'Harap tunggu saat kami menghubungkan ke sensor kamera.'
                       : 'Perangkat ini tidak memiliki kamera aktif atau sedang berjalan di emulator.',
@@ -582,8 +591,9 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
             if (_isCameraPermissionDenied) ...[
               const SizedBox(height: 12),
               TextButton(
+                key: const Key('retry_camera_permission_button'),
                 onPressed: _initializeCamera,
-                child: const Text('Coba Minta Izin Lagi', style: TextStyle(color: AppColors.accent)),
+                child: const Text('Coba Lagi', style: TextStyle(color: AppColors.accent)),
               ),
             ],
           ],

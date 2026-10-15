@@ -488,5 +488,20 @@ void main() {
       expect(find.textContaining('rate limited'), findsNothing);
       expect(find.textContaining('detail'), findsNothing);
     });
+
+    testWidgets('Displays friendly camera permission denied state with retry button', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: ScanCameraScreen(
+            baseUrl: 'http://localhost:8000',
+            initialCameraPermissionDenied: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Izin kamera diperlukan untuk scan'), findsOneWidget);
+      expect(find.text('Coba Lagi'), findsOneWidget);
+    });
   });
 }

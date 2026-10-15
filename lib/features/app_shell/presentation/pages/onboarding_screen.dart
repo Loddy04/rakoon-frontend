@@ -19,10 +19,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  bool _cameraGranted = false;
   bool _locationGranted = false;
   bool _isRequestingLocation = false;
-  bool _isRequestingCamera = false;
 
   final List<Map<String, dynamic>> _onboardingData = [
     {
@@ -53,7 +51,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       'title': 'Izin Akses Perangkat',
       'subtitle': 'Akses Fitur Utama',
       'description':
-          'Untuk menggunakan fitur AI Rakoon secara maksimal, kami memerlukan beberapa perizinan akses dasar untuk kamera dan lokasi GPS Anda.',
+          'Untuk menggunakan fitur AI Rakoon secara maksimal, kami memerlukan perizinan akses untuk lokasi GPS Anda. Izin kamera akan diminta saat Anda membuka kamera pemindai.',
       'icon': Icons.security_outlined,
       'color': AppColors.accent,
     },
@@ -111,29 +109,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           _isRequestingLocation = false;
         });
       }
-    }
-  }
-
-  Future<void> _requestCameraPermission() async {
-    setState(() {
-      _isRequestingCamera = true;
-    });
-
-    // Simulate requesting camera permission with a brief dialog explain and delay
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    setState(() {
-      _cameraGranted = true;
-      _isRequestingCamera = false;
-    });
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Izin kamera berhasil disimulasikan & diberikan!'),
-          backgroundColor: AppColors.accent,
-        ),
-      );
     }
   }
 
@@ -269,16 +244,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
                         // Interactive cards if permissions page
                         if (isPermissionsPage) ...[
-                          _buildPermissionCard(
-                            title: 'Izin Akses Kamera',
-                            description:
-                                'Diperlukan untuk memindai harga barang di rak via AI Vision.',
-                            icon: Icons.camera_alt,
-                            isGranted: _cameraGranted,
-                            isLoading: _isRequestingCamera,
-                            onPressed: _requestCameraPermission,
-                          ),
-                          const SizedBox(height: AppSpacing.l),
                           _buildPermissionCard(
                             title: 'Izin Akses Lokasi',
                             description:
