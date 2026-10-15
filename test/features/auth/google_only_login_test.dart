@@ -120,4 +120,13 @@ void main() {
     expect(find.text('Gagal masuk dengan Google. Coba lagi.'), findsOneWidget);
     expect(find.textContaining('internal detail'), findsNothing);
   });
+
+  testWidgets('the sheet shows only the consent line under the Google button', (tester) async {
+    await pumpSheet(tester, signIn: () async => AuthResponse());
+
+    expect(find.byKey(const Key('google_signin_note')), findsOneWidget);
+    expect(find.textContaining('Belum punya akun'), findsNothing);
+    expect(find.textContaining('menyetujui Syarat & Ketentuan dan Kebijakan Privasi'), findsOneWidget);
+    expect(find.text('Masuk untuk mulai memindai\ndan berbagi harga'), findsOneWidget);
+  });
 }

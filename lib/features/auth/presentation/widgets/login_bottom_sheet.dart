@@ -154,7 +154,7 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
 
                     // Headline
                     Text(
-                      'Go ahead and set up\nyour account',
+                      'Masuk untuk mulai memindai\ndan berbagi harga',
                       style: GoogleFonts.outfit(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,

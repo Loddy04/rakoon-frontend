@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
-import 'package:rakoon_frontend/features/auth/presentation/widgets/login_bottom_sheet.dart';
+import 'package:rakoon_frontend/features/auth/presentation/widgets/login_form.dart' show GoogleSignInNote, googleLoginErrorMessage;
 import 'package:rakoon_frontend/features/admin/presentation/pages/admin_product_photo_page.dart';
 import 'package:rakoon_frontend/features/admin/presentation/pages/admin_store_claims_page.dart';
 import 'package:rakoon_frontend/features/merchant/presentation/pages/merchant_dashboard_page.dart';
@@ -15,10 +15,14 @@ class ProfilePage extends StatefulWidget {
   final String? baseUrl;
   final http.Client? httpClient;
 
+  /// Hanya untuk test: pengganti AuthService.signInWithGoogle.
+  final Future<AuthResponse> Function()? signInWithGoogle;
+
   const ProfilePage({
     super.key,
     this.baseUrl,
     this.httpClient,
+    this.signInWithGoogle,
   });
 
   @override
@@ -27,6 +31,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   bool _isLoggingOut = false;
+  bool _isSigningIn = false;
   bool _isCheckingAdmin = false;
   StreamSubscription<AuthState>? _authSubscription;
 
@@ -68,23 +73,27 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  void _showLoginSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-      ),
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+  /// Langsung membuka pemilih akun Google, tanpa popup.
+  Future<void> _handleGoogleSignIn() async {
+    if (_isSigningIn) return;
+    setState(() => _isSigningIn = true);
+    try {
+      await (widget.signInWithGoogle ?? AuthService.signInWithGoogle)();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              googleLoginErrorMessage(e),
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.paper),
+            ),
+            backgroundColor: AppColors.error,
           ),
-          child: const LoginBottomSheet(),
         );
-      },
-    );
+      }
+    } finally {
+      if (mounted) setState(() => _isSigningIn = false);
+    }
   }
 
   Future<void> _handleSignOut() async {
@@ -260,10 +269,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   height: 48,
                   child: Semantics(
                     button: true,
-                    label: 'Masuk atau Buat Akun',
+                    label: 'Masuk dengan Google',
                     child: ElevatedButton(
                       key: const Key('signin_invitation_button'),
-                      onPressed: () => _showLoginSheet(context),
+                      onPressed: _isSigningIn ? null : _handleGoogleSignIn,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF059669),
                         foregroundColor: Colors.white,
@@ -274,7 +283,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                       child: const Text(
-                        'Masuk',
+                        'Masuk dengan Google',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
@@ -284,6 +293,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 12),
+                const GoogleSignInNote(),
               ],
             ),
           ),

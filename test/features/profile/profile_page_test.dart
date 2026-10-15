@@ -44,7 +44,11 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('Masuk'), findsOneWidget);
+      expect(find.text('Masuk dengan Google'), findsOneWidget);
+      expect(find.text('Masuk'), findsNothing);
+      expect(find.byKey(const Key('google_signin_note')), findsOneWidget);
+      expect(find.textContaining('Belum punya akun'), findsNothing);
+      expect(find.textContaining('menyetujui Syarat & Ketentuan dan Kebijakan Privasi'), findsOneWidget);
       expect(find.byKey(const Key('signin_invitation_button')), findsOneWidget);
       expect(find.byKey(const Key('profile_logout_button')), findsNothing);
 
@@ -53,18 +57,62 @@ void main() {
       expect(find.text('1.0.0 (Release Candidate)'), findsOneWidget);
     });
 
-    testWidgets('login invitation button opens LoginBottomSheet', (
+    testWidgets('tapping "Masuk dengan Google" signs in directly, with no login popup', (
       WidgetTester tester,
     ) async {
       AuthService.mockSession = null;
+      var calls = 0;
 
-      await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+      await tester.pumpWidget(MaterialApp(
+        home: ProfilePage(signInWithGoogle: () async {
+          calls++;
+          return AuthResponse();
+        }),
+      ));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const Key('signin_invitation_button')));
       await tester.pumpAndSettle();
 
-      expect(find.byType(LoginBottomSheet), findsOneWidget);
+      expect(calls, 1);
+      expect(find.byType(LoginBottomSheet), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
+    });
+
+    testWidgets('a cancelled Google login shows a friendly snackbar', (
+      WidgetTester tester,
+    ) async {
+      AuthService.mockSession = null;
+
+      await tester.pumpWidget(MaterialApp(
+        home: ProfilePage(
+          signInWithGoogle: () async => throw const AuthException('Login Google dibatalkan oleh pengguna.'),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('signin_invitation_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Login dibatalkan. Coba lagi bila ingin melanjutkan.'), findsOneWidget);
+      expect(find.byKey(const Key('signin_invitation_button')), findsOneWidget);
+    });
+
+    testWidgets('a failed Google login shows a friendly snackbar without the raw error', (
+      WidgetTester tester,
+    ) async {
+      AuthService.mockSession = null;
+
+      await tester.pumpWidget(MaterialApp(
+        home: ProfilePage(
+          signInWithGoogle: () async => throw Exception('PlatformException(sign_in_failed, secret.host)'),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('signin_invitation_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Gagal masuk dengan Google. Coba lagi.'), findsOneWidget);
+      expect(find.textContaining('PlatformException'), findsNothing);
     });
 
     testWidgets('login invitation button has >= 48dp height and semantics', (

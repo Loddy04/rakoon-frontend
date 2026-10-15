@@ -13,6 +13,35 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 const String googleCancelledMessage = 'Login dibatalkan. Coba lagi bila ingin melanjutkan.';
 const String googleFailedMessage = 'Gagal masuk dengan Google. Coba lagi.';
 
+/// Catatan persetujuan di bawah tombol Google (tidak ada daftar terpisah; akun dibuat saat pertama masuk).
+class GoogleSignInNote extends StatelessWidget {
+  final Color color;
+  const GoogleSignInNote({super.key, this.color = const Color(0xFF6B7280)});
+
+  @override
+  Widget build(BuildContext context) {
+    final style = GoogleFonts.outfit(fontSize: 11.5, color: color, height: 1.4);
+    return Text(
+      'Dengan masuk, kamu menyetujui Syarat & Ketentuan dan Kebijakan Privasi Rakoon.',
+      key: const Key('google_signin_note'),
+      textAlign: TextAlign.center,
+      style: style,
+    );
+  }
+}
+
+/// Pesan ramah untuk kegagalan login Google (dibatalkan, offline, atau gagal); tidak pernah memuat error mentah.
+String googleLoginErrorMessage(Object error) {
+  if (error is AuthException) {
+    final m = error.message.toLowerCase();
+    return m.contains('batal') || m.contains('cancel') ? googleCancelledMessage : googleFailedMessage;
+  }
+  if (error is SocketException || error is TimeoutException || error is http.ClientException) {
+    return noConnectionMessage;
+  }
+  return googleFailedMessage;
+}
+
 /// Login hanya lewat Google (provider email/password dimatikan di Supabase).
 class LoginForm extends StatefulWidget {
   final VoidCallback? onSuccess;
@@ -43,17 +72,8 @@ class _LoginFormState extends State<LoginForm> {
     try {
       final response = await (widget.signInWithGoogle ?? AuthService.signInWithGoogle)();
       if (response.session != null) widget.onSuccess?.call();
-    } on AuthException catch (e) {
-      final cancelled = e.message.toLowerCase().contains('batal') || e.message.toLowerCase().contains('cancel');
-      if (mounted) setState(() => _errorMessage = cancelled ? googleCancelledMessage : googleFailedMessage);
-    } on SocketException {
-      if (mounted) setState(() => _errorMessage = noConnectionMessage);
-    } on TimeoutException {
-      if (mounted) setState(() => _errorMessage = noConnectionMessage);
-    } on http.ClientException {
-      if (mounted) setState(() => _errorMessage = noConnectionMessage);
-    } catch (_) {
-      if (mounted) setState(() => _errorMessage = googleFailedMessage);
+    } catch (e) {
+      if (mounted) setState(() => _errorMessage = googleLoginErrorMessage(e));
     } finally {
       if (mounted) setState(() => _isGoogleLoading = false);
     }
@@ -127,6 +147,8 @@ class _LoginFormState extends State<LoginForm> {
                   ),
           ),
         ),
+        const SizedBox(height: 12),
+        const GoogleSignInNote(),
       ],
     );
   }
