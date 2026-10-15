@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 import 'package:rakoon_frontend/features/auth/presentation/widgets/login_bottom_sheet.dart';
@@ -108,7 +109,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _storesError = e.toString().replaceFirst('Exception: ', '');
+        _storesError = userMessage(e);
         _isLoadingStores = false;
       });
     }
@@ -145,7 +146,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _storesError = e.toString().replaceFirst('Exception: ', '');
+        _storesError = userMessage(e);
         _isLoadingStores = false;
         _selectedStore = null;
         _storeIdController.text = '';
@@ -1505,7 +1506,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _errorMessage = userMessage(e);
       });
     } finally {
       if (mounted) {

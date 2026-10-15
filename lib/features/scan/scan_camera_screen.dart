@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:camera/camera.dart';
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
 import 'package:rakoon_frontend/features/auth/presentation/widgets/login_bottom_sheet.dart';
@@ -359,7 +360,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+          _errorMessage = userMessage(e);
         });
       }
     } finally {

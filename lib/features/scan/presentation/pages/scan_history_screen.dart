@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/features/scan/presentation/pages/scan_session_detail_screen.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
@@ -70,7 +71,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _errorMessage = userMessage(e);
         _isLoading = false;
       });
     }
