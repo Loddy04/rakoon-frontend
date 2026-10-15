@@ -75,6 +75,11 @@ class PriceHistoryRepository {
         return PriceHistoryResponse.fromJson(body);
       } else if (response.statusCode == 404) {
         throw const ProductNotFoundException('Produk tidak ditemukan');
+      } else if (response.statusCode == 400) {
+        throw const PriceHistoryApiException(
+          400,
+          'Rentang tanggal tidak valid, pastikan tanggal mulai sebelum tanggal akhir',
+        );
       } else {
         throw PriceHistoryApiException(
           response.statusCode,
