@@ -2,15 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/services/ads_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AdminStoreClaimsPage extends StatefulWidget {
   final String? baseUrl;
   final http.Client? httpClient;
 
+  /// Peluncur URL bukti (diinjeksi pada test); null = url_launcher dengan browser eksternal.
+  final Future<bool> Function(Uri, {LaunchMode mode})? evidenceLauncher;
+
   const AdminStoreClaimsPage({
     super.key,
     this.baseUrl,
     this.httpClient,
+    this.evidenceLauncher,
   });
 
   @override
@@ -55,6 +60,71 @@ class _AdminStoreClaimsPageState extends State<AdminStoreClaimsPage> {
         });
       }
     }
+  }
+
+  static final RegExp _evidencePath = RegExp(r'^(documents|photos)/[0-9a-f]{48}\.(pdf|jpg|png)$');
+
+  void _showSnack(String message, {bool error = true}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: error ? const Color(0xFFDC2626) : const Color(0xFF166534)),
+    );
+  }
+
+  /// Membuka bukti klaim lewat URL bertanda tangan (berlaku sekitar 5 menit) di browser eksternal.
+  Future<void> _openEvidence(String path) async {
+    if (!_evidencePath.hasMatch(path)) {
+      _showSnack('Bukti ini berasal dari sistem lama dan tidak dapat dibuka.');
+      return;
+    }
+    try {
+      final url = await AdsService.getClaimEvidenceUrl(
+        path: path,
+        baseUrl: widget.baseUrl,
+        client: widget.httpClient,
+      );
+      final opened = await AdsService.launchCheckoutUrl(url, customLauncher: widget.evidenceLauncher);
+      if (!opened) _showSnack('Gagal membuka bukti: browser tidak dapat dibuka.');
+    } catch (e) {
+      _showSnack('Gagal membuka bukti: ${e.toString().replaceFirst('Exception: ', '')}');
+    }
+  }
+
+  Widget _evidenceChip({
+    required Key key,
+    required IconData icon,
+    required String label,
+    required Color fg,
+    required Color bg,
+    required Color border,
+    required String path,
+  }) {
+    return InkWell(
+      key: key,
+      onTap: () => _openEvidence(path),
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: fg),
+            const SizedBox(width: 4),
+            Text(label, style: GoogleFonts.outfit(fontSize: 11, color: fg, fontWeight: FontWeight.w600)),
+            const SizedBox(width: 6),
+            Text(
+              'Lihat bukti',
+              style: GoogleFonts.outfit(fontSize: 11, color: fg, fontWeight: FontWeight.w800, decoration: TextDecoration.underline),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _handleApprove(PendingStoreClaimData claim) async {
@@ -542,44 +612,24 @@ class _AdminStoreClaimsPageState extends State<AdminStoreClaimsPage> {
                           runSpacing: 4,
                           children: [
                             if (claim.documentUrl != null)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEFF6FF),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: const Color(0xFFBFDBFE)),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.description_outlined, size: 13, color: Color(0xFF1D4ED8)),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Dokumen Legalitas (NIB)',
-                                      style: GoogleFonts.outfit(fontSize: 11, color: const Color(0xFF1D4ED8), fontWeight: FontWeight.w600),
-                                    ),
-                                  ],
-                                ),
+                              _evidenceChip(
+                                key: Key('view_document_$claimKey'),
+                                icon: Icons.description_outlined,
+                                label: 'Dokumen Legalitas (NIB)',
+                                fg: const Color(0xFF1D4ED8),
+                                bg: const Color(0xFFEFF6FF),
+                                border: const Color(0xFFBFDBFE),
+                                path: claim.documentUrl!,
                               ),
                             if (claim.storePhotoUrl != null)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFDF2F8),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: const Color(0xFFFBCFE8)),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.photo_camera_outlined, size: 13, color: Color(0xFFBE185D)),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Foto Depan Toko',
-                                      style: GoogleFonts.outfit(fontSize: 11, color: const Color(0xFFBE185D), fontWeight: FontWeight.w600),
-                                    ),
-                                  ],
-                                ),
+                              _evidenceChip(
+                                key: Key('view_photo_$claimKey'),
+                                icon: Icons.photo_camera_outlined,
+                                label: 'Foto Depan Toko',
+                                fg: const Color(0xFFBE185D),
+                                bg: const Color(0xFFFDF2F8),
+                                border: const Color(0xFFFBCFE8),
+                                path: claim.storePhotoUrl!,
                               ),
                           ],
                         ),
