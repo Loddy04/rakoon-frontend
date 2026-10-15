@@ -126,10 +126,11 @@ void main() {
     });
 
     test('other errors keep a readable server detail or a generic fallback, never a parse crash', () async {
-      expect(await messageOf(500, '{"detail":"Terjadi kesalahan saat menyimpan konfirmasi scan."}'),
+      expect(await messageOf(400, '{"detail":"Terjadi kesalahan saat menyimpan konfirmasi scan."}'),
           'Terjadi kesalahan saat menyimpan konfirmasi scan.');
-      expect(await messageOf(500, '<html>boom</html>'), 'Gagal menyimpan konfirmasi');
-      expect(await messageOf(500, '{"detail":[{"msg":"x"}]}'), 'Gagal menyimpan konfirmasi');
+      expect(await messageOf(400, '<html>boom</html>'), 'Gagal menyimpan konfirmasi');
+      expect(await messageOf(400, '{"detail":[{"msg":"x"}]}'), 'Gagal menyimpan konfirmasi');
+      expect(await messageOf(500, '{"detail":"psycopg2 secret"}'), 'Server sedang bermasalah, coba lagi nanti');
     });
   });
 

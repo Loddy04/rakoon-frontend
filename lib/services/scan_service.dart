@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 
 const List<String> productCategories = [
@@ -140,8 +141,10 @@ class ScanService {
 
     // Send request
     try {
-      final streamedResponse = await httpClient.send(request).timeout(const Duration(seconds: 35));
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await mapNetworkErrors(() async {
+        final streamedResponse = await httpClient.send(request).timeout(const Duration(seconds: 35));
+        return http.Response.fromStream(streamedResponse);
+      });
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -158,10 +161,9 @@ class ScanService {
       } else if (response.statusCode == 429) {
         throw Exception('Terlalu banyak scan, coba lagi nanti');
       } else {
+        throwIfServerError(response);
         throw Exception('Gagal memproses scan. Silakan coba lagi nanti.');
       }
-    } on SocketException {
-      throw const SocketException('Tidak dapat terhubung ke server. Silakan periksa koneksi internet Anda atau Base URL backend.');
     } catch (e) {
       if (e is Exception) {
         rethrow;
@@ -194,7 +196,7 @@ class ScanService {
 
     try {
       final httpClient = client ?? http.Client();
-      final response = await httpClient.post(
+      final response = await mapNetworkErrors(() => httpClient.post(
         uri,
         headers: {
           'Content-Type': 'application/json',
@@ -205,11 +207,12 @@ class ScanService {
           'user_id': userId,
           'items': items.map((e) => e.toConfirmJson()).toList(),
         }),
-      ).timeout(const Duration(seconds: 15));
+      ).timeout(const Duration(seconds: 15)));
 
       if (response.statusCode == 201) {
         return ConfirmScanResult.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
       } else {
+        throwIfServerError(response);
         final friendly = _confirmErrorMessages[response.statusCode];
         if (friendly != null) {
           throw Exception(friendly);
@@ -222,8 +225,6 @@ class ScanService {
         } catch (_) {}
         throw Exception(errorDetail);
       }
-    } on SocketException {
-      throw const SocketException('Tidak dapat terhubung ke server. Periksa koneksi internet atau server backend Anda.');
     } catch (e) {
       if (e is Exception) {
         rethrow;
