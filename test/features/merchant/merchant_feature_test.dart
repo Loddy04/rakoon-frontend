@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -845,6 +846,10 @@ void main() {
                 }
               ]
             }), 200);
+          } else if (request.url.path.endsWith('/ads/upload-claim-document')) {
+            return http.Response(jsonEncode({'document_path': 'documents/doc.pdf'}), 200);
+          } else if (request.url.path.endsWith('/ads/upload-claim-photo')) {
+            return http.Response(jsonEncode({'photo_path': 'photos/foto.jpg'}), 200);
           } else if (request.url.path.endsWith('/ads/claim-store') && request.method == 'POST') {
             claimCalled = true;
             return http.Response(jsonEncode({
@@ -860,6 +865,10 @@ void main() {
           home: MerchantDashboardPage(
             baseUrl: 'https://api.test',
             httpClient: client,
+            documentPicker: ({required allowedExtensions}) async =>
+                PickedFileData(name: 'nib.pdf', sizeInBytes: 10, bytes: Uint8List(10)),
+            photoPicker: ({required allowedExtensions}) async =>
+                PickedFileData(name: 'depan.jpg', sizeInBytes: 10, bytes: Uint8List(10)),
           ),
         ));
         await tester.pumpAndSettle();
@@ -868,6 +877,14 @@ void main() {
         expect(claimBtn, findsOneWidget);
         await tester.tap(claimBtn);
         await tester.pumpAndSettle();
+        await tester.enterText(find.byKey(const Key('claim_form_name')), 'Budi Santoso');
+        await tester.enterText(find.byKey(const Key('claim_form_phone')), '081234567890');
+        await tester.pump();
+        for (final key in ['claim_form_pick_document', 'claim_form_pick_photo', 'claim_form_submit']) {
+          await tester.ensureVisible(find.byKey(Key(key)));
+          await tester.tap(find.byKey(Key(key)));
+          await tester.pumpAndSettle();
+        }
 
         expect(claimCalled, isTrue);
       });
@@ -1310,6 +1327,10 @@ void main() {
                 }
               ]
             }), 200);
+          } else if (request.url.path.endsWith('/ads/upload-claim-document')) {
+            return http.Response(jsonEncode({'document_path': 'documents/doc.pdf'}), 200);
+          } else if (request.url.path.endsWith('/ads/upload-claim-photo')) {
+            return http.Response(jsonEncode({'photo_path': 'photos/foto.jpg'}), 200);
           } else if (request.url.path.endsWith('/ads/claim-store')) {
             return http.Response('Internal Server Error', 500);
           }
@@ -1320,6 +1341,10 @@ void main() {
           home: MerchantDashboardPage(
             baseUrl: 'https://api.test',
             httpClient: client,
+            documentPicker: ({required allowedExtensions}) async =>
+                PickedFileData(name: 'nib.pdf', sizeInBytes: 10, bytes: Uint8List(10)),
+            photoPicker: ({required allowedExtensions}) async =>
+                PickedFileData(name: 'depan.jpg', sizeInBytes: 10, bytes: Uint8List(10)),
           ),
         ));
         await tester.pumpAndSettle();
@@ -1328,9 +1353,17 @@ void main() {
         expect(claimBtn, findsOneWidget);
         await tester.tap(claimBtn);
         await tester.pumpAndSettle();
+        await tester.enterText(find.byKey(const Key('claim_form_name')), 'Budi Santoso');
+        await tester.enterText(find.byKey(const Key('claim_form_phone')), '081234567890');
+        await tester.pump();
+        for (final key in ['claim_form_pick_document', 'claim_form_pick_photo', 'claim_form_submit']) {
+          await tester.ensureVisible(find.byKey(Key(key)));
+          await tester.tap(find.byKey(Key(key)));
+          await tester.pumpAndSettle();
+        }
 
-        // Must display friendly Indonesian error
-        expect(find.text('Gagal mengklaim toko: Terjadi kesalahan pada server. Silakan coba lagi.'), findsOneWidget);
+        // Must display friendly Indonesian error (inside the claim form)
+        expect(find.text('Terjadi kesalahan pada server. Silakan coba lagi.'), findsOneWidget);
         // Must NOT display FormatException or raw Internal Server Error
         expect(find.textContaining('FormatException'), findsNothing);
       });

@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/services/ads_service.dart';
@@ -11,6 +12,7 @@ import 'package:rakoon_frontend/features/admin/presentation/pages/admin_store_cl
 import 'package:rakoon_frontend/features/admin/presentation/pages/admin_product_photo_page.dart';
 import 'package:rakoon_frontend/features/merchant/presentation/pages/create_ad_campaign_page.dart';
 import 'package:rakoon_frontend/features/merchant/presentation/pages/edit_ad_campaign_page.dart';
+import 'package:rakoon_frontend/features/merchant/presentation/widgets/claim_store_form.dart';
 import 'package:rakoon_frontend/widgets/interactive_scale.dart';
 
 class PickedFileData {
@@ -60,15 +62,8 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
   MyStoreData? _myStoreData;
   List<StoreNearby> _availableStores = [];
   String? _selectedStoreId;
-  bool _isClaiming = false;
   bool _isOpeningCheckout = false;
   List<UserSubmissionData> _userSubmissions = [];
-
-  final _claimApplicantNameCtrl = TextEditingController();
-  final _claimApplicantPhoneCtrl = TextEditingController();
-  final String _claimApplicantRole = 'Pemilik';
-  final _claimDocUrlCtrl = TextEditingController();
-  final _claimPhotoUrlCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -80,10 +75,6 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _claimApplicantNameCtrl.dispose();
-    _claimApplicantPhoneCtrl.dispose();
-    _claimDocUrlCtrl.dispose();
-    _claimPhotoUrlCtrl.dispose();
     super.dispose();
   }
 
@@ -172,82 +163,74 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
     }
   }
 
-  Future<void> _handleClaimStore() async {
-    if (_selectedStoreId == null || _isClaiming) return;
+  Future<void> _showClaimForm() async {
+    final storeId = _selectedStoreId;
+    if (storeId == null) return;
+    final store = _availableStores.firstWhere((s) => s.storeId == storeId, orElse: () => _availableStores.first);
 
-    setState(() {
-      _isClaiming = true;
-    });
-
-    try {
-      final result = await AdsService.claimStore(
-        storeId: _selectedStoreId!,
-        applicantName: _claimApplicantNameCtrl.text.trim().isNotEmpty
-            ? _claimApplicantNameCtrl.text.trim()
-            : null,
-        applicantPhone: _claimApplicantPhoneCtrl.text.trim().isNotEmpty
-            ? _claimApplicantPhoneCtrl.text.trim()
-            : null,
-        applicantRole: _claimApplicantRole,
-        documentUrl: _claimDocUrlCtrl.text.trim().isNotEmpty
-            ? _claimDocUrlCtrl.text.trim()
-            : null,
-        storePhotoUrl: _claimPhotoUrlCtrl.text.trim().isNotEmpty
-            ? _claimPhotoUrlCtrl.text.trim()
-            : null,
-        baseUrl: widget.baseUrl,
-        client: widget.httpClient,
-      );
-
-      if (mounted) {
-        setState(() {
-          _myStoreData = result;
-          _isClaiming = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Permintaan klaim toko dikirim. Tunggu verifikasi admin sebelum memasang iklan.'),
-            backgroundColor: Color(0xFF166534),
-          ),
-        );
-        _loadData(silent: true);
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isClaiming = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal mengklaim toko: ${e.toString().replaceFirst("Exception: ", "")}'),
-            backgroundColor: const Color(0xFFDC2626),
-          ),
-        );
-      }
-    }
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (sheetContext) => ClaimStoreForm(
+        storeName: store.nama,
+        pickDocument: _pickDocumentFile,
+        pickPhoto: _pickPhotoFile,
+        uploadDocument: (file) => AdsService.uploadClaimDocument(
+          bytes: file.bytes,
+          filename: file.name,
+          baseUrl: widget.baseUrl,
+          client: widget.httpClient,
+        ),
+        uploadPhoto: (file) => AdsService.uploadClaimPhoto(
+          bytes: file.bytes,
+          filename: file.name,
+          baseUrl: widget.baseUrl,
+          client: widget.httpClient,
+        ),
+        onSubmit: (values) async {
+          final result = await AdsService.claimStore(
+            storeId: storeId,
+            applicantName: values.applicantName,
+            applicantPhone: values.applicantPhone,
+            applicantRole: 'Pemilik',
+            documentUrl: values.documentPath,
+            storePhotoUrl: values.photoPath,
+            baseUrl: widget.baseUrl,
+            client: widget.httpClient,
+          );
+          if (!mounted) return;
+          Navigator.of(sheetContext).pop();
+          setState(() {
+            _myStoreData = result;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Permintaan klaim toko dikirim. Tunggu verifikasi admin sebelum memasang iklan.'),
+              backgroundColor: Color(0xFF166534),
+            ),
+          );
+          _loadData(silent: true);
+        },
+      ),
+    );
   }
 
   Future<PickedFileData?> _pickDocumentFile() async {
     if (widget.documentPicker != null) {
-      return await widget.documentPicker!(allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'webp']);
+      return await widget.documentPicker!(allowedExtensions: claimDocumentExtensions);
     }
 
     try {
-      final picker = ImagePicker();
-      final picked = await picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1600,
-        maxHeight: 1600,
-        imageQuality: 85,
+      final picked = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: claimDocumentExtensions,
       );
-      if (picked != null) {
-        final bytes = await picked.readAsBytes();
-        return PickedFileData(
-          name: picked.name,
-          sizeInBytes: bytes.lengthInBytes,
-          bytes: bytes,
-        );
-      }
+      if (picked == null) return null;
+      final size = await picked.length() ?? 0;
+      // Berkas terlalu besar tidak dibaca ke memori; form menolaknya lewat sizeInBytes.
+      final bytes = size > claimMaxFileBytes ? Uint8List(0) : await picked.readAsBytes();
+      return PickedFileData(name: picked.name, sizeInBytes: size, bytes: bytes);
     } catch (e) {
       debugPrint('Error picking document: $e');
     }
@@ -256,7 +239,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
 
   Future<PickedFileData?> _pickPhotoFile({ImageSource source = ImageSource.gallery}) async {
     if (widget.photoPicker != null) {
-      return await widget.photoPicker!(allowedExtensions: ['jpg', 'jpeg', 'png', 'webp']);
+      return await widget.photoPicker!(allowedExtensions: claimPhotoExtensions);
     }
 
     try {
@@ -1331,7 +1314,8 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
           const SizedBox(height: 20),
 
           ElevatedButton(
-            onPressed: _isClaiming ? null : _handleClaimStore,
+            key: const Key('btn_claim_store'),
+            onPressed: _showClaimForm,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF0D2818),
               foregroundColor: Colors.white,
@@ -1341,22 +1325,13 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
               ),
               elevation: 0,
             ),
-            child: _isClaiming
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : Text(
-                    'Klaim & Kelola Toko Ini',
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                    ),
-                  ),
+            child: Text(
+              'Klaim & Kelola Toko Ini',
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
 
