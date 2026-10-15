@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:rakoon_frontend/core/config/app_config.dart';
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 
 class HomePromoBanner {
@@ -392,7 +393,7 @@ class AdsService {
     bool includeDemo = false,
   }) async {
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
     final queryParams = <String, String>{
       'lat': lat.toString(),
       'lng': lng.toString(),
@@ -432,7 +433,7 @@ class AdsService {
     http.Client? client,
   }) async {
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final response = await httpClient.get(
@@ -467,7 +468,7 @@ class AdsService {
     }
 
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final response = await httpClient.get(
@@ -508,7 +509,7 @@ class AdsService {
     }
 
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final response = await httpClient.post(
@@ -565,7 +566,7 @@ class AdsService {
     }
 
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final response = await httpClient.post(
@@ -615,7 +616,7 @@ class AdsService {
     }
 
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final response = await httpClient.get(
@@ -679,7 +680,7 @@ class AdsService {
       ),
     );
 
-    final streamedResponse = await (client ?? http.Client()).send(request);
+    final streamedResponse = await FriendlyHttpClient(client ?? http.Client()).send(request);
     final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode == 200) {
@@ -727,7 +728,7 @@ class AdsService {
       ),
     );
 
-    final streamedResponse = await (client ?? http.Client()).send(request);
+    final streamedResponse = await FriendlyHttpClient(client ?? http.Client()).send(request);
     final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode == 200) {
@@ -750,7 +751,7 @@ class AdsService {
     }
 
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final response = await httpClient.get(
@@ -810,7 +811,7 @@ class AdsService {
       ),
     );
 
-    final streamedResponse = await (client ?? http.Client()).send(request);
+    final streamedResponse = await FriendlyHttpClient(client ?? http.Client()).send(request);
     final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode == 200) {
@@ -838,7 +839,7 @@ class AdsService {
     }
 
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final response = await httpClient.post(
@@ -883,7 +884,7 @@ class AdsService {
     }
 
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final body = <String, dynamic>{};
@@ -925,7 +926,7 @@ class AdsService {
     }
 
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final body = <String, dynamic>{};
@@ -965,7 +966,7 @@ class AdsService {
     }
 
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final response = await httpClient.delete(
@@ -1000,7 +1001,7 @@ class AdsService {
     }
 
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final response = await httpClient.post(
@@ -1039,7 +1040,7 @@ class AdsService {
     }
 
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final response = await httpClient.get(
@@ -1074,7 +1075,7 @@ class AdsService {
     }
 
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final response = await httpClient.post(
@@ -1108,7 +1109,7 @@ class AdsService {
     }
 
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final response = await httpClient.post(
@@ -1142,7 +1143,7 @@ class AdsService {
     }
 
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final response = await httpClient.get(
@@ -1181,7 +1182,7 @@ class AdsService {
     }
 
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final response = await httpClient.post(
@@ -1223,7 +1224,7 @@ class AdsService {
     }
 
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final response = await httpClient.post(
@@ -1267,7 +1268,7 @@ class AdsService {
     }
 
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final response = await httpClient.post(
@@ -1311,7 +1312,7 @@ class AdsService {
     }
 
     final effectiveBase = _resolveBaseUrl(baseUrl);
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
 
     try {
       final response = await httpClient.post(
@@ -1364,7 +1365,9 @@ class AdsService {
       try {
         final decoded = jsonDecode(response.body);
         final detail = decoded is Map<String, dynamic> ? decoded['detail'] : null;
-        if (detail is String && detail.trim().isNotEmpty) return detail.trim();
+        if (detail is String && detail.trim().isNotEmpty && userMessage(detail) != genericErrorMessage) {
+          return detail.trim();
+        }
       } catch (_) {}
       return null;
     }
@@ -1409,7 +1412,7 @@ class AdsService {
           if (statusCode == 422 || detail is List || detailStr.startsWith('[{')) {
             return 'Alasan penolakan tidak valid atau belum diisi dengan benar.';
           }
-          return detailStr;
+          return userMessage(detailStr) == genericErrorMessage ? fallbackMessage : detailStr;
         }
       }
     } catch (_) {

@@ -113,9 +113,7 @@ class StoresService {
       }
     } catch (e) {
       if (friendlyApiError(e) != null) rethrow;
-      throw Exception(
-        'Gagal memuat toko terdekat. Pastikan server backend Anda berjalan ($cleanBaseUrl). Detail: $e',
-      );
+      throw Exception('Gagal memuat toko terdekat. Coba lagi.');
     }
   }
 
@@ -156,9 +154,7 @@ class StoresService {
       }
     } catch (e) {
       if (friendlyApiError(e) != null) rethrow;
-      throw Exception(
-        'Gagal memuat perbandingan harga produk. Detail: $e',
-      );
+      throw Exception('Gagal memuat perbandingan harga produk. Coba lagi.');
     }
   }
 

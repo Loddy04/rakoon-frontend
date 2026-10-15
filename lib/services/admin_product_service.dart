@@ -3,9 +3,37 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:rakoon_frontend/core/config/app_config.dart';
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 
 class AdminProductService {
+  /// Pesan ramah per status; `detail` dipakai hanya bila berupa teks biasa non-teknis.
+  static String _errorMessage(http.Response response, String fallback) {
+    switch (response.statusCode) {
+      case 401:
+        return 'Silakan masuk akun terlebih dahulu.';
+      case 403:
+        return 'Anda tidak memiliki izin untuk melakukan tindakan ini.';
+      case 404:
+        return 'Produk tidak ditemukan.';
+      case 413:
+        return 'Ukuran berkas terlalu besar (maksimum 5 MB).';
+      case 422:
+        return 'Data belum lengkap. Periksa isian Anda lalu coba lagi.';
+      case 429:
+        return 'Terlalu banyak permintaan, coba lagi nanti';
+    }
+    if (response.statusCode >= 500) return serverErrorMessage;
+    try {
+      final decoded = jsonDecode(response.body);
+      final detail = decoded is Map ? decoded['detail'] : null;
+      if (detail is String && detail.trim().isNotEmpty && userMessage(detail) != genericErrorMessage) {
+        return detail.trim();
+      }
+    } catch (_) {}
+    return fallback;
+  }
+
   /// Memperbarui URL foto produk secara langsung (admin only)
   static Future<String> updateProductPhotoUrl({
     required String productId,
@@ -14,7 +42,7 @@ class AdminProductService {
     http.Client? client,
   }) async {
     final effectiveBaseUrl = baseUrl ?? AppConfig.apiBaseUrl;
-    final httpClient = client ?? http.Client();
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
     final token = AuthService.currentSession?.accessToken;
 
     try {
@@ -35,9 +63,7 @@ class AdminProductService {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         return (data['foto_url'] as String?) ?? photoUrl;
       } else {
-        final errorData = jsonDecode(response.body);
-        final detail = errorData is Map ? errorData['detail'] : null;
-        throw Exception(detail ?? 'Gagal memperbarui foto produk (${response.statusCode})');
+        throw Exception(_errorMessage(response, 'Gagal memperbarui foto produk.'));
       }
     } finally {
       if (client == null) {
@@ -136,11 +162,13 @@ class AdminProductService {
       throw ArgumentError('Salah satu dari filePath atau fileBytes harus disediakan.');
     }
 
-    final streamedResponse = client != null
-        ? await client.send(request)
-        : await request.send();
-
-    final response = await http.Response.fromStream(streamedResponse);
+    final httpClient = FriendlyHttpClient(client ?? http.Client());
+    final http.Response response;
+    try {
+      response = await http.Response.fromStream(await httpClient.send(request));
+    } finally {
+      if (client == null) httpClient.close();
+    }
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -150,14 +178,7 @@ class AdminProductService {
       }
       return photoUrl;
     } else {
-      try {
-        final errorData = jsonDecode(response.body);
-        final detail = errorData is Map ? errorData['detail'] : null;
-        throw Exception(detail ?? 'Gagal mengunggah foto produk (${response.statusCode})');
-      } catch (e) {
-        if (e is Exception && !e.toString().contains('FormatException')) rethrow;
-        throw Exception('Gagal mengunggah foto produk (${response.statusCode})');
-      }
+      throw Exception(_errorMessage(response, 'Gagal mengunggah foto produk.'));
     }
   }
 }
