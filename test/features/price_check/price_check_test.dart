@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:rakoon_frontend/features/price_check/data/datasources/price_check_service.dart';
 import 'package:rakoon_frontend/features/price_check/data/models/product_catalog_model.dart';
 import 'package:rakoon_frontend/features/price_check/presentation/pages/price_check_catalog_page.dart';
 import 'package:rakoon_frontend/features/price_check/presentation/pages/unified_product_price_detail_page.dart';
@@ -408,6 +409,54 @@ void main() {
 
       expect(find.byType(PriceFreshnessLabel, skipOffstage: false), findsOneWidget);
       expect(find.text('Harga per 10 Jan 2026', skipOffstage: false), findsOneWidget);
+    });
+
+    test('PriceCheckService.getPriceComparison throws when backend returns non-200 instead of swallowing', () async {
+      final client500 = MockClient((request) async {
+        return http.Response('Internal Server Error with technical details', 500);
+      });
+
+      expect(
+        () => PriceCheckService.getPriceComparison(
+          productId: 'prod-001',
+          lat: -7.78,
+          lng: 110.40,
+          baseUrl: 'http://localhost:8000',
+          client: client500,
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    testWidgets('UnifiedProductPriceDetailPage displays error state with Coba lagi button on failure', (tester) async {
+      final client500 = MockClient((request) async {
+        return http.Response('{"detail": "Internal database syntax error SELECT *"}', 500);
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: UnifiedProductPriceDetailPage(
+            product: RecommendedProduct(
+              id: 'prod-001',
+              nama: 'Indomie Goreng',
+              kategori: 'Makanan Instan',
+              harga: 3000.0,
+              ukuran: 85.0,
+              satuan: 'g',
+              namaToko: 'Toko Test',
+              jarakKm: 1.0,
+              updatedAt: '2026-10-10T00:00:00Z',
+            ),
+            baseUrl: 'http://localhost:8000',
+            httpClient: client500,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Coba lagi'), findsOneWidget);
+      expect(find.textContaining('syntax error'), findsNothing);
+      expect(find.textContaining('SELECT'), findsNothing);
     });
   });
 }

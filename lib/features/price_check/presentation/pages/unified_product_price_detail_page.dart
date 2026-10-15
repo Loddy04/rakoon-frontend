@@ -1014,6 +1014,65 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                         child: CircularProgressIndicator(color: Color(0xFF059669)),
                       ),
                     )
+                  else if (_priceCheckProvider.detailStatus == PriceCheckStatus.error)
+                    Container(
+                      key: const Key('comparison_error_container'),
+                      padding: const EdgeInsets.all(20.0),
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18.0),
+                        border: Border.all(color: const Color(0xFFFCA5A5)),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 36),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Gagal memuat perbandingan harga',
+                            style: GoogleFonts.outfit(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF0D2818),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Terjadi kesalahan saat memuat data toko. Silakan coba lagi.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              color: const Color(0xFF6B7280),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            key: const Key('retry_detail_button'),
+                            onPressed: () {
+                              _priceCheckProvider.fetchProductDetail(
+                                productId: widget.product.id,
+                                userLat: widget.userLat,
+                                userLng: widget.userLng,
+                                range: _priceCheckProvider.selectedRange,
+                                baseUrl: widget.baseUrl,
+                                client: widget.httpClient,
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0D2818),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            ),
+                            child: Text(
+                              'Coba lagi',
+                              style: GoogleFonts.outfit(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
                   else if (sortedComparison.isEmpty)
                     Container(
                       padding: const EdgeInsets.all(20.0),

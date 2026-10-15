@@ -116,11 +116,13 @@ class PriceCheckService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> decoded = jsonDecode(response.body) as Map<String, dynamic>;
         return PriceCompareResponse.fromJson(decoded);
+      } else {
+        throw Exception('Gagal memuat perbandingan harga (HTTP ${response.statusCode})');
       }
-    } catch (_) {
-      // Return null on failure
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
     }
-
-    return null;
   }
 }
