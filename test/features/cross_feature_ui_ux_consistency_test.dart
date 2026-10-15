@@ -171,7 +171,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Best Value Recommendation'), findsOneWidget);
+        expect(find.text('Analisis Best Value'), findsOneWidget);
         expect(find.text('Tidak ada produk valid yang dapat dibandingkan.'), findsOneWidget);
         expect(tester.takeException(), isNull);
       }

@@ -329,7 +329,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Now RecommendationScreen is opened and displays per-category winner cards
-      expect(find.text('Best Value Recommendation'), findsOneWidget);
+      expect(find.text('Analisis Best Value'), findsOneWidget);
       expect(find.text('Makanan Pokok'), findsOneWidget);
       expect(find.text('Susu & Olahan'), findsOneWidget);
 
@@ -472,7 +472,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // RecommendationScreen should load without crashing.
-      expect(find.text('Best Value Recommendation'), findsOneWidget);
+      expect(find.text('Analisis Best Value'), findsOneWidget);
       expect(find.text('Minuman'), findsOneWidget);
       
       // Excluded products are rendered in details list
