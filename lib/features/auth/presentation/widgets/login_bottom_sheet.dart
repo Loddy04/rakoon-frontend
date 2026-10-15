@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:rakoon_frontend/features/auth/presentation/widgets/login_form.dart';
-import 'package:rakoon_frontend/features/auth/presentation/widgets/register_form.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthResponse;
 
 class LoginBottomSheet extends StatefulWidget {
-  final bool initialIsRegister;
   final VoidCallback? onSuccess;
+
+  /// Hanya untuk test: pengganti AuthService.signInWithGoogle.
+  final Future<AuthResponse> Function()? signInWithGoogle;
 
   const LoginBottomSheet({
     super.key,
-    this.initialIsRegister = false,
     this.onSuccess,
+    this.signInWithGoogle,
   });
 
   @override
@@ -19,14 +21,6 @@ class LoginBottomSheet extends StatefulWidget {
 }
 
 class _LoginBottomSheetState extends State<LoginBottomSheet> {
-  late bool _isRegister;
-
-  @override
-  void initState() {
-    super.initState();
-    _isRegister = widget.initialIsRegister;
-  }
-
   void _handleSuccess() {
     if (!mounted) return;
     if (widget.onSuccess != null) {
@@ -121,7 +115,7 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
                               ),
                               const SizedBox(width: 5),
                               Text(
-                                _isRegister ? 'Daftar Rakoon' : 'Rakoon',
+                                'Rakoon',
                                 style: GoogleFonts.outfit(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -147,7 +141,7 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        _isRegister ? 'Buat Akun Baru' : 'Masuk Ke Akun Anda',
+                        'Masuk Ke Akun Anda',
                         style: GoogleFonts.outfit(
                           color: const Color(0xFF86EFAC),
                           fontSize: 11,
@@ -191,132 +185,10 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Segmented Switcher (Login | Register)
-                    Container(
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: AppColors.authTabBg,
-                        borderRadius: BorderRadius.circular(21),
-                      ),
-                      padding: const EdgeInsets.all(3),
-                      child: Row(
-                        children: [
-                          // Login Tab
-                          Expanded(
-                            child: GestureDetector(
-                              key: const Key('goto_login_tab'),
-                              onTap: () {
-                                if (_isRegister) {
-                                  setState(() {
-                                    _isRegister = false;
-                                  });
-                                }
-                              },
-                              behavior: HitTestBehavior.opaque,
-                              child: Container(
-                                decoration: !_isRegister
-                                    ? BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius:
-                                            BorderRadius.circular(18),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.05,
-                                            ),
-                                            blurRadius: 4,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
-                                      )
-                                    : null,
-                                alignment: Alignment.center,
-                                child: Text(
-                                  'Login',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 13,
-                                    fontWeight: !_isRegister
-                                        ? FontWeight.w600
-                                        : FontWeight.w500,
-                                    color: !_isRegister
-                                        ? const Color(0xFF1F2937)
-                                        : const Color(0xFF9CA3AF),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          // Register Tab
-                          Expanded(
-                            child: GestureDetector(
-                              key: const Key('goto_register_tab'),
-                              onTap: () {
-                                if (!_isRegister) {
-                                  setState(() {
-                                    _isRegister = true;
-                                  });
-                                }
-                              },
-                              behavior: HitTestBehavior.opaque,
-                              child: Container(
-                                decoration: _isRegister
-                                    ? BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius:
-                                            BorderRadius.circular(18),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.05,
-                                            ),
-                                            blurRadius: 4,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
-                                      )
-                                    : null,
-                                alignment: Alignment.center,
-                                child: Text(
-                                  'Register',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 13,
-                                    fontWeight: _isRegister
-                                        ? FontWeight.w600
-                                        : FontWeight.w500,
-                                    color: _isRegister
-                                        ? const Color(0xFF1F2937)
-                                        : const Color(0xFF9CA3AF),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    LoginForm(
+                      onSuccess: _handleSuccess,
+                      signInWithGoogle: widget.signInWithGoogle,
                     ),
-                    const SizedBox(height: 14),
-
-                    // In-Place Mode Switcher (Login or Register)
-                    if (!_isRegister)
-                      LoginForm(
-                        showRegisterLink: true,
-                        onSuccess: _handleSuccess,
-                        onRegisterTap: () {
-                          setState(() {
-                            _isRegister = true;
-                          });
-                        },
-                      )
-                    else
-                      RegisterForm(
-                        showLoginLink: true,
-                        onSuccess: _handleSuccess,
-                        onLoginTap: () {
-                          setState(() {
-                            _isRegister = false;
-                          });
-                        },
-                      ),
                   ],
                 ),
               ),
@@ -324,21 +196,6 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// Convenience bottom sheet widget for opening directly in Register mode.
-class RegisterBottomSheet extends StatelessWidget {
-  final VoidCallback? onSuccess;
-
-  const RegisterBottomSheet({super.key, this.onSuccess});
-
-  @override
-  Widget build(BuildContext context) {
-    return LoginBottomSheet(
-      initialIsRegister: true,
-      onSuccess: onSuccess,
     );
   }
 }
