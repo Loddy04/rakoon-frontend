@@ -8,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/home_screen.dart';
 import 'package:rakoon_frontend/features/nearby/nearby_stores_screen.dart';
-import 'package:rakoon_frontend/features/nearby/price_comparison_screen.dart';
 import 'package:rakoon_frontend/features/price_check/presentation/pages/price_check_catalog_page.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/widgets/price_freshness_label.dart';
@@ -294,126 +293,6 @@ void main() {
         }, () => mockClient);
       });
     });
-
-    testWidgets(
-      'PriceComparisonScreen renders RakoonLocationMap with store markers',
-      (WidgetTester tester) async {
-        await mockNetworkImagesFor(() async {
-          await http.runWithClient(() async {
-            await tester.pumpWidget(
-              const MaterialApp(
-                home: PriceComparisonScreen(
-                  productId: 'prod-1',
-                  productName: 'Minyak Goreng 2L',
-                  baseUrl: 'http://localhost:8000',
-                ),
-              ),
-            );
-            await tester.pumpAndSettle();
-
-            expect(find.byType(PriceComparisonScreen), findsOneWidget);
-            // Map widget should now be embedded in price comparison
-            expect(find.descendant(of: find.byType(PriceComparisonScreen), matching: find.byType(RakoonLocationMap)), findsOneWidget);
-          }, () => mockClient);
-        });
-      },
-    );
-
-    testWidgets(
-      'PriceComparisonScreen: cheapest card keeps accent border when another card is tapped',
-      (WidgetTester tester) async {
-        await mockNetworkImagesFor(() async {
-          await http.runWithClient(() async {
-            await tester.pumpWidget(
-              const MaterialApp(
-                home: PriceComparisonScreen(
-                  productId: 'prod-1',
-                  productName: 'Minyak Goreng 2L',
-                  baseUrl: 'http://localhost:8000',
-                ),
-              ),
-            );
-            await tester.pumpAndSettle();
-
-            expect(find.byType(PriceComparisonScreen), findsOneWidget);
-
-            // Cheapest store card shows 'Termurah' badge — verify it's present
-            expect(find.text('Termurah'), findsOneWidget);
-
-            // The store without price shows 'Belum ada data' badge
-            expect(find.text('Belum ada data'), findsOneWidget);
-
-            // Tapping the no-data card should not remove Termurah badge from cheapest
-            await tester.tap(find.text('Alfamart Gatot Subroto'), warnIfMissed: false);
-            await tester.pumpAndSettle();
-
-            // Termurah badge must still exist
-            expect(find.text('Termurah'), findsOneWidget);
-          }, () => mockClient);
-        });
-      },
-    );
-
-    testWidgets(
-      'PriceComparisonScreen: store without price still shows on map (via RakoonLocationMap)',
-      (WidgetTester tester) async {
-        await mockNetworkImagesFor(() async {
-          await http.runWithClient(() async {
-            await tester.pumpWidget(
-              const MaterialApp(
-                home: PriceComparisonScreen(
-                  productId: 'prod-1',
-                  productName: 'Minyak Goreng 2L',
-                  baseUrl: 'http://localhost:8000',
-                ),
-              ),
-            );
-            await tester.pumpAndSettle();
-
-            // Map is present even when one store has no price
-            expect(find.descendant(of: find.byType(PriceComparisonScreen), matching: find.byType(RakoonLocationMap)), findsOneWidget);
-            // Both stores rendered in the list
-            expect(find.text('Indomaret Sudirman'), findsOneWidget);
-            expect(find.text('Alfamart Gatot Subroto'), findsOneWidget);
-          }, () => mockClient);
-        });
-      },
-    );
-
-    testWidgets(
-      'Responsive Layout 320dp — PriceComparisonScreen with map has no overflows',
-      (WidgetTester tester) async {
-        await mockNetworkImagesFor(() async {
-          await http.runWithClient(() async {
-            tester.view.physicalSize = const Size(320 * 3, 568 * 3);
-            tester.view.devicePixelRatio = 3.0;
-
-            addTearDown(() {
-              tester.view.resetPhysicalSize();
-              tester.view.resetDevicePixelRatio();
-            });
-
-            await tester.pumpWidget(
-              const MaterialApp(
-                home: PriceComparisonScreen(
-                  productId: 'prod-1',
-                  productName: 'Minyak Goreng 2L',
-                  baseUrl: 'http://localhost:8000',
-                ),
-              ),
-            );
-            await tester.pumpAndSettle();
-
-            final exception = tester.takeException();
-            if (exception != null && exception is FlutterError) {
-              debugPrint(exception.toStringDeep());
-            }
-            expect(exception, isNull);
-            expect(find.byType(PriceComparisonScreen), findsOneWidget);
-          }, () => mockClient);
-        });
-      },
-    );
 
     testWidgets(
       'Responsive Layout — NearbyStoresScreen renders across viewports (320dp, 360dp, 390dp) without overflow',

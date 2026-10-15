@@ -25,7 +25,7 @@ class MapStoreMarker {
   });
 }
 
-/// Reusable map widget used by NearbyStoresScreen, PriceComparisonScreen, and HomeScreen.
+/// Reusable map widget used by NearbyStoresScreen, UnifiedProductPriceDetailPage, and HomeScreen.
 class RakoonLocationMap extends StatelessWidget {
   const RakoonLocationMap({
     super.key,
