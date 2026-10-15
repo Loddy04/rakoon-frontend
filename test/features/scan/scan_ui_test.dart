@@ -345,7 +345,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Returns cleanly to ScanResultScreen with no mutation to items
-      expect(find.text('Koreksi Hasil Scan'), findsOneWidget);
+      expect(find.text('Hasil Scan'), findsOneWidget);
     });
 
     testWidgets('Editing price modifies inputs and recalculates correct winner upon opening CTA again', (WidgetTester tester) async {
@@ -403,7 +403,10 @@ void main() {
       await tester.enterText(find.byKey(const Key('add_name_field')), 'Indomilk 1L');
       await tester.enterText(find.byKey(const Key('add_price_field')), '15000');
       await tester.enterText(find.byKey(const Key('add_size_field')), '1');
-      await tester.enterText(find.byKey(const Key('add_unit_field')), 'l');
+      await tester.tap(find.byKey(const Key('add_unit_dropdown')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('L').last);
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('save_add_button')));
       await tester.pumpAndSettle();
 

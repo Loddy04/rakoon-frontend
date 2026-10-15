@@ -280,7 +280,7 @@ void main() {
       // Dialog closed
       expect(find.byType(Dialog), findsNothing);
       // Still on ScanResultScreen
-      expect(find.text('Koreksi Hasil Scan'), findsOneWidget);
+      expect(find.text('Hasil Scan'), findsOneWidget);
       expect(find.text('Teh Celup Kotak'), findsOneWidget);
     });
 
@@ -317,7 +317,7 @@ void main() {
 
       // Dialog is dismissed
       expect(find.byType(Dialog), findsNothing);
-      expect(find.text('Koreksi Hasil Scan'), findsOneWidget);
+      expect(find.text('Hasil Scan'), findsOneWidget);
 
       // User can immediately edit the item
       await tester.tap(find.byKey(const Key('edit_item_0_btn')));
@@ -359,7 +359,10 @@ void main() {
       await tester.tap(find.byKey(const Key('edit_item_0_btn')));
       await tester.pumpAndSettle();
       await tester.enterText(find.byKey(const Key('edit_size_field')), '2');
-      await tester.enterText(find.byKey(const Key('edit_unit_field')), 'l');
+      await tester.tap(find.byKey(const Key('edit_unit_dropdown')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('L').last);
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('save_edit_button')));
       await tester.pumpAndSettle();
 
@@ -669,6 +672,124 @@ void main() {
       // Bottom sheet closed and store updated
       expect(find.text('Pilih Lokasi Toko'), findsNothing);
       expect(find.text('Alfamart Gatsu'), findsOneWidget);
+    });
+
+    testWidgets('14. Edit product bottom sheet enforces inline form validation without SnackBar', (
+      WidgetTester tester,
+    ) async {
+      final items = [
+        ScanResultItem(
+          namaProduk: 'Minyak Goreng',
+          harga: 35000,
+          ukuran: 2.0,
+          satuan: 'l',
+          kategori: 'Makanan Pokok',
+          confidence: 'tinggi',
+          needsVerification: false,
+        ),
+      ];
+
+      await tester.pumpWidget(buildScanResultScreen(items));
+      await tester.pumpAndSettle();
+
+      // Open Edit modal
+      await tester.tap(find.byKey(const Key('edit_item_0_btn')));
+      await tester.pumpAndSettle();
+
+      // Clear name, set price to 0, clear size
+      await tester.enterText(find.byKey(const Key('edit_name_field')), '');
+      await tester.enterText(find.byKey(const Key('edit_price_field')), '0');
+      await tester.enterText(find.byKey(const Key('edit_size_field')), '');
+
+      // Tap Simpan Perubahan
+      await tester.tap(find.byKey(const Key('save_edit_button')));
+      await tester.pumpAndSettle();
+
+      // Modal is STILL open
+      expect(find.text('Edit Produk'), findsOneWidget);
+
+      // Inline error messages appear
+      expect(find.text('Nama produk wajib diisi'), findsOneWidget);
+      expect(find.text('Harga wajib diisi (lebih dari Rp 0)'), findsOneWidget);
+      expect(find.text('Ukuran wajib diisi'), findsOneWidget);
+
+      // Warning box appears
+      expect(find.byKey(const Key('edit_validation_warning_box')), findsOneWidget);
+
+      // No SnackBar is shown!
+      expect(find.byType(SnackBar), findsNothing);
+
+      // Start typing in name field -> name error disappears
+      await tester.enterText(find.byKey(const Key('edit_name_field')), 'Minyak Baru');
+      await tester.pumpAndSettle();
+      expect(find.text('Nama produk wajib diisi'), findsNothing);
+
+      // Fix price and size
+      await tester.enterText(find.byKey(const Key('edit_price_field')), '38000');
+      await tester.enterText(find.byKey(const Key('edit_size_field')), '2');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Harga wajib diisi (lebih dari Rp 0)'), findsNothing);
+      expect(find.text('Ukuran wajib diisi'), findsNothing);
+      expect(find.byKey(const Key('edit_validation_warning_box')), findsNothing);
+
+      // Tap Simpan -> modal closes and changes apply
+      await tester.tap(find.byKey(const Key('save_edit_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit Produk'), findsNothing);
+      expect(find.text('Minyak Baru'), findsOneWidget);
+    });
+
+    testWidgets('15. Add product bottom sheet enforces inline form validation without SnackBar', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(buildScanResultScreen([]));
+      await tester.pumpAndSettle();
+
+      // Open Add modal
+      await tester.ensureVisible(find.byKey(const Key('add_product_button')));
+      await tester.tap(find.byKey(const Key('add_product_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('save_add_button')), findsOneWidget);
+
+      // Tap Tambah Produk directly with empty inputs
+      await tester.tap(find.byKey(const Key('save_add_button')));
+      await tester.pumpAndSettle();
+
+      // Modal is STILL open
+      expect(find.byKey(const Key('save_add_button')), findsOneWidget);
+
+      // Inline errors appear
+      expect(find.text('Nama produk wajib diisi'), findsOneWidget);
+      expect(find.text('Harga wajib diisi (lebih dari Rp 0)'), findsOneWidget);
+      expect(find.text('Ukuran wajib diisi'), findsOneWidget);
+
+      // Warning box appears
+      expect(find.byKey(const Key('add_validation_warning_box')), findsOneWidget);
+
+      // No SnackBar
+      expect(find.byType(SnackBar), findsNothing);
+
+      // Fill valid values
+      await tester.enterText(find.byKey(const Key('add_name_field')), 'Susu Kotak');
+      await tester.enterText(find.byKey(const Key('add_price_field')), '12000');
+      await tester.enterText(find.byKey(const Key('add_size_field')), '250');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Nama produk wajib diisi'), findsNothing);
+      expect(find.text('Harga wajib diisi (lebih dari Rp 0)'), findsNothing);
+      expect(find.text('Ukuran wajib diisi'), findsNothing);
+      expect(find.byKey(const Key('add_validation_warning_box')), findsNothing);
+
+      // Save
+      await tester.tap(find.byKey(const Key('save_add_button')));
+      await tester.pumpAndSettle();
+
+      // Modal is now closed
+      expect(find.byKey(const Key('save_add_button')), findsNothing);
+      expect(find.text('Susu Kotak'), findsOneWidget);
     });
 
     test('ScanService.scanPhoto sends Authorization Bearer header when authenticated', () async {
