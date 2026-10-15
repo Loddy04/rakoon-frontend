@@ -1,17 +1,30 @@
-# rakoon_frontend
+# Rakoon Frontend
 
-A new Flutter project.
+Aplikasi mobile berbasis Flutter untuk platform **Rakoon** (Rak Pintar & Komparasi Harga Belanja Cerdas). Mendukung pemindaian rak belanja via kamera (*smart shelf scanning*), komparasi harga antar-gerai ritel dengan visual peta OpenStreetMap, asisten alokasi anggaran belanja harian, serta portal dasbor mitra pemilik toko (*merchant dashboard*).
 
-## Getting Started
+## Cara Menjalankan
 
-This project is a starting point for a Flutter application.
+1. **Instalasi Dependensi:**
+   ```bash
+   flutter pub get
+   ```
 
-A few resources to get you started if this is your first Flutter project:
+2. **Konfigurasi Environment:**
+   Salin berkas template dan sesuaikan nilainya:
+   ```bash
+   cp .env.example .env
+   ```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+3. **Jalankan Aplikasi:**
+   > **PENTING:** Seluruh eksekusi aplikasi **WAJIB** menyertakan parameter `--dart-define-from-file=.env`:
+   ```bash
+   flutter run --dart-define-from-file=.env
+   ```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+4. **Pengujian & Analisis:**
+   ```bash
+   flutter analyze
+   flutter test
+   ```
+
+Panduan setup koneksi emulator/perangkat fisik dan konfigurasi detail mengacu pada [SETUP.md](../SETUP.md) di root proyek.
