@@ -172,13 +172,13 @@ void main() {
         } else if (request.url.path.endsWith('/ads/upload-claim-document') && request.method == 'POST') {
           uploadDocCalled = true;
           return http.Response(
-            jsonEncode({'document_url': '/ads/documents/doc_uploaded_123.pdf', 'filename': 'doc_uploaded_123.pdf'}),
+            jsonEncode({'document_path': 'documents/uploaded123.pdf'}),
             200,
           );
         } else if (request.url.path.endsWith('/ads/upload-claim-photo') && request.method == 'POST') {
           uploadPhotoCalled = true;
           return http.Response(
-            jsonEncode({'photo_url': 'https://example.com/photo_uploaded_456.jpg'}),
+            jsonEncode({'photo_path': 'photos/uploaded456.jpg'}),
             200,
           );
         } else if (request.url.path.endsWith('/ads/my-submissions')) {
@@ -298,8 +298,8 @@ void main() {
       expect(submittedBody?['store_name'], 'Apotek K-24 Baru');
       expect(submittedBody?['applicant_name'], 'Ahmad Sutanto');
       expect(submittedBody?['applicant_phone'], '081233445566');
-      expect(submittedBody?['document_url'], '/ads/documents/doc_uploaded_123.pdf');
-      expect(submittedBody?['store_photo_url'], 'https://example.com/photo_uploaded_456.jpg');
+      expect(submittedBody?['document_url'], 'documents/uploaded123.pdf');
+      expect(submittedBody?['store_photo_url'], 'photos/uploaded456.jpg');
 
       // Verifikasi SnackBar sukses
       expect(find.text('Pengajuan toko baru berhasil dikirim. Menunggu verifikasi admin.'), findsOneWidget);
@@ -521,12 +521,12 @@ void main() {
           return http.Response(jsonEncode({'stores': []}), 200);
         } else if (request.url.path.endsWith('/ads/upload-claim-document') && request.method == 'POST') {
           return http.Response(
-            jsonEncode({'document_url': '/ads/documents/doc_123.pdf', 'filename': 'doc_123.pdf'}),
+            jsonEncode({'document_path': 'documents/doc123.pdf'}),
             200,
           );
         } else if (request.url.path.endsWith('/ads/upload-claim-photo') && request.method == 'POST') {
           return http.Response(
-            jsonEncode({'photo_url': 'https://example.com/photo_123.jpg'}),
+            jsonEncode({'photo_path': 'photos/photo123.jpg'}),
             200,
           );
         } else if (request.url.path.endsWith('/ads/my-submissions')) {
@@ -597,7 +597,7 @@ void main() {
 
       // Memastikan pesan error 503 dari backend ditampilkan secara jelas
       expect(
-        find.textContaining('Fitur pengajuan toko baru belum tersedia karena skema database belum diperbarui'),
+        find.textContaining('Penyimpanan belum tersedia, coba lagi nanti'),
         findsWidgets,
       );
       // Memastikan pesan sukses TIDAK ditampilkan

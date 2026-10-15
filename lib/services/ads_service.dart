@@ -525,7 +525,11 @@ class AdsService {
       if (response.statusCode == 200) {
         return MyStoreData.fromJson(jsonDecode(response.body));
       } else {
-        throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal mengklaim toko.'));
+        throw Exception(_evidenceErrorMessage(
+          response,
+          fallback: 'Gagal mengklaim toko.',
+          conflictMessage: 'Klaim untuk toko ini sudah ada',
+        ));
       }
     } finally {
       if (client == null) {
@@ -542,7 +546,8 @@ class AdsService {
     required String applicantPhone,
     required String applicantRole,
     String? businessEntityName,
-    String? storeCategory,
+    double? latitude,
+    double? longitude,
     String? documentUrl,
     String? storePhotoUrl,
     String? baseUrl,
@@ -572,8 +577,8 @@ class AdsService {
           'applicant_role': applicantRole.trim(),
           if (businessEntityName != null && businessEntityName.trim().isNotEmpty)
             'business_entity_name': businessEntityName.trim(),
-          if (storeCategory != null && storeCategory.trim().isNotEmpty)
-            'store_category': storeCategory.trim(),
+          'latitude': ?latitude,
+          'longitude': ?longitude,
           if (documentUrl != null && documentUrl.trim().isNotEmpty)
             'document_url': documentUrl.trim(),
           if (storePhotoUrl != null && storePhotoUrl.trim().isNotEmpty)
@@ -584,7 +589,7 @@ class AdsService {
       if (response.statusCode == 201) {
         return UserSubmissionData.fromJson(jsonDecode(response.body));
       } else {
-        throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal mengajukan toko baru.'));
+        throw Exception(_evidenceErrorMessage(response, fallback: 'Gagal mengajukan toko baru.'));
       }
     } finally {
       if (client == null) {
@@ -673,9 +678,9 @@ class AdsService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return data['document_url'] as String;
+      return data['document_path'] as String;
     } else {
-      throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal mengunggah dokumen legalitas.'));
+      throw Exception(_evidenceErrorMessage(response, fallback: 'Gagal mengunggah dokumen legalitas.'));
     }
   }
 
@@ -721,9 +726,44 @@ class AdsService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return data['photo_url'] as String;
+      return data['photo_path'] as String;
     } else {
-      throw Exception(extractErrorMessage(response, fallbackMessage: 'Gagal mengunggah foto toko.'));
+      throw Exception(_evidenceErrorMessage(response, fallback: 'Gagal mengunggah foto toko.'));
+    }
+  }
+
+  /// Admin: URL bertanda tangan (berlaku sekitar 5 menit) untuk membuka satu bukti klaim.
+  static Future<String> getClaimEvidenceUrl({
+    required String path,
+    String? baseUrl,
+    http.Client? client,
+  }) async {
+    final token = AuthService.currentSession?.accessToken;
+    if (token == null) {
+      throw Exception('Silakan masuk akun terlebih dahulu.');
+    }
+
+    final effectiveBase = _resolveBaseUrl(baseUrl);
+    final httpClient = client ?? http.Client();
+
+    try {
+      final response = await httpClient.get(
+        Uri.parse('$effectiveBase/ads/claim-evidence-url').replace(queryParameters: {'path': path}),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return data['url'] as String;
+      }
+      throw Exception(_evidenceErrorMessage(response, fallback: 'Gagal membuka bukti klaim.'));
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
     }
   }
 
@@ -1298,6 +1338,37 @@ class AdsService {
       response.statusCode,
       fallbackMessage: fallbackMessage,
     );
+  }
+
+  /// Pesan ramah untuk alur bukti klaim, klaim, dan pengajuan toko. Tidak pernah memuat body mentah:
+  /// `detail` hanya dipakai bila berupa teks biasa (400/409), bukan daftar validasi.
+  static String _evidenceErrorMessage(
+    http.Response response, {
+    required String fallback,
+    String? conflictMessage,
+  }) {
+    String? plainDetail() {
+      try {
+        final decoded = jsonDecode(response.body);
+        final detail = decoded is Map<String, dynamic> ? decoded['detail'] : null;
+        if (detail is String && detail.trim().isNotEmpty) return detail.trim();
+      } catch (_) {}
+      return null;
+    }
+
+    switch (response.statusCode) {
+      case 400:
+        return plainDetail() ?? 'Berkas atau data tidak valid. Periksa lalu coba lagi.';
+      case 409:
+        return conflictMessage ?? plainDetail() ?? 'Data bertentangan dengan data yang sudah ada.';
+      case 413:
+        return 'Ukuran berkas terlalu besar (maksimum 5 MB).';
+      case 422:
+        return 'Data belum lengkap. Periksa isian Anda lalu coba lagi.';
+      case 503:
+        return 'Penyimpanan belum tersedia, coba lagi nanti';
+    }
+    return extractErrorMessage(response, fallbackMessage: fallback);
   }
 
   static String extractErrorMessageFromBody(
