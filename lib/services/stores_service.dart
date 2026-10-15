@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 
 /// Dart representation of a nearby store item.
 class StoreNearby {
@@ -104,10 +105,13 @@ class StoresService {
         final decoded = jsonDecode(response.body) as Map<String, dynamic>;
         return NearbyStoresResponse.fromJson(decoded);
       } else {
+        throwIfInvalidRequest(response);
         throw Exception(
           'HTTP ${response.statusCode}: Gagal menghubungi server backend.',
         );
       }
+    } on InvalidRequestException {
+      rethrow;
     } catch (e) {
       throw Exception(
         'Gagal memuat toko terdekat. Pastikan server backend Anda berjalan ($cleanBaseUrl). Detail: $e',
@@ -144,10 +148,13 @@ class StoresService {
         final decoded = jsonDecode(response.body) as Map<String, dynamic>;
         return PriceCompareResponse.fromJson(decoded);
       } else {
+        throwIfInvalidRequest(response);
         throw Exception(
           'HTTP ${response.statusCode}: Gagal mengambil data perbandingan harga.',
         );
       }
+    } on InvalidRequestException {
+      rethrow;
     } catch (e) {
       throw Exception(
         'Gagal memuat perbandingan harga produk. Detail: $e',

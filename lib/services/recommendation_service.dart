@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 
 class RecommendationCandidate {
   final String? productId;
@@ -316,6 +317,9 @@ class RecommendationService {
             .map((e) => RecommendedProduct.fromJson(e as Map<String, dynamic>))
             .toList();
       }
+      throwIfInvalidRequest(response);
+    } on InvalidRequestException {
+      rethrow;
     } catch (_) {
       // Fallback
     }
