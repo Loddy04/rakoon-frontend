@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/core/config/app_config.dart';
@@ -17,7 +18,13 @@ import 'package:rakoon_frontend/theme/app_theme.dart';
 
 class IntegrationDashboardPage extends StatefulWidget {
   final http.Client? httpClient;
-  const IntegrationDashboardPage({super.key, this.httpClient});
+  final bool debugMode;
+
+  const IntegrationDashboardPage({
+    super.key,
+    this.httpClient,
+    this.debugMode = kDebugMode,
+  });
 
   @override
   State<IntegrationDashboardPage> createState() =>
@@ -333,6 +340,14 @@ class _IntegrationDashboardPageState extends State<IntegrationDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.debugMode) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Debug dashboard hanya tersedia dalam mode debug.'),
+        ),
+      );
+    }
+
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(

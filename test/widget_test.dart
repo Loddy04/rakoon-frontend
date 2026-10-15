@@ -8,10 +8,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:rakoon_frontend/main.dart';
+import 'package:rakoon_frontend/features/debug/integration_dashboard_page.dart';
 
 void main() {
-  testWidgets('Integration dashboard smoke test', (WidgetTester tester) async {
+  testWidgets('Integration dashboard smoke test in debug mode', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(
       const MaterialApp(
@@ -22,5 +22,16 @@ void main() {
     // Verify that the dashboard header is present.
     expect(find.text('Rakoon Dev Integration'), findsOneWidget);
     expect(find.text('🔌 Konfigurasi Koneksi Server'), findsOneWidget);
+  });
+
+  testWidgets('Integration dashboard is inaccessible outside debug mode', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: IntegrationDashboardPage(debugMode: false),
+      ),
+    );
+
+    expect(find.text('Rakoon Dev Integration'), findsNothing);
+    expect(find.text('Debug dashboard hanya tersedia dalam mode debug.'), findsOneWidget);
   });
 }

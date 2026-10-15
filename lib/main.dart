@@ -7,8 +7,6 @@ import 'package:rakoon_frontend/features/auth/presentation/pages/login_page.dart
 import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 
-export 'package:rakoon_frontend/features/debug/integration_dashboard_page.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 

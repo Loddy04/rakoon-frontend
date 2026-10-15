@@ -8,6 +8,7 @@ import 'package:rakoon_frontend/features/auth/presentation/pages/login_page.dart
 import 'package:rakoon_frontend/features/auth/presentation/pages/register_page.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/main.dart';
+import 'package:rakoon_frontend/features/debug/integration_dashboard_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/app_shell.dart';
