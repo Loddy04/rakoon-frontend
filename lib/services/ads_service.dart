@@ -35,7 +35,7 @@ class HomePromoBanner {
     required this.title,
     required this.bannerUrl,
     required this.durationDays,
-    required this.pricePaid,
+    this.pricePaid = 0, // tidak dikirim backend pada respons publik
     required this.distanceKm,
     required this.expiresAt,
     required this.daysLeft,
