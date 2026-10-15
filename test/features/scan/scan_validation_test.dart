@@ -280,7 +280,7 @@ void main() {
       // Dialog closed
       expect(find.byType(Dialog), findsNothing);
       // Still on ScanResultScreen
-      expect(find.text('Koreksi Hasil Scan'), findsOneWidget);
+      expect(find.text('Hasil Scan'), findsOneWidget);
       expect(find.text('Teh Celup Kotak'), findsOneWidget);
     });
 
@@ -317,7 +317,7 @@ void main() {
 
       // Dialog is dismissed
       expect(find.byType(Dialog), findsNothing);
-      expect(find.text('Koreksi Hasil Scan'), findsOneWidget);
+      expect(find.text('Hasil Scan'), findsOneWidget);
 
       // User can immediately edit the item
       await tester.tap(find.byKey(const Key('edit_item_0_btn')));
@@ -359,7 +359,10 @@ void main() {
       await tester.tap(find.byKey(const Key('edit_item_0_btn')));
       await tester.pumpAndSettle();
       await tester.enterText(find.byKey(const Key('edit_size_field')), '2');
-      await tester.enterText(find.byKey(const Key('edit_unit_field')), 'l');
+      await tester.tap(find.byKey(const Key('edit_unit_dropdown')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('L').last);
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('save_edit_button')));
       await tester.pumpAndSettle();
 

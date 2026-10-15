@@ -71,6 +71,49 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     super.dispose();
   }
 
+  // Fallback coordinates (Yogyakarta / Babarsari) if GPS is disabled or unavailable
+  static const double _defaultFallbackLat = -7.7829;
+  static const double _defaultFallbackLng = 110.4083;
+
+  Future<void> _fetchStoresWithFallbackCoordinates({bool openSelector = false}) async {
+    setState(() {
+      _isLoadingStores = true;
+      _storesError = null;
+    });
+
+    try {
+      final response = await StoresService.getNearbyStores(
+        lat: _defaultFallbackLat,
+        lng: _defaultFallbackLng,
+        radiusKm: 15.0,
+        baseUrl: widget.baseUrl,
+        client: widget.httpClient,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _nearbyStores = response.stores;
+        if (response.stores.isNotEmpty && _selectedStore == null) {
+          _selectedStore = response.stores.first;
+          _storeIdController.text = response.stores.first.storeId;
+        }
+        _isLoadingStores = false;
+        _storesError = null;
+      });
+
+      if (openSelector && mounted) {
+        _showStoreSelectorBottomSheet();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _storesError = e.toString().replaceFirst('Exception: ', '');
+        _isLoadingStores = false;
+      });
+    }
+  }
+
   Future<void> _fetchNearbyStores() async {
     setState(() {
       _isLoadingStores = true;
@@ -633,18 +676,37 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _fetchNearbyStores,
-                icon: const Icon(Icons.refresh, size: 16),
-                label: const Text('Coba Lagi', style: TextStyle(fontSize: 12)),
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFFEF4444),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            const SizedBox(height: 8),
+            Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                OutlinedButton.icon(
+                  key: const Key('manual_store_select_button'),
+                  onPressed: () => _fetchStoresWithFallbackCoordinates(openSelector: true),
+                  icon: const Icon(Icons.storefront_outlined, size: 14),
+                  label: const Text('Pilih Toko Manual', style: TextStyle(fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF00875A),
+                    side: const BorderSide(color: Color(0xFF00875A), width: 1.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
                 ),
-              ),
+                TextButton.icon(
+                  onPressed: _fetchNearbyStores,
+                  icon: const Icon(Icons.refresh, size: 15),
+                  label: const Text('Coba Lagi', style: TextStyle(fontSize: 12)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFEF4444),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -776,17 +838,27 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     final double? unitPrice = _calculateUnitPrice(item);
     final bool isWinner = itemIndex == _findBestValueWinnerIndex();
 
+    final bool isPriceValid = price > 0;
+    final bool isSizeValid = size > 0 && unit.trim().isNotEmpty;
+    final bool isComplete = isPriceValid && isSizeValid;
+
+    // Card border color:
+    final Color borderColor;
+    if (isWinner) {
+      borderColor = const Color(0xFFF59E0B);
+    } else if (!isComplete) {
+      borderColor = const Color(0xFFF59E0B);
+    } else {
+      borderColor = const Color(0xFFE8E4DC);
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: isWinner ? const Color(0xFFFFFDF5) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isWinner
-              ? const Color(0xFFF59E0B)
-              : (item.needsVerification
-                  ? const Color(0xFFF59E0B)
-                  : const Color(0xFFE8E4DC)),
+          color: borderColor,
           width: isWinner ? 1.5 : 1.0,
         ),
         boxShadow: [
@@ -797,131 +869,242 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // If Best Value Winner: show top badge ribbon
-          if (isWinner)
-            Padding(
-              padding: const EdgeInsets.only(left: 12, top: 8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD97706),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.emoji_events, size: 11, color: Colors.white),
-                    const SizedBox(width: 4),
-                    Text(
-                      'BEST VALUE WINNER',
-                      style: GoogleFonts.outfit(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.4,
-                      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _openEditBottomSheet(item),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // If Best Value Winner: show top badge ribbon
+              if (isWinner)
+                Padding(
+                  padding: const EdgeInsets.only(left: 12, top: 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD97706),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
-                ),
-              ),
-            ),
-
-          Padding(
-            padding: EdgeInsets.fromLTRB(10, isWinner ? 6 : 9, 10, 9),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 1. Number Badge Circle (NO PRODUCT IMAGE!)
-                Container(
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    color: isWinner
-                        ? const Color(0xFFF59E0B)
-                        : const Color(0xFFF3F4F6),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isWinner
-                          ? const Color(0xFFD97706)
-                          : const Color(0xFFE5E7EB),
-                      width: 1,
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    '${itemIndex + 1}',
-                    style: GoogleFonts.outfit(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      color: isWinner ? Colors.white : const Color(0xFF4B5563),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-
-                // 2. Title, Category, Size, Price, Unit Price
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        name.isNotEmpty ? name : 'Produk #${itemIndex + 1}',
-                        style: GoogleFonts.outfit(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF0D2818),
-                          height: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${item.kategori ?? "Kategori"}\n${size > 0 ? (size % 1 == 0 ? size.toInt() : size.toStringAsFixed(1)) : "-"} $unit',
-                        style: GoogleFonts.outfit(
-                          fontSize: 10.5,
-                          color: const Color(0xFF6B7280),
-                          height: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        price > 0 ? _formatRupiah(price) : 'Rp -',
-                        style: GoogleFonts.outfit(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF00875A),
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      if (unitPrice != null)
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.emoji_events, size: 11, color: Colors.white),
+                        const SizedBox(width: 4),
                         Text(
-                          'Rp ${unitPrice.toStringAsFixed(1).replaceAll('.', ',')} / $unit',
+                          'BEST VALUE WINNER',
                           style: GoogleFonts.outfit(
-                            fontSize: 9.5,
-                            color: const Color(0xFF6B7280),
-                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.4,
                           ),
                         ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(width: 4),
 
-                // 3. Right Column: Badges & Action Buttons
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
+              Padding(
+                padding: EdgeInsets.fromLTRB(10, isWinner ? 6 : 10, 10, 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Accuracy or Verification Badge
-                    if (item.needsVerification)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                    // 1. Number Badge Circle
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: isWinner
+                            ? const Color(0xFFF59E0B)
+                            : const Color(0xFFF3F4F6),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isWinner
+                              ? const Color(0xFFD97706)
+                              : const Color(0xFFE5E7EB),
+                          width: 1,
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${itemIndex + 1}',
+                        style: GoogleFonts.outfit(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: isWinner ? Colors.white : const Color(0xFF4B5563),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // 2. Title, Category & Size Pills, Price, Unit Price
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
+                          Text(
+                            name.isNotEmpty ? name : 'Produk #${itemIndex + 1}',
+                            style: GoogleFonts.outfit(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF0D2818),
+                              height: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+
+                          // Pills Kategori & Ukuran
+                          Wrap(
+                            spacing: 5,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              // Kategori Pill
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF3F4F6),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  item.kategori?.isNotEmpty == true
+                                      ? item.kategori!
+                                      : 'Kategori',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF4B5563),
+                                  ),
+                                ),
+                              ),
+
+                              // Ukuran Pill
+                              if (isSizeValid)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF3F4F6),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    '${size % 1 == 0 ? size.toInt() : size.toStringAsFixed(1)} $unit',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF4B5563),
+                                    ),
+                                  ),
+                                )
+                              else
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFEE2E2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    '⚠️ Isi ukuran',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFFEF4444),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 5),
+
+                          // Price
+                          Text(
+                            isPriceValid ? _formatRupiah(price) : 'Rp -',
+                            style: GoogleFonts.outfit(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: isPriceValid
+                                  ? const Color(0xFF00875A)
+                                  : const Color(0xFFEF4444),
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          if (!isPriceValid)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2.0),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.warning_amber_rounded,
+                                    size: 12,
+                                    color: Color(0xFFEF4444),
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Flexible(
+                                    child: Text(
+                                      'Wajib isi harga',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFFEF4444),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (unitPrice != null)
+                            Text(
+                              'Rp ${unitPrice.toStringAsFixed(1).replaceAll('.', ',')} / $unit',
+                              style: GoogleFonts.outfit(
+                                fontSize: 9.5,
+                                color: const Color(0xFF6B7280),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+
+                    // 3. Right Column: Badges & Action Buttons
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Badge logic
+                        if (!isPriceValid)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEE2E2),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: const Color(0xFFFECACA)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.error_outline_rounded,
+                                    color: Color(0xFFEF4444), size: 10),
+                                const SizedBox(width: 3),
+                                Text(
+                                  'Lengkapi Harga',
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFFDC2626),
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else if (!isSizeValid)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
                             decoration: BoxDecoration(
                               color: const Color(0xFFFEF3C7),
                               borderRadius: BorderRadius.circular(20),
@@ -930,13 +1113,13 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.error_outline_rounded,
+                                const Icon(Icons.warning_amber_rounded,
                                     color: Color(0xFFD97706), size: 10),
-                                const SizedBox(width: 2),
+                                const SizedBox(width: 3),
                                 Text(
-                                  'Verifikasi Harga',
+                                  'Lengkapi Ukuran',
                                   style: GoogleFonts.outfit(
-                                    color: const Color(0xFFD97706),
+                                    color: const Color(0xFFB45309),
                                     fontSize: 8.5,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -944,157 +1127,130 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Harga mungkin beda',
-                            textAlign: TextAlign.right,
-                            style: GoogleFonts.outfit(
-                              color: const Color(0xFF9CA3AF),
-                              fontSize: 8,
-                              height: 1.1,
-                            ),
-                          ),
-                        ],
-                      )
-                    else
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE8FAF2),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFA7F3D0)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.check_circle_rounded,
-                                color: Color(0xFF10B981), size: 11),
-                            const SizedBox(width: 3),
-                            Text(
-                              'Akurat ${item.confidence == "tinggi" ? "98%" : "85%"}',
-                              style: GoogleFonts.outfit(
-                                color: const Color(0xFF059669),
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
 
-                    // Winner Crown Badge
-                    if (isWinner) ...[
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEF3C7),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFFDE68A)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.workspace_premium_rounded,
-                                color: Color(0xFFD97706), size: 13),
-                            const SizedBox(width: 4),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Termurah',
-                                  style: GoogleFonts.outfit(
-                                    color: const Color(0xFFB45309),
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                Text(
-                                  'di produk sejenis!',
-                                  style: GoogleFonts.outfit(
-                                    color: const Color(0xFFB45309),
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-
-                    const SizedBox(height: 8),
-
-                    // Actions: Delete, Edit
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Delete button (accessible hit area >= 48x48)
-                        Semantics(
-                          label: 'Hapus produk ${name.isNotEmpty ? name : ""}',
-                          button: true,
-                          container: true,
-                          child: SizedBox(
-                            width: 48,
-                            height: 48,
-                            child: IconButton(
-                              key: Key('delete_item_${itemIndex}_btn'),
-                              padding: EdgeInsets.zero,
-                              icon: const Icon(
-                                Icons.delete_outline_rounded,
-                                size: 18,
-                                color: Color(0xFFEF4444),
-                              ),
-                              tooltip: 'Hapus produk',
-                              onPressed: () => _deleteItem(item),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 2),
-
-                        // Edit button (accessible hit area >= 48x48)
-                        Semantics(
-                          label: 'Edit produk ${name.isNotEmpty ? name : ""}',
-                          button: true,
-                          container: true,
-                          child: OutlinedButton(
-                            key: Key('edit_item_${itemIndex}_btn'),
-                            onPressed: () => _openEditBottomSheet(item),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(54, 48),
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              side: const BorderSide(color: Color(0xFFD1D5DB)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
+                        // Winner Crown Badge (if isWinner)
+                        if (isWinner) ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF3C7),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xFFFDE68A)),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.edit_outlined,
-                                    size: 12, color: Color(0xFF4B5563)),
-                                const SizedBox(width: 3),
-                                Text(
-                                  'Edit',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: const Color(0xFF4B5563),
-                                  ),
+                                const Icon(Icons.workspace_premium_rounded,
+                                    color: Color(0xFFD97706), size: 13),
+                                const SizedBox(width: 4),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Termurah',
+                                      style: GoogleFonts.outfit(
+                                        color: const Color(0xFFB45309),
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    Text(
+                                      'di produk sejenis!',
+                                      style: GoogleFonts.outfit(
+                                        color: const Color(0xFFB45309),
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
                           ),
+                        ],
+
+                        const SizedBox(height: 8),
+
+                        // Actions: Edit (green) & Delete (red) uniform 38x38dp buttons
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // Edit button
+                            Semantics(
+                              label: 'Edit produk ${name.isNotEmpty ? name : ""}',
+                              button: true,
+                              container: true,
+                              child: InkWell(
+                                key: Key('edit_item_${itemIndex}_btn'),
+                                onTap: () => _openEditBottomSheet(item),
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  constraints: const BoxConstraints(
+                                    minWidth: 48,
+                                    minHeight: 48,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE6F4EA),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(
+                                      Icons.edit_outlined,
+                                      size: 18,
+                                      color: Color(0xFF00875A),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+
+                            // Delete button
+                            Semantics(
+                              label: 'Hapus produk ${name.isNotEmpty ? name : ""}',
+                              button: true,
+                              container: true,
+                              child: InkWell(
+                                key: Key('delete_item_${itemIndex}_btn'),
+                                onTap: () => _deleteItem(item),
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  constraints: const BoxConstraints(
+                                    minWidth: 48,
+                                    minHeight: 48,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFEE2E2),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(
+                                      Icons.delete_outline_rounded,
+                                      size: 18,
+                                      color: Color(0xFFEF4444),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1410,6 +1566,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
           elevation: 0,
           scrolledUnderElevation: 0,
           toolbarHeight: 50,
+          centerTitle: false,
           leading: IconButton(
             icon: const Icon(
               Icons.arrow_back_rounded,
@@ -1427,54 +1584,14 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
               }
             },
           ),
-          title: const SizedBox(
-            height: 0,
-            width: 0,
-            child: Text(
-              'Koreksi Hasil Scan',
-              style: TextStyle(fontSize: 0, color: Colors.transparent),
+          title: Text(
+            'Hasil Scan',
+            style: GoogleFonts.outfit(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF0D2818),
             ),
           ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 12.0),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFE8E4DC)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.02),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.lightbulb_rounded,
-                      color: Color(0xFFF59E0B),
-                      size: 15,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      'Harga dapat berbeda\nsetiap toko dan lokasi',
-                      style: GoogleFonts.outfit(
-                        fontSize: 8.5,
-                        color: const Color(0xFF6B7280),
-                        height: 1.15,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
         ),
         body: SafeArea(
           top: false,
@@ -1484,145 +1601,47 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 14.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Title & Subtitle Section
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2, bottom: 10),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Hasil Scan & Deteksi AI',
-                              style: GoogleFonts.outfit(
-                                fontSize: 21,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF0D2818),
-                                letterSpacing: -0.3,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Berikut produk yang berhasil dikenali dari rak belanja',
-                              style: GoogleFonts.outfit(
-                                fontSize: 12,
-                                color: const Color(0xFF6B7280),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
                       // Store selection card
                       _buildStoreSelectionArea(),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
 
-                      // Detection summary card
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: const Color(0xFFE8E4DC),
-                            width: 1.0,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.02),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
+                      // AI Detection Header (bersih di sisi kiri saja, tanpa tombol di kanan)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4, bottom: 8, left: 2),
                         child: Row(
                           children: [
                             Container(
-                              width: 28,
-                              height: 28,
+                              padding: const EdgeInsets.all(4),
                               decoration: const BoxDecoration(
-                                color: Color(0xFF10B981),
+                                color: Color(0xFFE8FAF2),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
-                                Icons.check_rounded,
-                                color: Colors.white,
-                                size: 16,
+                                Icons.auto_awesome_rounded,
+                                color: Color(0xFF00875A),
+                                size: 14,
                               ),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    '${_items.length} produk berhasil dideteksi',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: const Color(0xFF0D2818),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 1),
-                                  Text(
-                                    'Cek hasil dan bandingkan harga sebelum belanja',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 10.5,
-                                      color: const Color(0xFF6B7280),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            InkWell(
-                              onTap: () {
-                                Navigator.pop(context);
-                              },
-                              borderRadius: BorderRadius.circular(20),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 9,
-                                  vertical: 5,
+                              child: Text(
+                                '${_items.length} Produk Berhasil Dideteksi',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF0D2818),
                                 ),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: const Color(0xFF00A86B),
-                                    width: 1.0,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.refresh_rounded,
-                                      color: Color(0xFF00A86B),
-                                      size: 13,
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      'Scan Lagi',
-                                      style: GoogleFonts.outfit(
-                                        color: const Color(0xFF00A86B),
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 10),
 
                       // Error message if any
                       if (_errorMessage != null)
@@ -1686,62 +1705,115 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                       else
                         ..._items.map((item) => _buildProductComparisonCard(item)),
 
-                      // Best Value AI Recommendation CTA button
-                      InteractiveScale(
-                        key: const Key('best_value_cta_button'),
-                        onTap: _evaluateBestValue,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFFBEB),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: const Color(0xFFFDE68A),
-                              width: 1.0,
+                      // Full-width OutlinedButton: Tambah Produk Manual
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4, bottom: 8),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: OutlinedButton.icon(
+                            key: const Key('add_product_button'),
+                            onPressed: _openAddBottomSheet,
+                            icon: const Icon(
+                              Icons.add_rounded,
+                              color: Color(0xFF00875A),
+                              size: 18,
+                            ),
+                            label: Text(
+                              'Tambah Produk Manual',
+                              style: GoogleFonts.outfit(
+                                color: const Color(0xFF00875A),
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              side: const BorderSide(
+                                color: Color(0xFF00875A),
+                                width: 1.2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.emoji_events_rounded,
-                                color: Color(0xFFD97706),
-                                size: 20,
+                        ),
+                      ),
+
+                      // Best Value AI Recommendation CTA button (only displayed if products have valid price & size)
+                      Builder(
+                        builder: (context) {
+                          final bool hasValidBestValueCandidate = _items.any(
+                            (item) =>
+                                item.harga != null &&
+                                item.harga! > 0 &&
+                                item.ukuran != null &&
+                                item.ukuran! > 0 &&
+                                (item.satuan != null && item.satuan!.trim().isNotEmpty),
+                          );
+
+                          if (!hasValidBestValueCandidate) {
+                            return const SizedBox.shrink();
+                          }
+
+                          return InteractiveScale(
+                            key: const Key('best_value_cta_button'),
+                            onTap: _evaluateBestValue,
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Analisis Best Value AI',
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: const Color(0xFF92400E),
-                                      ),
-                                    ),
-                                    Text(
-                                      'Bandingkan nilai per satuan ukuran produk secara mendalam',
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 10.5,
-                                        color: const Color(0xFFB45309),
-                                      ),
-                                    ),
-                                  ],
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFFBEB),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: const Color(0xFFFDE68A),
+                                  width: 1.0,
                                 ),
                               ),
-                              const Icon(
-                                Icons.chevron_right_rounded,
-                                color: Color(0xFFD97706),
-                                size: 18,
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.emoji_events_rounded,
+                                    color: Color(0xFFD97706),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Analisis Best Value AI',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFF92400E),
+                                          ),
+                                        ),
+                                        Text(
+                                          'Bandingkan nilai per satuan ukuran produk secara mendalam',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 10.5,
+                                            color: const Color(0xFFB45309),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.chevron_right_rounded,
+                                    color: Color(0xFFD97706),
+                                    size: 18,
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
+                            ),
+                          );
+                        },
                       ),
 
                       const SizedBox(height: 14),
@@ -1750,7 +1822,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                 ),
               ),
 
-              // Fixed Bottom Action Bar (Tambah Produk Manual & Simpan Hasil Scan)
+              // Fixed Bottom Action Bar (Hanya 1 tombol utama Simpan Hasil Scan)
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -1766,46 +1838,30 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                   top: false,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10.0,
-                      vertical: 8.0,
+                      horizontal: 14.0,
+                      vertical: 10.0,
                     ),
-                    child: Row(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Left: Tambah Produk Manual Button
-                        Expanded(
-                          flex: 5,
-                          child: OutlinedButton(
-                            key: const Key('add_product_button'),
-                            onPressed: _openAddBottomSheet,
-                            style: OutlinedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              side: const BorderSide(
-                                color: Color(0xFF00A86B),
-                                width: 1.2,
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                            ),
+                        if (_items.any((item) =>
+                            (item.harga == null || item.harga! <= 0) ||
+                            (item.ukuran == null || item.ukuran! <= 0))) ...[
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
-                                  Icons.add_circle_outline_rounded,
-                                  color: Color(0xFF00A86B),
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 4),
                                 Flexible(
                                   child: Text(
-                                    'Tambah Produk',
+                                    '⚠️ Lengkapi ukuran & harga semua produk sebelum menyimpan',
                                     style: GoogleFonts.outfit(
-                                      color: const Color(0xFF00A86B),
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w700,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFFEF4444),
                                     ),
+                                    textAlign: TextAlign.center,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -1813,12 +1869,10 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                               ],
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-
-                        // Right: Simpan Hasil Scan Button
-                        Expanded(
-                          flex: 6,
+                        ],
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
                           child: ElevatedButton(
                             key: const Key('save_confirm_button'),
                             onPressed: _isSaving ||
@@ -1830,12 +1884,9 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF00875A),
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
+                              disabledBackgroundColor: const Color(0xFF9CA3AF),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(24),
+                                borderRadius: BorderRadius.circular(12),
                               ),
                               elevation: 0,
                             ),
@@ -1848,45 +1899,14 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                                       color: Colors.white,
                                     ),
                                   )
-                                : Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              'Simpan Hasil Scan',
-                                              style: GoogleFonts.outfit(
-                                                color: Colors.white,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            Text(
-                                              '${_items.length} produk',
-                                              style: GoogleFonts.outfit(
-                                                color: Colors.white
-                                                    .withValues(alpha: 0.9),
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const Icon(
-                                        Icons.chevron_right_rounded,
-                                        color: Colors.white,
-                                        size: 18,
-                                      ),
-                                    ],
+                                : Text(
+                                    'Simpan Hasil Scan (${_items.length} Produk)',
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
                           ),
                         ),
@@ -1921,29 +1941,48 @@ class _EditProductBottomSheetState extends State<_EditProductBottomSheet> {
   late final TextEditingController nameController;
   late final TextEditingController priceController;
   late final TextEditingController sizeController;
-  late final TextEditingController unitController;
   late String selectedCategory;
+  late String selectedUnit;
+
+  static const List<String> standardUnits = ['gr', 'kg', 'ml', 'L', 'pcs'];
+
+  static String _resolveUnit(String? raw) {
+    if (raw == null || raw.isEmpty) return 'gr';
+    final lower = raw.trim().toLowerCase();
+    if (lower == 'l' || lower == 'liter' || lower == 'litre') return 'L';
+    if (lower == 'ml' || lower == 'mili' || lower == 'milliliter' || lower == 'cc') return 'ml';
+    if (lower == 'kg' || lower == 'kilo' || lower == 'kilogram') return 'kg';
+    if (lower == 'pcs' || lower == 'piece' || lower == 'buah' || lower == 'biji' || lower == 'pack' || lower == 'bungkus') return 'pcs';
+    if (lower == 'gr' || lower == 'g' || lower == 'gram') return 'gr';
+    for (final u in standardUnits) {
+      if (u.toLowerCase() == lower) return u;
+    }
+    return 'gr';
+  }
 
   @override
   void initState() {
     super.initState();
     nameController = TextEditingController(text: widget.item.namaProduk ?? '');
     priceController = TextEditingController(
-      text: widget.item.harga != null
+      text: widget.item.harga != null && widget.item.harga! > 0
           ? (widget.item.harga! % 1 == 0
               ? widget.item.harga!.toInt().toString()
               : widget.item.harga!.toString())
           : '',
     );
     sizeController = TextEditingController(
-      text: widget.item.ukuran != null
+      text: widget.item.ukuran != null && widget.item.ukuran! > 0
           ? (widget.item.ukuran! % 1 == 0
               ? widget.item.ukuran!.toInt().toString()
               : widget.item.ukuran!.toString())
           : '',
     );
-    unitController = TextEditingController(text: widget.item.satuan ?? '');
+    selectedUnit = _resolveUnit(widget.item.satuan);
     selectedCategory = widget.item.kategori ?? 'Lainnya';
+    if (!productCategories.contains(selectedCategory)) {
+      selectedCategory = 'Lainnya';
+    }
   }
 
   @override
@@ -1951,231 +1990,376 @@ class _EditProductBottomSheetState extends State<_EditProductBottomSheet> {
     nameController.dispose();
     priceController.dispose();
     sizeController.dispose();
-    unitController.dispose();
     super.dispose();
+  }
+
+  void _saveItem() {
+    final name = nameController.text.trim();
+    final priceText = priceController.text.trim();
+    final sizeText = sizeController.text.trim();
+
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nama produk tidak boleh kosong.')),
+      );
+      return;
+    }
+
+    final cleanPriceText = priceText.replaceAll('.', '').replaceAll(',', '').replaceAll(' ', '');
+    final parsedPrice = double.tryParse(cleanPriceText);
+    if (parsedPrice == null || parsedPrice <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Harga harus lebih besar dari 0.')),
+      );
+      return;
+    }
+
+    final cleanSizeText = sizeText.replaceAll(',', '.').trim();
+    final parsedSize = double.tryParse(cleanSizeText);
+    if (parsedSize == null || parsedSize <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ukuran harus lebih besar dari 0.')),
+      );
+      return;
+    }
+
+    widget.item.namaProduk = name;
+    widget.item.harga = parsedPrice;
+    widget.item.ukuran = parsedSize;
+    widget.item.satuan = selectedUnit;
+    widget.item.kategori = selectedCategory;
+
+    widget.onSaved();
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Edit Produk',
-                style: GoogleFonts.outfit(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF0D2818),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 1. Drag handle pill (lebar 40dp, tinggi 4dp, warna #D1D5DB, borderRadius 2)
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD1D5DB),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, color: Color(0xFF6B7280)),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-          const Divider(color: Color(0xFFE8E4DC)),
-          const SizedBox(height: 12),
 
-          TextField(
-            key: const Key('edit_name_field'),
-            controller: nameController,
-            decoration: InputDecoration(
-              labelText: 'Nama Produk',
-              labelStyle: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF6B7280)),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
+                // 2. Header Row: Judul & tombol tutup bundar lembut di kanan
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Edit Produk',
+                      style: GoogleFonts.outfit(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF0D2818),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () => Navigator.pop(context),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF3F4F6),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close_rounded,
+                          size: 18,
+                          color: Color(0xFF6B7280),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
 
-          DropdownButtonFormField<String>(
-            key: const Key('edit_category_dropdown'),
-            initialValue: selectedCategory,
-            decoration: InputDecoration(
-              labelText: 'Kategori',
-              labelStyle: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF6B7280)),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
-              ),
-            ),
-            items: productCategories.map((cat) {
-              return DropdownMenuItem<String>(
-                value: cat,
-                child: Text(cat, style: GoogleFonts.outfit(fontSize: 13.5)),
-              );
-            }).toList(),
-            onChanged: (val) {
-              if (val != null) {
-                setState(() {
-                  selectedCategory = val;
-                });
-              }
-            },
-          ),
-          const SizedBox(height: 12),
+                // 3. Nama Produk
+                Text(
+                  'Nama Produk',
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF374151),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  key: const Key('edit_name_field'),
+                  controller: nameController,
+                  style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF0D2818)),
+                  decoration: InputDecoration(
+                    hintText: 'Contoh: Indomie Goreng',
+                    hintStyle: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF9CA3AF)),
+                    filled: true,
+                    fillColor: const Color(0xFFF9FAFB),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
 
-          TextField(
-            key: const Key('edit_price_field'),
-            controller: priceController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'Harga (Rupiah)',
-              labelStyle: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF6B7280)),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
+                // 4. Kategori Dropdown
+                Text(
+                  'Kategori',
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF374151),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                DropdownButtonFormField<String>(
+                  key: const Key('edit_category_dropdown'),
+                  initialValue: selectedCategory,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6B7280)),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: const Color(0xFFF9FAFB),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
+                    ),
+                  ),
+                  items: productCategories.map((cat) {
+                    return DropdownMenuItem<String>(
+                      value: cat,
+                      child: Text(
+                        cat,
+                        style: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF0D2818)),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        selectedCategory = val;
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 14),
 
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  key: const Key('edit_size_field'),
-                  controller: sizeController,
+                // 5. Harga
+                Text(
+                  'Harga',
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF374151),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  key: const Key('edit_price_field'),
+                  controller: priceController,
                   keyboardType: TextInputType.number,
+                  style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF0D2818)),
                   decoration: InputDecoration(
-                    labelText: 'Ukuran',
-                    labelStyle: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF6B7280)),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    hintText: '0',
+                    hintStyle: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF9CA3AF)),
+                    prefixText: 'Rp ',
+                    prefixStyle: GoogleFonts.outfit(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF0D2818),
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFF9FAFB),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  key: const Key('edit_unit_field'),
-                  controller: unitController,
-                  decoration: InputDecoration(
-                    labelText: 'Satuan',
-                    labelStyle: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF6B7280)),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
+                const SizedBox(height: 14),
+
+                // 6. Baris Ukuran & Satuan (Berdampingan)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Kolom Kiri: Ukuran (flex 3)
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Ukuran',
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF374151),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          TextField(
+                            key: const Key('edit_size_field'),
+                            controller: sizeController,
+                            keyboardType: TextInputType.number,
+                            style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF0D2818)),
+                            decoration: InputDecoration(
+                              hintText: 'Contoh: 200',
+                              hintStyle: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF9CA3AF)),
+                              filled: true,
+                              fillColor: const Color(0xFFF9FAFB),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Kolom Kanan: Satuan (flex 2)
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Satuan',
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF374151),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          DropdownButtonFormField<String>(
+                            key: const Key('edit_unit_dropdown'),
+                            initialValue: selectedUnit,
+                            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6B7280)),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: const Color(0xFFF9FAFB),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
+                              ),
+                            ),
+                            items: standardUnits.map((u) {
+                              return DropdownMenuItem<String>(
+                                value: u,
+                                child: Text(
+                                  u,
+                                  style: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF0D2818)),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() {
+                                  selectedUnit = val;
+                                });
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Tombol Simpan Perubahan
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    key: const Key('save_edit_button'),
+                    onPressed: _saveItem,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00875A),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Simpan Perubahan',
+                      style: GoogleFonts.outfit(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          ElevatedButton(
-            key: const Key('save_edit_button'),
-            onPressed: () {
-              final name = nameController.text.trim();
-              final priceText = priceController.text.trim();
-              final sizeText = sizeController.text.trim();
-              final unit = unitController.text.trim().toLowerCase();
-
-              if (name.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Nama produk tidak boleh kosong.')),
-                );
-                return;
-              }
-
-              final parsedPrice = double.tryParse(priceText);
-              if (parsedPrice == null || parsedPrice <= 0) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Harga harus lebih besar dari 0.')),
-                );
-                return;
-              }
-
-              final parsedSize = double.tryParse(sizeText);
-              if (parsedSize == null || parsedSize <= 0) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Ukuran harus lebih besar dari 0.')),
-                );
-                return;
-              }
-
-              final allowedUnits = [
-                'ml',
-                'mili',
-                'milliliter',
-                'cc',
-                'l',
-                'liter',
-                'litre',
-                'g',
-                'gr',
-                'gram',
-                'kg',
-                'kilo',
-                'kilogram',
-                'pcs',
-                'piece',
-                'pieces',
-                'buah',
-                'biji',
-                'pack',
-                'bungkus'
-              ];
-              if (unit.isEmpty || !allowedUnits.contains(unit)) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text(
-                          'Satuan tidak didukung. Gunakan ml, l, g, kg, pcs, dll.')),
-                );
-                return;
-              }
-
-              widget.item.namaProduk = name;
-              widget.item.harga = parsedPrice;
-              widget.item.ukuran = parsedSize;
-              widget.item.satuan = unit;
-              widget.item.kategori = selectedCategory;
-
-              widget.onSaved();
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00875A),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              'Simpan Perubahan',
-              style: GoogleFonts.outfit(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -2196,243 +2380,389 @@ class _AddProductBottomSheetState extends State<_AddProductBottomSheet> {
   final nameController = TextEditingController();
   final priceController = TextEditingController();
   final sizeController = TextEditingController();
-  final unitController = TextEditingController();
   String selectedCategory = 'Makanan Pokok';
+  String selectedUnit = 'gr';
+  static const List<String> standardUnits = ['gr', 'kg', 'ml', 'L', 'pcs'];
 
   @override
   void dispose() {
     nameController.dispose();
     priceController.dispose();
     sizeController.dispose();
-    unitController.dispose();
     super.dispose();
+  }
+
+  void _saveItem() {
+    final name = nameController.text.trim();
+    final priceText = priceController.text.trim();
+    final sizeText = sizeController.text.trim();
+
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nama produk tidak boleh kosong.')),
+      );
+      return;
+    }
+
+    final cleanPriceText = priceText.replaceAll('.', '').replaceAll(',', '').replaceAll(' ', '');
+    final parsedPrice = double.tryParse(cleanPriceText);
+    if (parsedPrice == null || parsedPrice <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Harga harus lebih besar dari 0.')),
+      );
+      return;
+    }
+
+    final cleanSizeText = sizeText.replaceAll(',', '.').trim();
+    final parsedSize = double.tryParse(cleanSizeText);
+    if (parsedSize == null || parsedSize <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ukuran harus lebih besar dari 0.')),
+      );
+      return;
+    }
+
+    final newItem = ScanResultItem(
+      namaProduk: name,
+      harga: parsedPrice,
+      ukuran: parsedSize,
+      satuan: selectedUnit,
+      kategori: selectedCategory,
+      confidence: 'tinggi',
+      needsVerification: false,
+    );
+
+    widget.onAdded(newItem);
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Tambah Produk Manual',
-                style: GoogleFonts.outfit(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF0D2818),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 1. Drag handle pill
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD1D5DB),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, color: Color(0xFF6B7280)),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-          const Divider(color: Color(0xFFE8E4DC)),
-          const SizedBox(height: 12),
 
-          TextField(
-            key: const Key('add_name_field'),
-            controller: nameController,
-            decoration: InputDecoration(
-              labelText: 'Nama Produk',
-              labelStyle: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF6B7280)),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
+                // 2. Header Row: Judul & tombol tutup bundar lembut di kanan
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Tambah Produk Manual',
+                      style: GoogleFonts.outfit(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF0D2818),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () => Navigator.pop(context),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF3F4F6),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close_rounded,
+                          size: 18,
+                          color: Color(0xFF6B7280),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
 
-          DropdownButtonFormField<String>(
-            key: const Key('add_category_dropdown'),
-            initialValue: selectedCategory,
-            decoration: InputDecoration(
-              labelText: 'Kategori',
-              labelStyle: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF6B7280)),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
-              ),
-            ),
-            items: productCategories.map((cat) {
-              return DropdownMenuItem<String>(
-                value: cat,
-                child: Text(cat, style: GoogleFonts.outfit(fontSize: 13.5)),
-              );
-            }).toList(),
-            onChanged: (val) {
-              if (val != null) {
-                setState(() {
-                  selectedCategory = val;
-                });
-              }
-            },
-          ),
-          const SizedBox(height: 12),
+                // 3. Nama Produk
+                Text(
+                  'Nama Produk',
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF374151),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  key: const Key('add_name_field'),
+                  controller: nameController,
+                  style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF0D2818)),
+                  decoration: InputDecoration(
+                    hintText: 'Contoh: Indomie Goreng',
+                    hintStyle: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF9CA3AF)),
+                    filled: true,
+                    fillColor: const Color(0xFFF9FAFB),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
 
-          TextField(
-            key: const Key('add_price_field'),
-            controller: priceController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'Harga (Rupiah)',
-              labelStyle: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF6B7280)),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
+                // 4. Kategori Dropdown
+                Text(
+                  'Kategori',
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF374151),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                DropdownButtonFormField<String>(
+                  key: const Key('add_category_dropdown'),
+                  initialValue: selectedCategory,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6B7280)),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: const Color(0xFFF9FAFB),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
+                    ),
+                  ),
+                  items: productCategories.map((cat) {
+                    return DropdownMenuItem<String>(
+                      value: cat,
+                      child: Text(
+                        cat,
+                        style: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF0D2818)),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        selectedCategory = val;
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 14),
 
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  key: const Key('add_size_field'),
-                  controller: sizeController,
+                // 5. Harga
+                Text(
+                  'Harga',
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF374151),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  key: const Key('add_price_field'),
+                  controller: priceController,
                   keyboardType: TextInputType.number,
+                  style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF0D2818)),
                   decoration: InputDecoration(
-                    labelText: 'Ukuran',
-                    labelStyle: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF6B7280)),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    hintText: '0',
+                    hintStyle: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF9CA3AF)),
+                    prefixText: 'Rp ',
+                    prefixStyle: GoogleFonts.outfit(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF0D2818),
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFF9FAFB),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  key: const Key('add_unit_field'),
-                  controller: unitController,
-                  decoration: InputDecoration(
-                    labelText: 'Satuan',
-                    labelStyle: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF6B7280)),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
+                const SizedBox(height: 14),
+
+                // 6. Baris Ukuran & Satuan (Berdampingan)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Kolom Kiri: Ukuran (flex 3)
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Ukuran',
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF374151),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          TextField(
+                            key: const Key('add_size_field'),
+                            controller: sizeController,
+                            keyboardType: TextInputType.number,
+                            style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF0D2818)),
+                            decoration: InputDecoration(
+                              hintText: 'Contoh: 200',
+                              hintStyle: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF9CA3AF)),
+                              filled: true,
+                              fillColor: const Color(0xFFF9FAFB),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Kolom Kanan: Satuan (flex 2)
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Satuan',
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF374151),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          DropdownButtonFormField<String>(
+                            key: const Key('add_unit_dropdown'),
+                            initialValue: selectedUnit,
+                            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6B7280)),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: const Color(0xFFF9FAFB),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFF00875A), width: 1.5),
+                              ),
+                            ),
+                            items: standardUnits.map((u) {
+                              return DropdownMenuItem<String>(
+                                value: u,
+                                child: Text(
+                                  u,
+                                  style: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF0D2818)),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() {
+                                  selectedUnit = val;
+                                });
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Tombol Tambah Produk
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    key: const Key('save_add_button'),
+                    onPressed: _saveItem,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00875A),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Tambah Produk',
+                      style: GoogleFonts.outfit(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          ElevatedButton(
-            key: const Key('save_add_button'),
-            onPressed: () {
-              final name = nameController.text.trim();
-              final priceText = priceController.text.trim();
-              final sizeText = sizeController.text.trim();
-              final unit = unitController.text.trim().toLowerCase();
-
-              if (name.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Nama produk tidak boleh kosong.')),
-                );
-                return;
-              }
-
-              final parsedPrice = double.tryParse(priceText);
-              if (parsedPrice == null || parsedPrice <= 0) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Harga harus lebih besar dari 0.')),
-                );
-                return;
-              }
-
-              final parsedSize = double.tryParse(sizeText);
-              if (parsedSize == null || parsedSize <= 0) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Ukuran harus lebih besar dari 0.')),
-                );
-                return;
-              }
-
-              final allowedUnits = [
-                'ml',
-                'mili',
-                'milliliter',
-                'cc',
-                'l',
-                'liter',
-                'litre',
-                'g',
-                'gr',
-                'gram',
-                'kg',
-                'kilo',
-                'kilogram',
-                'pcs',
-                'piece',
-                'pieces',
-                'buah',
-                'biji',
-                'pack',
-                'bungkus'
-              ];
-              if (unit.isEmpty || !allowedUnits.contains(unit)) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text(
-                          'Satuan tidak didukung. Gunakan ml, l, g, kg, pcs, dll.')),
-                );
-                return;
-              }
-
-              final newItem = ScanResultItem(
-                namaProduk: name,
-                harga: parsedPrice,
-                ukuran: parsedSize,
-                satuan: unit,
-                kategori: selectedCategory,
-                confidence: 'tinggi',
-                needsVerification: false,
-              );
-
-              widget.onAdded(newItem);
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00875A),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              'Tambah Produk',
-              style: GoogleFonts.outfit(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

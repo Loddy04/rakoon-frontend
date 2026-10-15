@@ -125,7 +125,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Koreksi Hasil Scan'), findsOneWidget);
+      expect(find.text('Hasil Scan'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

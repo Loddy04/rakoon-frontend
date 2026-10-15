@@ -110,7 +110,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify widget mounted properly
-      expect(find.text('Koreksi Hasil Scan'), findsOneWidget);
+      expect(find.text('Hasil Scan'), findsOneWidget);
 
       // Verify no hardcoded UUIDs are present in source
       final file = File('lib/features/scan/scan_result_screen.dart');
