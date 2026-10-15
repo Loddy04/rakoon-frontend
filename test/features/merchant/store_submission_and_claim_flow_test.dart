@@ -511,6 +511,7 @@ void main() {
       // Dialog tolak muncul
       expect(find.text('Tolak Pengajuan Toko Baru?'), findsOneWidget);
       await tester.enterText(find.byKey(const Key('reject_reason_input')), 'Foto papan nama tidak terlihat jelas.');
+      await tester.pump();
       await tester.tap(find.byKey(const Key('confirm_reject_button')));
       await tester.pumpAndSettle();
 

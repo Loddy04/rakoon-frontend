@@ -121,7 +121,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => AppShell(baseUrl: widget.baseUrl),
+        builder: (context) => const AppShell(),
       ),
     );
   }
