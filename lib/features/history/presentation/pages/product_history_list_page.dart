@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/products_service.dart';
 import '../../data/repositories/price_history_repository.dart';
 import '../providers/price_history_notifier.dart';
@@ -53,7 +54,7 @@ class _ProductHistoryListPageState extends State<ProductHistoryListPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _errorMessage = userMessage(e);
         _isLoading = false;
       });
     }

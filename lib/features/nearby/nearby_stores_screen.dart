@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 import 'package:rakoon_frontend/services/location_service.dart';
@@ -181,7 +182,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _errorMessage = userMessage(e);
         _isLoading = false;
       });
     }

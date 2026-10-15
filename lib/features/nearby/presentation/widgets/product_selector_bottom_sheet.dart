@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/products_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 
@@ -60,7 +61,7 @@ class _ProductSelectorBottomSheetState
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _errorMessage = userMessage(e);
         _isLoading = false;
       });
     }

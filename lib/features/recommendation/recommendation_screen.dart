@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
@@ -59,7 +60,7 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _errorMessage = userMessage(e);
         _isLoading = false;
       });
     }
