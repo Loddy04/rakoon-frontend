@@ -13,40 +13,6 @@ class AuthService {
     }
   }
 
-  /// Sign Up with Email and Password
-  static Future<AuthResponse> signUp({
-    required String email,
-    required String password,
-  }) async {
-    if (_mockSession != null) {
-      return AuthResponse(session: _mockSession, user: _mockSession?.user);
-    }
-    if (_client == null) {
-      throw Exception('Supabase belum diinisialisasi.');
-    }
-    return await _client!.auth.signUp(
-      email: email,
-      password: password,
-    );
-  }
-
-  /// Sign In with Email and Password
-  static Future<AuthResponse> signIn({
-    required String email,
-    required String password,
-  }) async {
-    if (_mockSession != null) {
-      return AuthResponse(session: _mockSession, user: _mockSession?.user);
-    }
-    if (_client == null) {
-      throw Exception('Supabase belum diinisialisasi.');
-    }
-    return await _client!.auth.signInWithPassword(
-      email: email,
-      password: password,
-    );
-  }
-
   /// Sign In with Google OAuth (Native Google Sign-In via ID Token)
   static Future<AuthResponse> signInWithGoogle({
     String? webClientId,

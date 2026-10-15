@@ -71,31 +71,3 @@ class _GoogleLogoPainter extends CustomPainter {
 }
 
 /// Facebook circle 'f' icon
-class FacebookLogoWidget extends StatelessWidget {
-  final double size;
-
-  const FacebookLogoWidget({super.key, this.size = 20});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: const BoxDecoration(
-        color: Color(0xFF1877F2),
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: const Text(
-        'f',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          fontFamily: 'sans-serif',
-          height: 1.0,
-        ),
-      ),
-    );
-  }
-}
