@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
+export 'package:geolocator/geolocator.dart' show LocationPermission;
+
 /// Hasil permintaan lokasi, dipakai layar yang harus membedakan penyebab kegagalan.
 enum LocationOutcome { granted, denied, deniedForever, serviceDisabled, failed }
 
@@ -64,6 +66,26 @@ class LocationService {
 
   static Future<LocationPermission> _requestPermissionOnce() {
     return _pendingPermission ??= Geolocator.requestPermission().whenComplete(() => _pendingPermission = null);
+  }
+
+  /// Meminta izin lokasi dengan pengaman permintaan tunggal (_requestPermissionOnce).
+  /// Mencegah dialog izin ganda dan tidak memanggil requestPermission lagi jika sudah ditolak permanen.
+  static Future<LocationPermission> requestPermission() async {
+    if (_pendingPermission != null) {
+      return await _pendingPermission!;
+    }
+    if (Platform.environment.containsKey('FLUTTER_TEST') &&
+        !testUsePlatform &&
+        GeolocatorPlatform.instance.runtimeType.toString() == 'MethodChannelGeolocator') {
+      if (testOutcome == LocationOutcome.deniedForever) return LocationPermission.deniedForever;
+      if (testOutcome == LocationOutcome.denied) return LocationPermission.denied;
+      return LocationPermission.whileInUse;
+    }
+    final permission = await Geolocator.checkPermission().timeout(_statusTimeout);
+    if (permission == LocationPermission.denied) {
+      return await _requestPermissionOnce();
+    }
+    return permission;
   }
 
 

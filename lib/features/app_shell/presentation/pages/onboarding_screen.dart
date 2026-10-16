@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:rakoon_frontend/services/location_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
@@ -70,10 +70,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     });
 
     try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
+      final permission = await LocationService.requestPermission();
 
       if (!mounted) return;
 
@@ -86,6 +83,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           const SnackBar(
             content: Text('Izin lokasi berhasil diberikan!'),
             backgroundColor: AppColors.accent,
+          ),
+        );
+      } else if (permission == LocationPermission.deniedForever) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Izin lokasi ditolak permanen. Silakan aktifkan izin lokasi di pengaturan aplikasi.',
+            ),
+            backgroundColor: AppColors.error,
+            action: SnackBarAction(
+              label: 'Pengaturan',
+              textColor: Colors.white,
+              onPressed: LocationService.openAppSettings,
+            ),
           ),
         );
       } else {

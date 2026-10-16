@@ -41,6 +41,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
   // Store selection state
   bool _isLoadingStores = true;
   String? _storesError;
+  LocationOutcome? _locationProblem;
   List<StoreNearby> _nearbyStores = [];
   StoreNearby? _selectedStore;
 
@@ -119,10 +120,33 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     setState(() {
       _isLoadingStores = true;
       _storesError = null;
+      _locationProblem = null;
     });
 
     try {
-      final position = await LocationService.getCurrentLocation();
+      final result = await LocationService.resolveLocation(askPermission: true);
+      if (!mounted) return;
+
+      if (result.outcome != LocationOutcome.granted || result.position == null) {
+        setState(() {
+          _isLoadingStores = false;
+          _selectedStore = null;
+          _storeIdController.text = '';
+          _locationProblem = result.outcome;
+          if (result.outcome == LocationOutcome.deniedForever) {
+            _storesError = 'Izin lokasi ditolak permanen di pengaturan sistem.';
+          } else if (result.outcome == LocationOutcome.serviceDisabled) {
+            _storesError = 'Layanan lokasi (GPS) tidak aktif.';
+          } else if (result.outcome == LocationOutcome.denied) {
+            _storesError = 'Izin akses lokasi ditolak.';
+          } else {
+            _storesError = 'Gagal mendeteksi lokasi.';
+          }
+        });
+        return;
+      }
+
+      final position = result.position!;
       final response = await StoresService.getNearbyStores(
         lat: position.latitude,
         lng: position.longitude,
@@ -723,6 +747,18 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
               spacing: 8,
               runSpacing: 6,
               children: [
+                if (_locationProblem == LocationOutcome.deniedForever)
+                  TextButton.icon(
+                    key: const Key('btn_open_app_settings_scan'),
+                    onPressed: LocationService.openAppSettings,
+                    icon: const Icon(Icons.settings, size: 15),
+                    label: const Text('Buka Pengaturan', style: TextStyle(fontSize: 12)),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF00875A),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: const Size(48, 48),
+                    ),
+                  ),
                 OutlinedButton.icon(
                   key: const Key('manual_store_select_button'),
                   onPressed: () => _fetchStoresWithFallbackCoordinates(openSelector: true),

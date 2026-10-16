@@ -297,20 +297,28 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
     bool locationRequested = false;
     bool sheetOpen = true;
     LatLng? pickedPoint;
+    LocationOutcome? locationProblem;
 
     void requestLocation(StateSetter setModalState) {
       if (locationRequested) return;
       locationRequested = true;
-      LocationService.getCurrentLocation().timeout(const Duration(seconds: 6)).then((pos) {
+      LocationService.resolveLocation(askPermission: true).timeout(const Duration(seconds: 6)).then((result) {
         if (!sheetOpen) return;
         setModalState(() {
-          mapCenter = LatLng(pos.latitude, pos.longitude);
-          hasGps = true;
           locating = false;
+          if (result.outcome == LocationOutcome.granted && result.position != null) {
+            mapCenter = LatLng(result.position!.latitude, result.position!.longitude);
+            hasGps = true;
+          } else {
+            locationProblem = result.outcome;
+          }
         });
       }).catchError((_) {
         if (!sheetOpen) return;
-        setModalState(() => locating = false);
+        setModalState(() {
+          locating = false;
+          locationProblem = LocationOutcome.failed;
+        });
       });
     }
 
@@ -428,7 +436,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
                     height: 200,
                     child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
                   )
-                else
+                else ...[
                   RakoonLocationMap(
                     key: const Key('new_store_location_map'),
                     userLat: mapCenter.latitude,
@@ -446,6 +454,33 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
                       });
                     },
                   ),
+                  if (locationProblem == LocationOutcome.deniedForever)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Izin lokasi dinonaktifkan di pengaturan sistem.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFFEF4444),
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            key: const Key('btn_open_app_settings_merchant'),
+                            onPressed: LocationService.openAppSettings,
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              minimumSize: const Size(48, 48),
+                            ),
+                            child: const Text('Buka Pengaturan', style: TextStyle(fontSize: 12)),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
                 const SizedBox(height: 6),
                 Text(
                   pickedPoint == null
