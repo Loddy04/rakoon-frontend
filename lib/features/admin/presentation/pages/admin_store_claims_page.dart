@@ -220,7 +220,7 @@ class _AdminStoreClaimsPageState extends State<AdminStoreClaimsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menyetujui: $e'),
+            content: Text(userMessage(e)),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );

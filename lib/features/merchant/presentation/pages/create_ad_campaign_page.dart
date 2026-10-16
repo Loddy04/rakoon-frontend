@@ -86,7 +86,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal memilih gambar: $e'),
+            content: Text(userMessage(e)),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );

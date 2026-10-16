@@ -1,5 +1,6 @@
 // ignore_for_file: depend_on_referenced_packages
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -289,6 +290,52 @@ void main() {
       // Toko Berkah Mandiri is no longer in pending list
       expect(find.text('Toko Berkah Mandiri'), findsNothing);
       expect(find.text('Warung Bu Siti'), findsOneWidget);
+    });
+
+    testWidgets('Approving claim handles SocketException with friendly message without raw exception', (tester) async {
+      final client = MockClient((request) async {
+        if (request.url.path.endsWith('/ads/pending-claims')) {
+          return http.Response(
+            jsonEncode([
+              {
+                'user_id': 'user-123',
+                'store_id': 'store-456',
+                'store_nama': 'Toko Berkah Mandiri',
+                'store_alamat': 'Jl. Kaliurang KM 5 No. 10, Sleman',
+                'user_nama': 'Pak Bambang',
+                'user_email': 'bambang@gmail.com',
+                'status': 'pending',
+                'created_at': '2026-10-10T10:00:00Z',
+                'has_verified_owner': false,
+              },
+            ]),
+            200,
+          );
+        } else if (request.url.path.endsWith('/ads/verify-claim')) {
+          throw const SocketException('Failed host lookup: secret.internal');
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AdminStoreClaimsPage(
+            baseUrl: 'http://localhost:8000',
+            httpClient: client,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('approve_claim_store-456')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('confirm_approve_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('SocketException'), findsNothing);
+      expect(find.textContaining('secret.internal'), findsNothing);
+      expect(find.text('Tidak ada koneksi internet. Periksa data seluler atau Wi-Fi, lalu coba lagi.'), findsOneWidget);
     });
 
     testWidgets('Rejecting a claim shows confirmation dialog, supports reason, and updates list', (tester) async {
