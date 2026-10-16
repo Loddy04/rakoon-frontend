@@ -301,26 +301,13 @@ class _AdminStoreClaimsPageState extends State<AdminStoreClaimsPage> {
           icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0D2818)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Verifikasi Klaim Toko',
-              style: GoogleFonts.outfit(
-                color: const Color(0xFF0D2818),
-                fontWeight: FontWeight.w700,
-                fontSize: 17,
-              ),
-            ),
-            Text(
-              'Panel Administrator',
-              style: GoogleFonts.outfit(
-                color: const Color(0xFF6B7280),
-                fontWeight: FontWeight.w500,
-                fontSize: 11.5,
-              ),
-            ),
-          ],
+        title: Text(
+          'Verifikasi Klaim',
+          style: GoogleFonts.outfit(
+            color: const Color(0xFF0D2818),
+            fontWeight: FontWeight.w700,
+            fontSize: 17,
+          ),
         ),
         actions: [
           IconButton(

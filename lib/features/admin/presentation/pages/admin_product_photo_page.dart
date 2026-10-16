@@ -167,27 +167,17 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFFAF7F2),
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'KELOLA FOTO PRODUK',
-              style: GoogleFonts.outfit(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
-                color: const Color(0xFF0D2818),
-              ),
-            ),
-            Text(
-              'Panel Administrator',
-              style: GoogleFonts.outfit(
-                fontSize: 11,
-                color: const Color(0xFF00A86B),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0D2818)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Foto Produk',
+          style: GoogleFonts.outfit(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF0D2818),
+          ),
         ),
         backgroundColor: Colors.white,
         elevation: 0,

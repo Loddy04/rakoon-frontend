@@ -194,8 +194,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Page title
-      expect(find.text('Verifikasi Klaim Toko'), findsOneWidget);
-      expect(find.text('Panel Administrator'), findsOneWidget);
+      expect(find.text('Verifikasi Klaim'), findsOneWidget);
+      expect(find.text('Panel Administrator'), findsNothing);
 
       // Claim cards
       expect(find.text('Toko Berkah Mandiri'), findsOneWidget);

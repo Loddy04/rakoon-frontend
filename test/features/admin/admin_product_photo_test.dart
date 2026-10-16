@@ -384,8 +384,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('KELOLA FOTO PRODUK'), findsOneWidget);
-      expect(find.text('Panel Administrator'), findsOneWidget);
+      expect(find.text('Foto Produk'), findsOneWidget);
+      expect(find.text('Panel Administrator'), findsNothing);
       expect(find.byKey(const Key('admin_product_search_input')), findsOneWidget);
       expect(find.text('Susu UHT Cokelat 1L'), findsOneWidget);
       expect(find.text('Minyak Goreng 2L'), findsOneWidget);
