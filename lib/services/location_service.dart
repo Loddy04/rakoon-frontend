@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
@@ -26,6 +27,24 @@ class LocationService {
 
   /// Test hook: bila diisi, [resolveLocation] menunggu future ini (mensimulasikan dialog izin yang terbuka).
   static Future<void>? testGate;
+
+  /// Test hook: jalankan jalur Geolocator sungguhan (dengan GeolocatorPlatform palsu) meski di FLUTTER_TEST.
+  static bool testUsePlatform = false;
+
+  // Satu permintaan izin pada satu waktu: pemanggil lain (mis. Home saat resume) memakai hasil yang sama,
+  // supaya plugin tidak menerima requestPermission ganda (galat "request in progress", dialog ganda).
+  static Future<LocationPermission>? _pendingPermission;
+
+  static Future<LocationPermission> _requestPermissionOnce() {
+    return _pendingPermission ??= Geolocator.requestPermission().whenComplete(() => _pendingPermission = null);
+  }
+
+  // Batas waktu pemeriksaan status (bukan dialog izin): panggilan platform yang macet tidak boleh
+  // membuat layar menunggu selamanya.
+  static const Duration _statusTimeout = Duration(seconds: 5);
+
+  /// Batas waktu pengambilan posisi setelah izin diberikan.
+  static const Duration _positionTimeout = Duration(seconds: 6);
 
   /// Test callback when openLocationSettings is invoked.
   static void Function()? onOpenLocationSettings;
@@ -85,29 +104,34 @@ class LocationService {
     if (testGate != null) await testGate;
     if (forced != null && forced != LocationOutcome.granted) return LocationResult(forced);
     if (testIsLocationServiceEnabled == false) return const LocationResult(LocationOutcome.serviceDisabled);
-    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (Platform.environment.containsKey('FLUTTER_TEST') && !testUsePlatform) {
       return LocationResult(LocationOutcome.granted, _testPosition());
     }
-    if (!await Geolocator.isLocationServiceEnabled()) {
-      return const LocationResult(LocationOutcome.serviceDisabled);
-    }
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied && askPermission) {
-      permission = await Geolocator.requestPermission();
-    }
-    if (permission == LocationPermission.deniedForever) {
-      return const LocationResult(LocationOutcome.deniedForever);
-    }
-    if (permission == LocationPermission.denied) {
-      return const LocationResult(LocationOutcome.denied);
-    }
+    // Urutan: layanan aktif? -> izin? -> (ditolak/permanen: berhenti) -> baru ambil posisi.
     try {
+      if (!await Geolocator.isLocationServiceEnabled().timeout(_statusTimeout)) {
+        return const LocationResult(LocationOutcome.serviceDisabled);
+      }
+      var permission = await Geolocator.checkPermission().timeout(_statusTimeout);
+      if (permission == LocationPermission.denied && askPermission) {
+        permission = await _requestPermissionOnce();
+      }
+      if (permission == LocationPermission.deniedForever) {
+        return const LocationResult(LocationOutcome.deniedForever);
+      }
+      if (permission == LocationPermission.denied) {
+        return const LocationResult(LocationOutcome.denied);
+      }
+      if (permission == LocationPermission.unableToDetermine) {
+        return const LocationResult(LocationOutcome.failed);
+      }
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 8),
+        timeLimit: _positionTimeout,
       );
       return LocationResult(LocationOutcome.granted, position);
     } catch (_) {
+      // Galat platform/timeout: jangan melempar; layar menampilkan "Lokasi belum terdeteksi".
       return const LocationResult(LocationOutcome.failed);
     }
   }
@@ -120,7 +144,7 @@ class LocationService {
         'Layanan lokasi (GPS) tidak aktif. Silakan aktifkan GPS pada perangkat Anda.',
       );
     }
-    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (Platform.environment.containsKey('FLUTTER_TEST') && !testUsePlatform) {
       return Position(
         longitude: 106.8456,
         latitude: -6.2088,
@@ -149,7 +173,7 @@ class LocationService {
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       // Request permission.
-      permission = await Geolocator.requestPermission();
+      permission = await _requestPermissionOnce();
       if (permission == LocationPermission.denied) {
         throw const LocationServiceException(
           'Izin akses lokasi ditolak. Izin lokasi diperlukan untuk mendeteksi toko di sekitar Anda.',

@@ -73,12 +73,18 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
   Future<void> _recheckLocationOnResume() async {
     _requesting = true;
     try {
-      final result = await LocationService.resolveLocation(askPermission: false);
+      LocationResult result;
+      try {
+        result = await LocationService.resolveLocation(askPermission: false);
+      } catch (_) {
+        return;
+      }
       if (!mounted || result.outcome == _locationProblem) return;
       _startLoading();
       await _showLocationResult(result);
     } finally {
       _requesting = false;
+      if (mounted && _isLoading) setState(() => _isLoading = false);
     }
   }
 
@@ -178,11 +184,18 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
       _startLoading();
       // initialLat/initialLng dari pemanggil diabaikan: Home meneruskan titik bawaan saat lokasi belum
       // terdeteksi, dan layar ini tidak boleh memakai koordinat bawaan.
-      final result = await LocationService.resolveLocation(askPermission: askPermission);
+      LocationResult result;
+      try {
+        result = await LocationService.resolveLocation(askPermission: askPermission);
+      } catch (_) {
+        result = const LocationResult(LocationOutcome.failed);
+      }
       if (!mounted) return;
       await _showLocationResult(result);
     } finally {
       _requesting = false;
+      // Jaring pengaman: apa pun yang terjadi, spinner tidak boleh tertinggal.
+      if (mounted && _isLoading) setState(() => _isLoading = false);
     }
   }
 
