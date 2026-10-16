@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rakoon_frontend/core/config/app_config.dart';
@@ -22,7 +23,9 @@ void main() async {
       anonKey: supabaseAnonKey, // ignore: deprecated_member_use
     );
   } catch (e) {
-    debugPrint('Supabase initialization note: $e');
+    if (kDebugMode) {
+      debugPrint('Supabase initialization note: ${e.runtimeType}');
+    }
   }
 
   runApp(const RakoonApp());

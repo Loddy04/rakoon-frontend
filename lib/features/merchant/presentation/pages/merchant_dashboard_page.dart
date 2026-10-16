@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -237,7 +238,9 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
       final bytes = size > claimMaxFileBytes ? Uint8List(0) : await picked.readAsBytes();
       return PickedFileData(name: picked.name, sizeInBytes: size, bytes: bytes);
     } catch (e) {
-      debugPrint('Error picking document: $e');
+      if (kDebugMode) {
+        debugPrint('Error picking document: ${e.runtimeType}');
+      }
     }
     return null;
   }
@@ -264,7 +267,9 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
         );
       }
     } catch (e) {
-      debugPrint('Error picking photo: $e');
+      if (kDebugMode) {
+        debugPrint('Error picking photo: ${e.runtimeType}');
+      }
     }
     return null;
   }

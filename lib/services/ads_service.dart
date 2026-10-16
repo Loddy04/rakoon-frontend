@@ -1393,7 +1393,9 @@ class AdsService {
     String fallbackMessage = 'Terjadi kesalahan pada sistem.',
   }) {
     // Catat log diagnostik untuk developer tanpa membocorkan ke pengguna
-    debugPrint('[AdsService Error $statusCode]: $responseBody');
+    if (kDebugMode) {
+      debugPrint('[AdsService Error $statusCode]');
+    }
 
     // 1. Coba parsing JSON terstruktur terlebih dahulu
     try {
