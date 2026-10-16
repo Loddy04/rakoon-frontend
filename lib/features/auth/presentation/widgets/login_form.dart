@@ -114,15 +114,16 @@ class _LoginFormState extends State<LoginForm> {
           const SizedBox(height: 10),
         ],
         SizedBox(
-          height: 46,
+          height: 48,
           child: OutlinedButton(
             key: const Key('google_login_button'),
             onPressed: _isGoogleLoading ? null : _handleGoogleLogin,
             style: OutlinedButton.styleFrom(
               backgroundColor: Colors.white,
               side: const BorderSide(color: AppColors.authFieldBorder, width: 1.2),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(23)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               padding: EdgeInsets.zero,
+              minimumSize: const Size(double.infinity, 48),
             ),
             child: _isGoogleLoading
                 ? const SizedBox(

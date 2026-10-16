@@ -593,8 +593,8 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                                         color: Color(0xFFEF4444),
                                       ),
                                       constraints: const BoxConstraints(
-                                        minWidth: 32,
-                                        minHeight: 32,
+                                        minWidth: 48,
+                                        minHeight: 48,
                                       ),
                                       padding: EdgeInsets.zero,
                                       onPressed: () {
@@ -620,8 +620,8 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                                               color: Color(0xFF4B5563),
                                             ),
                                             constraints: const BoxConstraints(
-                                              minWidth: 30,
-                                              minHeight: 30,
+                                              minWidth: 48,
+                                              minHeight: 48,
                                             ),
                                             padding: EdgeInsets.zero,
                                             onPressed: () {
@@ -651,8 +651,8 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                                               color: Color(0xFF059669),
                                             ),
                                             constraints: const BoxConstraints(
-                                              minWidth: 30,
-                                              minHeight: 30,
+                                              minWidth: 48,
+                                              minHeight: 48,
                                             ),
                                             padding: EdgeInsets.zero,
                                             onPressed: () {
@@ -1283,8 +1283,8 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                               ),
                               color: const Color(0xFFEF4444),
                               constraints: const BoxConstraints(
-                                minWidth: 32,
-                                minHeight: 32,
+                                minWidth: 48,
+                                minHeight: 48,
                               ),
                               padding: EdgeInsets.zero,
                               onPressed: () {
@@ -1304,8 +1304,8 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                               ),
                               color: const Color(0xFF9CA3AF),
                               constraints: const BoxConstraints(
-                                minWidth: 32,
-                                minHeight: 32,
+                                minWidth: 48,
+                                minHeight: 48,
                               ),
                               padding: EdgeInsets.zero,
                               onPressed: () =>
@@ -1340,8 +1340,8 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                               ),
                               color: const Color(0xFF059669),
                               constraints: const BoxConstraints(
-                                minWidth: 32,
-                                minHeight: 32,
+                                minWidth: 48,
+                                minHeight: 48,
                               ),
                               padding: EdgeInsets.zero,
                               onPressed: () =>
@@ -1532,8 +1532,8 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                       size: 20,
                     ),
                     constraints: const BoxConstraints(
-                      minWidth: 28,
-                      minHeight: 28,
+                      minWidth: 48,
+                      minHeight: 48,
                     ),
                     padding: EdgeInsets.zero,
                     onPressed: () {

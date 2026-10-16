@@ -415,7 +415,10 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
                                   onPressed: () => Navigator.pop(context),
                                   tooltip: 'Tutup',
                                   padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 48,
+                                    minHeight: 48,
+                                  ),
                                 ),
                               ],
                             ),
