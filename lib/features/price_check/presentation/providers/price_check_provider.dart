@@ -171,8 +171,8 @@ class PriceCheckProvider extends ChangeNotifier {
 
   Future<void> fetchProductDetail({
     required String productId,
-    required double userLat,
-    required double userLng,
+    double? userLat,
+    double? userLng,
     String range = '1m',
     String? baseUrl,
     http.Client? client,
@@ -214,8 +214,8 @@ class PriceCheckProvider extends ChangeNotifier {
   void updateRange(
     String range, {
     required String productId,
-    required double userLat,
-    required double userLng,
+    double? userLat,
+    double? userLng,
     String? baseUrl,
     http.Client? client,
   }) {

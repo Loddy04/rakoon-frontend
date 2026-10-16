@@ -100,8 +100,8 @@ class PriceCheckService {
 
   static Future<PriceCompareResponse?> getPriceComparison({
     required String productId,
-    required double lat,
-    required double lng,
+    double? lat,
+    double? lng,
     double radiusKm = 5.0,
     String? baseUrl,
     http.Client? client,
@@ -113,12 +113,15 @@ class PriceCheckService {
         ? activeBaseUrl.substring(0, activeBaseUrl.length - 1)
         : activeBaseUrl;
 
+    final Map<String, String> queryParams = {};
+    if (lat != null && lng != null) {
+      queryParams['lat'] = lat.toString();
+      queryParams['lng'] = lng.toString();
+      queryParams['radius_km'] = radiusKm.toString();
+    }
+
     final uri = Uri.parse('$cleanBaseUrl/price/compare/$productId').replace(
-      queryParameters: {
-        'lat': lat.toString(),
-        'lng': lng.toString(),
-        'radius_km': radiusKm.toString(),
-      },
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
     );
     final httpClient = client ?? http.Client();
 

@@ -2,11 +2,13 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:latlong2/latlong.dart';
 import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 import 'package:rakoon_frontend/features/history/data/models/price_history_item.dart';
 import 'package:rakoon_frontend/features/price_check/presentation/providers/price_check_provider.dart';
+import 'package:rakoon_frontend/services/location_service.dart';
 import 'package:rakoon_frontend/services/products_service.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
@@ -19,16 +21,16 @@ class UnifiedProductPriceDetailPage extends StatefulWidget {
   final RecommendedProduct product;
   final String? baseUrl;
   final http.Client? httpClient;
-  final double userLat;
-  final double userLng;
+  final double? userLat;
+  final double? userLng;
 
   const UnifiedProductPriceDetailPage({
     super.key,
     required this.product,
     this.baseUrl,
     this.httpClient,
-    this.userLat = -7.7829,
-    this.userLng = 110.4083,
+    this.userLat,
+    this.userLng,
   });
 
   @override
@@ -41,18 +43,44 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
   String? _currentFotoUrl;
   String? _selectedStoreFilterId;
   bool _showAllStores = false;
+  double? _effectiveLat;
+  double? _effectiveLng;
 
   @override
   void initState() {
     super.initState();
     _currentFotoUrl = widget.product.fotoUrl;
+    _effectiveLat = widget.userLat;
+    _effectiveLng = widget.userLng;
     _priceCheckProvider = PriceCheckProvider();
     _priceCheckProvider.addListener(_onPriceCheckProviderUpdated);
     _loadFreshProductDetails();
+    _resolveLocationAndFetch();
+  }
+
+  Future<void> _resolveLocationAndFetch() async {
+    double? lat = widget.userLat;
+    double? lng = widget.userLng;
+
+    if (lat == null || lng == null) {
+      final locResult = await LocationService.resolveLocation(askPermission: false);
+      if (locResult.outcome == LocationOutcome.granted && locResult.position != null) {
+        lat = locResult.position!.latitude;
+        lng = locResult.position!.longitude;
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _effectiveLat = lat;
+        _effectiveLng = lng;
+      });
+    }
+
     _priceCheckProvider.fetchProductDetail(
       productId: widget.product.id,
-      userLat: widget.userLat,
-      userLng: widget.userLng,
+      userLat: lat,
+      userLng: lng,
       range: '1m',
       baseUrl: widget.baseUrl,
       client: widget.httpClient,
@@ -99,8 +127,8 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
     _priceCheckProvider.updateRange(
       range,
       productId: widget.product.id,
-      userLat: widget.userLat,
-      userLng: widget.userLng,
+      userLat: _effectiveLat,
+      userLng: _effectiveLng,
       baseUrl: widget.baseUrl,
       client: widget.httpClient,
     );
@@ -728,10 +756,25 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
 
             PriceCompareItem? closestStore;
             if (sortedComparison.isNotEmpty) {
-              final withDistance = sortedComparison.where((s) => s.jarakKm != null).toList();
+              final withDistance = sortedComparison.map((s) {
+                double? d = s.jarakKm;
+                if (d == null &&
+                    _effectiveLat != null &&
+                    _effectiveLng != null &&
+                    s.lat != 0.0 &&
+                    s.lng != 0.0) {
+                  d = const Distance().as(
+                    LengthUnit.Kilometer,
+                    LatLng(_effectiveLat!, _effectiveLng!),
+                    LatLng(s.lat, s.lng),
+                  );
+                }
+                return (item: s, distance: d);
+              }).where((p) => p.distance != null).toList();
+
               if (withDistance.isNotEmpty) {
-                withDistance.sort((a, b) => a.jarakKm!.compareTo(b.jarakKm!));
-                closestStore = withDistance.first;
+                withDistance.sort((a, b) => a.distance!.compareTo(b.distance!));
+                closestStore = withDistance.first.item;
               }
             }
 
@@ -1055,8 +1098,8 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                             onPressed: () {
                               _priceCheckProvider.fetchProductDetail(
                                 productId: widget.product.id,
-                                userLat: widget.userLat,
-                                userLng: widget.userLng,
+                                userLat: _effectiveLat,
+                                userLng: _effectiveLng,
                                 range: _priceCheckProvider.selectedRange,
                                 baseUrl: widget.baseUrl,
                                 client: widget.httpClient,
@@ -1117,7 +1160,20 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                           diff: diff,
                         );
 
-                        final distanceStr = ProductCard.formatDistance(item.jarakKm);
+                        double? effectiveDistance = item.jarakKm;
+                        if (effectiveDistance == null &&
+                            _effectiveLat != null &&
+                            _effectiveLng != null &&
+                            item.lat != 0.0 &&
+                            item.lng != 0.0) {
+                          effectiveDistance = const Distance().as(
+                            LengthUnit.Kilometer,
+                            LatLng(_effectiveLat!, _effectiveLng!),
+                            LatLng(item.lat, item.lng),
+                          );
+                        }
+
+                        final distanceStr = ProductCard.formatDistance(effectiveDistance);
                         final storeRowText = distanceStr != null ? '${item.namaToko} · $distanceStr' : item.namaToko;
 
                         return Container(

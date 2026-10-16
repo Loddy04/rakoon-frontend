@@ -11,8 +11,8 @@ import 'package:rakoon_frontend/widgets/product_card.dart';
 class PriceCheckCatalogPage extends StatefulWidget {
   final String? baseUrl;
   final http.Client? httpClient;
-  final double userLat;
-  final double userLng;
+  final double? userLat;
+  final double? userLng;
   // userLat/userLng punya nilai bawaan; hanya dikirim ke backend bila lokasi benar-benar terdeteksi.
   final bool hasUserLocation;
 
@@ -20,8 +20,8 @@ class PriceCheckCatalogPage extends StatefulWidget {
     super.key,
     this.baseUrl,
     this.httpClient,
-    this.userLat = -7.7829,
-    this.userLng = 110.4083,
+    this.userLat,
+    this.userLng,
     this.hasUserLocation = false,
   });
 
@@ -38,8 +38,8 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
   void initState() {
     super.initState();
     _priceCheckProvider = PriceCheckProvider();
-    if (widget.hasUserLocation) {
-      _priceCheckProvider.setUserLocation(widget.userLat, widget.userLng);
+    if (widget.hasUserLocation && widget.userLat != null && widget.userLng != null) {
+      _priceCheckProvider.setUserLocation(widget.userLat!, widget.userLng!);
     }
     _priceCheckProvider.fetchCatalog(
       baseUrl: widget.baseUrl,
@@ -117,8 +117,8 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
           product: product,
           baseUrl: widget.baseUrl,
           httpClient: widget.httpClient,
-          userLat: widget.userLat,
-          userLng: widget.userLng,
+          userLat: widget.hasUserLocation ? widget.userLat : null,
+          userLng: widget.hasUserLocation ? widget.userLng : null,
         ),
       ),
     );
