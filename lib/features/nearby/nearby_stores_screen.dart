@@ -944,9 +944,9 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
               const SizedBox(height: 12),
               Text(
                 'Terjadi Kesalahan',
-                style: GoogleFonts.dmSerifDisplay(
+                style: GoogleFonts.outfit(
                   color: const Color(0xFF991B1B),
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                   fontSize: 18,
                 ),
               ),

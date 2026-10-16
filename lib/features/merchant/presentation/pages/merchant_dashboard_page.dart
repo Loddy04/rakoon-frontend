@@ -1320,9 +1320,10 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
                 const SizedBox(height: 12),
                 Text(
                   'Kelola Toko & Pasang Iklan Promo Offline',
-                  style: GoogleFonts.dmSerifDisplay(
+                  style: GoogleFonts.outfit(
                     color: Colors.white,
                     fontSize: 20,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -1670,8 +1671,9 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
                 const SizedBox(height: 12),
                 Text(
                   store.storeNama ?? 'Toko Anda',
-                  style: GoogleFonts.dmSerifDisplay(
+                  style: GoogleFonts.outfit(
                     fontSize: 22,
+                    fontWeight: FontWeight.w700,
                     color: const Color(0xFF0D2818),
                   ),
                 ),
@@ -1730,8 +1732,9 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage>
             children: [
               Text(
                 'Iklan Brosur Promo Anda',
-                style: GoogleFonts.dmSerifDisplay(
+                style: GoogleFonts.outfit(
                   fontSize: 20,
+                  fontWeight: FontWeight.w700,
                   color: const Color(0xFF0D2818),
                 ),
               ),
