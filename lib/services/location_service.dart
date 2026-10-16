@@ -39,19 +39,6 @@ class LocationService {
     return _pendingPermission ??= Geolocator.requestPermission().whenComplete(() => _pendingPermission = null);
   }
 
-  // requestPermission yang kembali denied lebih cepat dari ini berarti sistem tidak menampilkan dialog
-  // (Android "jangan tanya lagi", iOS setelah penolakan): perlakukan sebagai ditolak permanen.
-  static const Duration _instantDenyThreshold = Duration(milliseconds: 300);
-
-  /// Meminta izin dan membaca hasilnya; denied seketika dianggap [LocationPermission.deniedForever].
-  static Future<LocationPermission> _requestAndClassify() async {
-    final stopwatch = Stopwatch()..start();
-    final permission = await _requestPermissionOnce();
-    if (permission == LocationPermission.denied && stopwatch.elapsed < _instantDenyThreshold) {
-      return LocationPermission.deniedForever;
-    }
-    return permission;
-  }
 
   // Batas waktu pemeriksaan status (bukan dialog izin): panggilan platform yang macet tidak boleh
   // membuat layar menunggu selamanya.
@@ -89,7 +76,7 @@ class LocationService {
   /// Opens the app's permission settings screen.
   static Future<bool> openAppSettings() async {
     onOpenAppSettings?.call();
-    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (Platform.environment.containsKey('FLUTTER_TEST') && !testUsePlatform) {
       return true;
     }
     return await Geolocator.openAppSettings();
@@ -128,7 +115,7 @@ class LocationService {
       }
       var permission = await Geolocator.checkPermission().timeout(_statusTimeout);
       if (permission == LocationPermission.denied && askPermission) {
-        permission = await _requestAndClassify();
+        permission = await _requestPermissionOnce();
       }
       if (permission == LocationPermission.deniedForever) {
         return const LocationResult(LocationOutcome.deniedForever);

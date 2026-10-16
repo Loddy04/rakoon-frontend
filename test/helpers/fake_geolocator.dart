@@ -11,6 +11,7 @@ class FakeGeolocator extends GeolocatorPlatform {
   Completer<LocationPermission>? requestGate;
   Object? positionError;
   int openLocationSettingsCount = 0;
+  int openAppSettingsCount = 0;
 
   final calls = <String>[];
   int get requestCount => calls.where((c) => c == 'requestPermission').length;
@@ -53,6 +54,12 @@ class FakeGeolocator extends GeolocatorPlatform {
       speed: 0,
       speedAccuracy: 0,
     );
+  }
+
+  @override
+  Future<bool> openAppSettings() async {
+    openAppSettingsCount++;
+    return true;
   }
 
   @override

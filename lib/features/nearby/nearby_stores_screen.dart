@@ -859,9 +859,11 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
     final String actionLabel;
     final VoidCallback onAction;
     switch (problem) {
+      // Setelah permintaan otomatis awal, denied dan deniedForever sama: satu tap langsung ke pengaturan.
+      case LocationOutcome.denied:
       case LocationOutcome.deniedForever:
         title = 'Izin lokasi diperlukan untuk melihat toko terdekat';
-        body = 'Izin lokasi dimatikan di pengaturan. Aktifkan izin lokasi untuk Rakoon, lalu kembali ke sini.';
+        body = 'Aktifkan izin lokasi untuk Rakoon di pengaturan, lalu kembali ke sini.';
         actionLabel = 'Buka pengaturan';
         onAction = LocationService.openAppSettings;
         break;
@@ -878,12 +880,12 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
         actionLabel = 'Coba lagi';
         onAction = _fetchLocationAndStores;
         break;
-      case LocationOutcome.denied:
       case LocationOutcome.granted:
-        title = 'Izin lokasi diperlukan untuk melihat toko terdekat';
-        body = 'Izinkan akses lokasi agar kami bisa menampilkan toko di sekitar Anda.';
-        actionLabel = 'Izinkan lokasi';
-        onAction = () => _fetchLocationAndStores(askPermission: true);
+        // Tidak terjangkau: granted tidak pernah menjadi masalah lokasi.
+        title = 'Lokasi belum terdeteksi';
+        body = 'Kami belum berhasil mengambil lokasi Anda. Coba lagi sebentar lagi.';
+        actionLabel = 'Coba lagi';
+        onAction = _fetchLocationAndStores;
         break;
     }
     return Center(
