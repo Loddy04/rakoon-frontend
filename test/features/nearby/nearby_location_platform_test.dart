@@ -209,4 +209,43 @@ void main() {
       });
     });
   });
+
+  group('denied tanpa dialog = ditolak permanen', () {
+    testWidgets('requestPermission kembali denied seketika: "Buka pengaturan", spinner 0, requestPermission 1x', (tester) async {
+      await mockNetworkImagesFor(() async {
+        final api = await open(tester);
+
+        expect(find.text('Buka pengaturan'), findsOneWidget);
+        expect(find.text('Izinkan lokasi'), findsNothing);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(fake.requestCount, 1);
+        expect(api.nearby, isEmpty);
+      });
+    });
+
+    testWidgets('denied setelah dialog sempat tampil (lambat): tetap "Izinkan lokasi"; ulangi lalu instan: "Buka pengaturan"', (tester) async {
+      await mockNetworkImagesFor(() async {
+        fake.requestGate = Completer<LocationPermission>();
+        await open(tester);
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 450)));
+        fake.requestGate!.complete(LocationPermission.denied);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Izinkan lokasi'), findsOneWidget);
+        expect(fake.requestCount, 1);
+
+        fake.requestGate = null; // permintaan berikutnya kembali seketika (sistem tidak lagi menampilkan dialog)
+        await tester.tap(find.text('Izinkan lokasi'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Buka pengaturan'), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(fake.requestCount, 2);
+
+        await tester.tap(find.text('Buka pengaturan'));
+        await tester.pumpAndSettle();
+        expect(fake.requestCount, 2);
+      });
+    });
+  });
 }
