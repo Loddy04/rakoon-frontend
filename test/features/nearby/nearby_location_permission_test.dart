@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -45,7 +46,13 @@ Future<void> _open(WidgetTester tester, _Api api) async {
 }
 
 void main() {
+  setUp(() {
+    LocationService.testResolveCalls = 0;
+    LocationService.testPermissionRequests = 0;
+  });
+
   tearDown(() {
+    LocationService.testGate = null;
     LocationService.testOutcome = null;
     LocationService.onOpenAppSettings = null;
   });
@@ -139,6 +146,100 @@ void main() {
       expect(api.nearby, hasLength(1));
       expect(api.nearby.single.queryParameters['lat'], '-6.2088');
       expect(find.text('Toko Satu'), findsWidgets);
+    });
+  });
+
+  Future<void> resumeApp(WidgetTester tester, {bool settle = true}) async {
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    // Saat permintaan berjalan ada spinner: pumpAndSettle tidak akan selesai.
+    settle ? await tester.pumpAndSettle() : await tester.pump();
+  }
+
+  group('tanpa loop resume/izin', () {
+    testWidgets('ditolak + resume berulang: izin diminta sekali (saat dibuka), tanpa panggilan toko', (tester) async {
+      LocationService.testOutcome = LocationOutcome.denied;
+      await mockNetworkImagesFor(() async {
+        final api = _Api();
+        await _open(tester, api);
+        expect(LocationService.testPermissionRequests, 1);
+
+        for (var i = 0; i < 5; i++) {
+          await resumeApp(tester);
+        }
+
+        expect(LocationService.testPermissionRequests, 1);
+        expect(api.nearby, isEmpty);
+        expect(find.text('Izinkan lokasi'), findsOneWidget);
+      });
+    });
+
+    testWidgets('ditolak, diberikan di pengaturan, lalu resume berulang: toko dimuat sekali', (tester) async {
+      LocationService.testOutcome = LocationOutcome.denied;
+      await mockNetworkImagesFor(() async {
+        final api = _Api();
+        await _open(tester, api);
+
+        LocationService.testOutcome = null;
+        await resumeApp(tester);
+        await resumeApp(tester);
+        await resumeApp(tester);
+
+        expect(api.nearby, hasLength(1));
+        expect(LocationService.testPermissionRequests, 1);
+      });
+    });
+
+    testWidgets('tombol "Izinkan lokasi" saat sedang meminta diabaikan', (tester) async {
+      LocationService.testOutcome = LocationOutcome.denied;
+      await mockNetworkImagesFor(() async {
+        final api = _Api();
+        await _open(tester, api);
+        expect(LocationService.testPermissionRequests, 1);
+
+        final gate = Completer<void>();
+        LocationService.testGate = gate.future;
+        await tester.tap(find.text('Izinkan lokasi'));
+        await tester.tap(find.text('Izinkan lokasi'), warnIfMissed: false);
+        gate.complete();
+        await tester.pumpAndSettle();
+
+        expect(LocationService.testPermissionRequests, 2);
+        expect(api.nearby, isEmpty);
+      });
+    });
+
+    testWidgets('resume saat permintaan berjalan diabaikan', (tester) async {
+      LocationService.testOutcome = LocationOutcome.denied;
+      await mockNetworkImagesFor(() async {
+        final api = _Api();
+        await _open(tester, api);
+
+        final gate = Completer<void>();
+        LocationService.testGate = gate.future;
+        await tester.tap(find.text('Izinkan lokasi'));
+        await tester.pump();
+        final before = LocationService.testResolveCalls;
+        await resumeApp(tester, settle: false);
+        expect(LocationService.testResolveCalls, before);
+        gate.complete();
+        await tester.pumpAndSettle();
+      });
+    });
+
+    testWidgets('ditolak permanen + resume berulang: tidak pernah meminta izin lagi', (tester) async {
+      LocationService.testOutcome = LocationOutcome.deniedForever;
+      await mockNetworkImagesFor(() async {
+        final api = _Api();
+        await _open(tester, api);
+        for (var i = 0; i < 5; i++) {
+          await resumeApp(tester);
+        }
+
+        expect(LocationService.testPermissionRequests, 0);
+        expect(api.nearby, isEmpty);
+        expect(find.text('Buka pengaturan'), findsOneWidget);
+      });
     });
   });
 }

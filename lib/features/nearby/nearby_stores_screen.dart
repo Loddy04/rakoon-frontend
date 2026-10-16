@@ -41,6 +41,8 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
   String? _errorMessage;
   // Bukan granted = tidak ada lokasi: tanpa panggilan toko, daftar, atau marker lokasi pengguna.
   LocationOutcome? _locationProblem;
+  // True selama permintaan lokasi/izin atau pemuatan toko berjalan: tombol dan resume diabaikan.
+  bool _requesting = false;
 
   Position? _userPosition;
   NearbyStoresResponse? _storesResponse;
@@ -51,18 +53,32 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _fetchLocationAndStores();
+    // Satu-satunya permintaan izin otomatis; berikutnya hanya lewat tombol "Izinkan lokasi".
+    _fetchLocationAndStores(askPermission: true);
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Kembali dari pengaturan: coba lagi hanya bila sebelumnya terhalang izin/layanan.
     final problem = _locationProblem;
     if (state == AppLifecycleState.resumed &&
-        !_isLoading &&
+        !_requesting &&
         problem != null &&
         problem != LocationOutcome.failed) {
-      _fetchLocationAndStores();
+      _recheckLocationOnResume();
+    }
+  }
+
+  /// Resume (mis. kembali dari pengaturan): periksa status tanpa dialog izin, dan muat ulang hanya
+  /// bila statusnya berubah dari hasil terakhir.
+  Future<void> _recheckLocationOnResume() async {
+    _requesting = true;
+    try {
+      final result = await LocationService.resolveLocation(askPermission: false);
+      if (!mounted || result.outcome == _locationProblem) return;
+      _startLoading();
+      await _showLocationResult(result);
+    } finally {
+      _requesting = false;
     }
   }
 
@@ -143,8 +159,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
     });
   }
 
-  /// Gets location and queries the backend for stores.
-  Future<void> _fetchLocationAndStores() async {
+  void _startLoading() {
     _cardKeys.clear();
     setState(() {
       _isLoading = true;
@@ -152,12 +167,27 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
       _locationProblem = null;
       _selectedStore = null;
     });
+  }
 
+  /// Gets location and queries the backend for stores. [askPermission] hanya true saat layar dibuka
+  /// dan lewat tombol "Izinkan lokasi"; abaikan bila permintaan lain sedang berjalan.
+  Future<void> _fetchLocationAndStores({bool askPermission = false}) async {
+    if (_requesting) return;
+    _requesting = true;
     try {
+      _startLoading();
       // initialLat/initialLng dari pemanggil diabaikan: Home meneruskan titik bawaan saat lokasi belum
       // terdeteksi, dan layar ini tidak boleh memakai koordinat bawaan.
-      final result = await LocationService.resolveLocation();
+      final result = await LocationService.resolveLocation(askPermission: askPermission);
       if (!mounted) return;
+      await _showLocationResult(result);
+    } finally {
+      _requesting = false;
+    }
+  }
+
+  Future<void> _showLocationResult(LocationResult result) async {
+    try {
       final position = result.position;
       if (result.outcome != LocationOutcome.granted || position == null) {
         setState(() {
@@ -839,7 +869,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
         title = 'Izin lokasi diperlukan untuk melihat toko terdekat';
         body = 'Izinkan akses lokasi agar kami bisa menampilkan toko di sekitar Anda.';
         actionLabel = 'Izinkan lokasi';
-        onAction = _fetchLocationAndStores;
+        onAction = () => _fetchLocationAndStores(askPermission: true);
         break;
     }
     return Center(

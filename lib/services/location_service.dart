@@ -20,6 +20,13 @@ class LocationService {
   /// Test override: paksa hasil [resolveLocation] selain granted (null = perilaku normal).
   static LocationOutcome? testOutcome;
 
+  /// Test hooks: jumlah panggilan [resolveLocation] dan jumlah permintaan izin (dialog) yang akan muncul.
+  static int testResolveCalls = 0;
+  static int testPermissionRequests = 0;
+
+  /// Test hook: bila diisi, [resolveLocation] menunggu future ini (mensimulasikan dialog izin yang terbuka).
+  static Future<void>? testGate;
+
   /// Test callback when openLocationSettings is invoked.
   static void Function()? onOpenLocationSettings;
 
@@ -68,10 +75,14 @@ class LocationService {
         speedAccuracy: 0.0,
       );
 
-  /// Meminta izin lokasi bila perlu dan mengembalikan posisi, atau penyebab tidak ada posisi
-  /// (tanpa melempar). Tidak pernah memakai koordinat bawaan.
-  static Future<LocationResult> resolveLocation() async {
+  /// Mengembalikan posisi, atau penyebab tidak ada posisi (tanpa melempar). Tidak pernah memakai
+  /// koordinat bawaan. [askPermission] false = hanya memeriksa status (tanpa dialog izin), dipakai
+  /// saat aplikasi resume; izin yang sudah ditolak permanen tidak pernah diminta lagi.
+  static Future<LocationResult> resolveLocation({bool askPermission = true}) async {
+    testResolveCalls++;
     final forced = testOutcome;
+    if (forced == LocationOutcome.denied && askPermission) testPermissionRequests++;
+    if (testGate != null) await testGate;
     if (forced != null && forced != LocationOutcome.granted) return LocationResult(forced);
     if (testIsLocationServiceEnabled == false) return const LocationResult(LocationOutcome.serviceDisabled);
     if (Platform.environment.containsKey('FLUTTER_TEST')) {
@@ -81,7 +92,7 @@ class LocationService {
       return const LocationResult(LocationOutcome.serviceDisabled);
     }
     var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
+    if (permission == LocationPermission.denied && askPermission) {
       permission = await Geolocator.requestPermission();
     }
     if (permission == LocationPermission.deniedForever) {
