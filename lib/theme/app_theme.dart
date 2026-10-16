@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Class containing all core design tokens for colors defined in DESIGN.md (Shupatto style).
+/// Design tokens warna. Nilai mengikuti home_screen.dart (UI_RULES.md); nama token dipertahankan.
 class AppColors {
   /// Vibrant Smart-Grocery Design Tokens (Gemastik 2026 UI)
   static const Color primaryGreen = Color(0xFF00A86B);
@@ -19,11 +19,11 @@ class AppColors {
   static const Color teal = Color(0xFF0D9488);
   static const Color tealLight = Color(0xFFCCFBF1);
 
-  static const Color charcoal = Color(0xFF111827);
-  static const Color textMuted = Color(0xFF6B7280);
-  static const Color borderLight = Color(0xFFF1F5F9);
+  static const Color charcoal = Color(0xFF0D2818);
+  static const Color textMuted = Color(0xFF6B6B6B);
+  static const Color borderLight = Color(0xFFE8E4DC);
   static const Color surfaceWhite = Color(0xFFFFFFFF);
-  static const Color scaffoldBg = Color(0xFFF9FBFA);
+  static const Color scaffoldBg = Color(0xFFFAF7F2);
 
   /// Auth UI Tokens (Design Parity)
   static const Color authSageGreen = Color(0xFF688973);
@@ -31,31 +31,31 @@ class AppColors {
   static const Color authTabBg = Color(0xFFF3F4F6);
   static const Color authFieldBorder = Color(0xFFE5E7EB);
 
-  /// Graphite (#2D2D2D) - Primary text, hairline borders, structural lines
-  static const Color graphite = Color(0xFF2D2D2D);
+  /// Graphite (#0D2818) - Teks/judul utama
+  static const Color graphite = Color(0xFF0D2818);
 
-  /// Ink (#000000) - Strongest text and most emphatic borders
-  static const Color ink = Color(0xFF111827);
+  /// Ink (#0D2818) - Teks paling tegas (sama dengan graphite)
+  static const Color ink = Color(0xFF0D2818);
 
   /// Paper (#FFFFFF) - Page canvas, card surfaces, nav background
   static const Color paper = Color(0xFFFFFFFF);
 
-  /// Fog (#878887) - Muted helper text, secondary borders, dimmed metadata
-  static const Color fog = Color(0xFF6B7280);
+  /// Fog (#6B6B6B) - Teks abu, metadata
+  static const Color fog = Color(0xFF6B6B6B);
 
   /// Periwinkle (#7380A5 / #738AE5) - Sole chromatic accent for badges, active states, pressure points
   static const Color periwinkle = Color(0xFF10B981);
 
-  static const Color softWhite = Color(0xFFF9FBFA);
+  static const Color softWhite = Color(0xFFFAF7F2);
 
-  // --- Aliases for Shupatto Design Token Parity & Legacy Compatibility ---
+  // --- Alias legacy (nama dipertahankan) ---
 
   static const Color inkBlack = graphite;
   static const Color pureBlack = ink;
   static const Color boneWhite = paper;
-  static const Color background = paper;
+  static const Color background = Color(0xFFFAF7F2);
   static const Color card = paper;
-  static const Color line = Color(0xFFE5E7EB);
+  static const Color line = Color(0xFFE8E4DC);
   static const Color muted = fog;
   static const Color accent = Color(0xFF10B981);
   static const Color accentSoft = Color(0xFFE8FAF2);
@@ -77,7 +77,7 @@ class AppColors {
   static const Color onboardingAccent2 = Color(0xFFFF7A00);
 }
 
-/// Spacing scale and layout constants aligned with DESIGN.md (Shupatto style).
+/// Spacing scale and layout constants (nama dipertahankan).
 class AppSpacing {
   static const double s5 = 5.0;
   static const double s10 = 10.0;
@@ -112,21 +112,20 @@ class AppSpacing {
   static const double s160 = 120.0;
 }
 
-/// Corner radius tokens aligned with DESIGN.md Shupatto style (3px sharp architecture).
+/// Radius: 12 (gambar, tag, tombol), 16 (kartu), 24 (pill pencarian), 100 (pill penuh).
 class AppRadius {
-  /// Shupatto signature 3px radius across cards, buttons, badges
-  static const double cards = 3.0;
-  static const double buttons = 3.0;
-  static const double tags = 3.0;
-  static const double md = 3.0;
-  static const double sm = 3.0;
-  static const double full = 3.0;
+  static const double cards = 16.0;
+  static const double buttons = 12.0;
+  static const double tags = 12.0;
+  static const double md = 12.0;
+  static const double sm = 12.0;
+  static const double full = 100.0;
 
   /// Legacy radius aliases
-  static const double s = 3.0;
-  static const double m = 3.0;
-  static const double l = 3.0;
-  static const double xl = 3.0;
+  static const double s = 12.0;
+  static const double m = 12.0;
+  static const double l = 16.0;
+  static const double xl = 24.0;
 }
 
 /// Motion and duration tokens supporting responsive, snappy micro-interactions.
@@ -145,67 +144,60 @@ class AppCurves {
   static const Curve standard = Curves.easeInOut;
 }
 
-/// Typography styles based on DESIGN.md Shupatto substitutes (Outfit / Jost).
+/// Tipografi Outfit, Title/Sentence case, tracking normal. Judul seksi 16-18, hero 20-22, judul kartu 13.
 class AppTextStyles {
-  /// Editorial Large Heading (28px, Uppercase, wide tracking)
+  /// Hero (22)
   static TextStyle get headingLg => GoogleFonts.outfit(
-        fontSize: 28.0,
-        height: 1.0,
-        letterSpacing: 2.24,
+        fontSize: 22.0,
+        height: 1.2,
         fontWeight: FontWeight.w700,
         color: AppColors.graphite,
       );
 
-  /// Editorial Small Heading (21px, Uppercase, wide tracking)
+  /// Judul seksi (18)
   static TextStyle get headingSm => GoogleFonts.outfit(
-        fontSize: 21.0,
-        height: 1.22,
-        letterSpacing: 2.52,
-        fontWeight: FontWeight.w700,
-        color: AppColors.graphite,
-      );
-
-  /// Subheading (18px, Uppercase, wide tracking)
-  static TextStyle get subheading => GoogleFonts.outfit(
         fontSize: 18.0,
         height: 1.25,
-        letterSpacing: 1.44,
+        fontWeight: FontWeight.w700,
+        color: AppColors.graphite,
+      );
+
+  /// Judul seksi kecil (16)
+  static TextStyle get subheading => GoogleFonts.outfit(
+        fontSize: 16.0,
+        height: 1.25,
         fontWeight: FontWeight.w600,
         color: AppColors.graphite,
       );
 
-  /// Body text (16px, editorial tracking)
+  /// Teks isi (14)
   static TextStyle get body => GoogleFonts.outfit(
-        fontSize: 16.0,
-        height: 1.29,
-        letterSpacing: 1.28,
+        fontSize: 14.0,
+        height: 1.3,
         fontWeight: FontWeight.w400,
         color: AppColors.graphite,
       );
 
-  /// Caption / Micro Label (10px, Uppercase, tracking)
+  /// Keterangan kecil (11)
   static TextStyle get caption => GoogleFonts.outfit(
-        fontSize: 10.0,
-        height: 1.0,
-        letterSpacing: 1.0,
-        fontWeight: FontWeight.w600,
+        fontSize: 11.0,
+        height: 1.2,
+        fontWeight: FontWeight.w500,
         color: AppColors.fog,
       );
 
-  /// Monospaced / Badge Tag (11px, Uppercase, tracking)
+  /// Tag/badge (11)
   static TextStyle get monoTag => GoogleFonts.outfit(
         fontSize: 11.0,
         height: 1.0,
-        letterSpacing: 1.2,
         fontWeight: FontWeight.w600,
         color: AppColors.graphite,
       );
 
-  /// Button label / CTA text (14px, Uppercase, wide tracking)
+  /// Label tombol (14)
   static TextStyle get buttonLabel => GoogleFonts.outfit(
         fontSize: 14.0,
         height: 1.0,
-        letterSpacing: 1.5,
         fontWeight: FontWeight.w600,
         color: AppColors.graphite,
       );
@@ -215,61 +207,55 @@ class AppTextStyles {
   static TextStyle get display => headingLg;
 
   static TextStyle get titleLarge => GoogleFonts.outfit(
-        fontSize: 22.0,
+        fontSize: 20.0,
         fontWeight: FontWeight.w700,
         color: AppColors.graphite,
-        letterSpacing: 1.2,
       );
 
   static TextStyle get titleMedium => GoogleFonts.outfit(
         fontSize: 18.0,
         fontWeight: FontWeight.w700,
         color: AppColors.graphite,
-        letterSpacing: 1.0,
       );
 
   static TextStyle get titleSmall => GoogleFonts.outfit(
-        fontSize: 15.0,
+        fontSize: 16.0,
         fontWeight: FontWeight.w600,
         color: AppColors.graphite,
-        letterSpacing: 0.8,
       );
 
+  /// Judul kartu (13)
   static TextStyle get bodyLarge => GoogleFonts.outfit(
-        fontSize: 15.0,
+        fontSize: 13.0,
         fontWeight: FontWeight.w600,
         color: AppColors.graphite,
-        letterSpacing: 0.8,
       );
 
   static TextStyle get bodyMedium => GoogleFonts.outfit(
         fontSize: 13.0,
         fontWeight: FontWeight.w400,
         color: AppColors.graphite,
-        letterSpacing: 0.5,
       );
 
   static TextStyle get bodySmall => GoogleFonts.outfit(
         fontSize: 12.0,
         fontWeight: FontWeight.w400,
         color: AppColors.fog,
-        letterSpacing: 0.4,
       );
 
   static TextStyle get labelSmall => GoogleFonts.outfit(
         fontSize: 10.0,
         fontWeight: FontWeight.w600,
         color: AppColors.periwinkle,
-        letterSpacing: 1.0,
       );
 }
 
-/// Core theme configurations for the Rakoon application adopting Shupatto style.
+/// Tema aplikasi Rakoon; nilai dari token di atas.
 class AppTheme {
   static ThemeData get light {
     final baseTheme = ThemeData.light(useMaterial3: true);
     return baseTheme.copyWith(
-      scaffoldBackgroundColor: AppColors.paper,
+      scaffoldBackgroundColor: AppColors.background,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.graphite,
         primary: AppColors.graphite,
@@ -286,7 +272,7 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.cards),
-          side: const BorderSide(color: AppColors.graphite, width: 1.0),
+          side: const BorderSide(color: AppColors.line, width: 1.0),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -300,7 +286,7 @@ class AppTheme {
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.buttons),
-            side: const BorderSide(color: AppColors.graphite, width: 1.0),
+            side: const BorderSide(color: AppColors.line, width: 1.0),
           ),
           textStyle: AppTextStyles.buttonLabel,
         ),
@@ -309,7 +295,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.graphite,
           backgroundColor: Colors.transparent,
-          side: const BorderSide(color: AppColors.graphite, width: 1.0),
+          side: const BorderSide(color: AppColors.line, width: 1.0),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.cardPadding,
             vertical: AppSpacing.s14,
@@ -329,11 +315,11 @@ class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.cards),
-          borderSide: const BorderSide(color: AppColors.graphite, width: 1.0),
+          borderSide: const BorderSide(color: AppColors.line, width: 1.0),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.cards),
-          borderSide: const BorderSide(color: AppColors.graphite, width: 1.0),
+          borderSide: const BorderSide(color: AppColors.line, width: 1.0),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.cards),
@@ -341,7 +327,7 @@ class AppTheme {
         ),
       ),
       dividerTheme: const DividerThemeData(
-        color: AppColors.graphite,
+        color: AppColors.line,
         thickness: 1.0,
         space: 1.0,
       ),
@@ -384,7 +370,6 @@ class AppTheme {
           fontSize: 18.0,
           fontWeight: FontWeight.w700,
           color: AppColors.graphite,
-          letterSpacing: 1.0,
         ),
       ),
     );
