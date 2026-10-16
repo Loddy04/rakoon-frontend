@@ -18,26 +18,32 @@ void main() {
       expect(ProductCard.formatDistance(null), isNull);
     });
 
-    test('formatTimeAgo parses ISO strings and relative strings dynamically', () {
-      final now = DateTime.now();
-      final min15Ago = now.subtract(const Duration(minutes: 15)).toIso8601String();
-      final hour2Ago = now.subtract(const Duration(hours: 2)).toIso8601String();
-      final day3Ago = now.subtract(const Duration(days: 3)).toIso8601String();
-      final week1Ago = now.subtract(const Duration(days: 7)).toIso8601String();
+    testWidgets('ProductCard never displays upload timestamps or just now text', (
+      WidgetTester tester,
+    ) async {
+      final product = RecommendedProduct(
+        id: 'test-3',
+        nama: 'INDOMIE GORENG 85G',
+        kategori: 'Makanan Instan',
+        harga: 3100,
+        namaToko: 'MANNA KAMPUS BABARSARI',
+        jarakKm: 1.5,
+        updatedAt: '2026-10-15T10:00:00Z',
+      );
 
-      expect(ProductCard.formatTimeAgo(min15Ago), '15m ago');
-      expect(ProductCard.formatTimeAgo(hour2Ago), '2h ago');
-      expect(ProductCard.formatTimeAgo(day3Ago), '3d ago');
-      expect(ProductCard.formatTimeAgo(week1Ago), '1w ago');
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: ProductCard(product: product),
+            ),
+          ),
+        ),
+      );
 
-      // Test relative fallback strings
-      expect(ProductCard.formatTimeAgo('15 mnt lalu'), '15m ago');
-      expect(ProductCard.formatTimeAgo('1 jam lalu'), '1h ago');
-      expect(ProductCard.formatTimeAgo('2 jam lalu'), '2h ago');
-      expect(ProductCard.formatTimeAgo('3 hari lalu'), '3d ago');
-      expect(ProductCard.formatTimeAgo('1 minggu lalu'), '1w ago');
-      expect(ProductCard.formatTimeAgo('Baru saja'), 'just now');
-      expect(ProductCard.formatTimeAgo(null), 'just now');
+      expect(find.text('just now'), findsNothing);
+      expect(find.textContaining('ago'), findsNothing);
+      expect(find.text('1.5 km'), findsOneWidget);
     });
 
     testWidgets('ProductCard renders distance and metadata without overflow at 320dp', (

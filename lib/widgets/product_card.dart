@@ -7,7 +7,7 @@ import 'package:rakoon_frontend/widgets/price_freshness_label.dart';
 
 /// Reusable ProductCard widget complying with UI_RULES.md.
 /// - InkWell root interaction for product detail navigation.
-/// - Smooth rounded corners (16px), white background, soft shadow.
+/// - Sudut membulat (16px), latar putih, border #E8E4DC, dan bayangan lembut.
 /// - Fixed-height 2-line title container to prevent uneven grid heights.
 /// - No green (+) add button.
 /// - Store logo (16x16), store name, separator dot, and distance with lowercase unit (m/km).
@@ -35,65 +35,6 @@ class ProductCard extends StatelessWidget {
     } else {
       return '${jarakKm.toStringAsFixed(1)} km';
     }
-  }
-
-  /// Utility to format time ago (preserved for backward compatibility).
-  static String formatTimeAgo(String? rawUpdatedAt) {
-    if (rawUpdatedAt == null || rawUpdatedAt.trim().isEmpty) {
-      return 'just now';
-    }
-    final trimmed = rawUpdatedAt.trim();
-
-    final parsed = DateTime.tryParse(trimmed);
-    if (parsed != null) {
-      final now = DateTime.now();
-      final diff = now.difference(parsed.toLocal());
-      if (diff.isNegative || diff.inSeconds < 60) {
-        return 'just now';
-      }
-      if (diff.inMinutes < 60) {
-        return '${diff.inMinutes}m ago';
-      }
-      if (diff.inHours < 24) {
-        return '${diff.inHours}h ago';
-      }
-      if (diff.inDays < 7) {
-        return '${diff.inDays}d ago';
-      }
-      final weeks = diff.inDays ~/ 7;
-      return '${weeks}w ago';
-    }
-
-    final lower = trimmed.toLowerCase();
-    if (lower.contains('baru saja') || lower.contains('just now')) {
-      return 'just now';
-    }
-
-    final regWeeks = RegExp(r'(\d+)\s*(minggu|w|week|wk)\b');
-    final matchWeek = regWeeks.firstMatch(lower);
-    if (matchWeek != null) {
-      return '${matchWeek.group(1)}w ago';
-    }
-
-    final regDays = RegExp(r'(\d+)\s*(hari|d|day)\b');
-    final matchDay = regDays.firstMatch(lower);
-    if (matchDay != null) {
-      return '${matchDay.group(1)}d ago';
-    }
-
-    final regHours = RegExp(r'(\d+)\s*(jam|h|hr)\b');
-    final matchHour = regHours.firstMatch(lower);
-    if (matchHour != null) {
-      return '${matchHour.group(1)}h ago';
-    }
-
-    final regMinutes = RegExp(r'(\d+)\s*(mnt|menit|m)\b');
-    final matchMin = regMinutes.firstMatch(lower);
-    if (matchMin != null) {
-      return '${matchMin.group(1)}m ago';
-    }
-
-    return trimmed;
   }
 
   @override
