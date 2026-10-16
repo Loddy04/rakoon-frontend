@@ -82,7 +82,25 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed &&
         _locationLabel == 'Tidak Terdeteksi') {
-      _detectLocationAndStore();
+      _recheckLocationOnResume();
+    }
+  }
+
+  bool _recheckingLocation = false;
+
+  /// Resume: periksa status tanpa dialog izin; deteksi ulang hanya bila lokasi kini tersedia.
+  Future<void> _recheckLocationOnResume() async {
+    if (_recheckingLocation) return;
+    _recheckingLocation = true;
+    try {
+      final result = await LocationService.resolveLocation(askPermission: false);
+      if (result.outcome == LocationOutcome.granted && mounted) {
+        await _detectLocationAndStore();
+      }
+    } catch (_) {
+      // Pemeriksaan diam-diam gagal: biarkan label "Tidak Terdeteksi".
+    } finally {
+      _recheckingLocation = false;
     }
   }
 
