@@ -668,6 +668,7 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
         scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0D2818)),
+          tooltip: 'Kembali',
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: Text(
@@ -727,9 +728,11 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
 
             PriceCompareItem? closestStore;
             if (sortedComparison.isNotEmpty) {
-              final byDistance = List<PriceCompareItem>.from(sortedComparison);
-              byDistance.sort((a, b) => a.jarakKm.compareTo(b.jarakKm));
-              closestStore = byDistance.first;
+              final withDistance = sortedComparison.where((s) => s.jarakKm != null).toList();
+              if (withDistance.isNotEmpty) {
+                withDistance.sort((a, b) => a.jarakKm!.compareTo(b.jarakKm!));
+                closestStore = withDistance.first;
+              }
             }
 
             PriceCompareItem? bestStore;
@@ -1114,6 +1117,9 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                           diff: diff,
                         );
 
+                        final distanceStr = ProductCard.formatDistance(item.jarakKm);
+                        final storeRowText = distanceStr != null ? '${item.namaToko} · $distanceStr' : item.namaToko;
+
                         return Container(
                           padding: const EdgeInsets.all(14.0),
                           decoration: BoxDecoration(
@@ -1165,21 +1171,11 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      item.namaToko,
+                                      storeRowText,
                                       style: GoogleFonts.outfit(
                                         fontSize: 13.5,
                                         fontWeight: FontWeight.w800,
                                         color: const Color(0xFF0D2818),
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '${ProductCard.formatDistance(item.jarakKm)} · Supermarket terdekat',
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 11,
-                                        color: const Color(0xFF6B7280),
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -1202,7 +1198,7 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
-                                    item.hargaTerbaru != null ? formatRp(itemPrice) : 'N/A',
+                                    item.hargaTerbaru != null ? formatRp(itemPrice) : 'Tidak tersedia',
                                     style: GoogleFonts.outfit(
                                       fontSize: 14.5,
                                       fontWeight: FontWeight.w800,

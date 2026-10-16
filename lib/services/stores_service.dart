@@ -202,7 +202,7 @@ class PriceCompareItem {
   final String namaToko;
   final double lat;
   final double lng;
-  final double jarakKm;
+  final double? jarakKm;
   final int? hargaTerbaru;
   final String? tanggalUpdate;
   final bool stale;
@@ -214,7 +214,7 @@ class PriceCompareItem {
     required this.namaToko,
     required this.lat,
     required this.lng,
-    required this.jarakKm,
+    this.jarakKm,
     this.hargaTerbaru,
     this.tanggalUpdate,
     this.stale = false,
@@ -228,7 +228,7 @@ class PriceCompareItem {
       namaToko: json['nama_toko'] as String? ?? 'Toko Kelontong',
       lat: (json['lat'] as num?)?.toDouble() ?? 0.0,
       lng: (json['lng'] as num?)?.toDouble() ?? 0.0,
-      jarakKm: (json['jarak_km'] as num?)?.toDouble() ?? 0.0,
+      jarakKm: (json['jarak_km'] as num?)?.toDouble(),
       hargaTerbaru: json['harga_terbaru'] as int?,
       tanggalUpdate: json['tanggal_update'] as String?,
       stale: json['stale'] as bool? ?? false,
