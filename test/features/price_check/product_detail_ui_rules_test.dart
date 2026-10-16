@@ -73,8 +73,9 @@ void main() {
     expect(find.textContaining('Toko Tanpa Jarak ·'), findsNothing);
     expect(find.text('Toko Tanpa Jarak'), findsWidgets);
 
-    // Verification 3: Store row with distance formatted as "{nama_toko} · {jarak}"
-    expect(find.text('Toko Berjarak · 1.5 km'), findsOneWidget);
+    // Verification 3: Store row with distance shows store name and distance
+    expect(find.text('Toko Berjarak'), findsWidgets);
+    expect(find.text('1.5 km'), findsOneWidget);
 
     // Verification 4: Empty price displays "Tidak tersedia" instead of "N/A"
     expect(find.text('N/A'), findsNothing);
@@ -222,12 +223,14 @@ void main() {
       LocationService.testUsePlatform = true;
       LocationService.testResolveCalls = 0;
       LocationService.testPermissionRequests = 0;
+      LocationService.clearCache();
     });
 
     tearDown(() {
       GeolocatorPlatform.instance = original;
       LocationService.testUsePlatform = false;
       LocationService.testOutcome = null;
+      LocationService.clearCache();
     });
 
     testWidgets('with location: sends lat/lng and shows "Nama · 800 m"', (tester) async {
@@ -289,7 +292,8 @@ void main() {
       expect(compareUri!.queryParameters['lat'], isNotNull);
       expect(compareUri!.queryParameters['lng'], isNotNull);
       expect(fake.requestCount, 0, reason: 'Must not request permission from detail page');
-      expect(find.text('Super Indo Seturan · 800 m'), findsOneWidget);
+      expect(find.text('Super Indo Seturan'), findsWidgets);
+      expect(find.text('800 m'), findsOneWidget);
     });
 
     testWidgets('without location: does not send lat/lng, does not call requestPermission, and shows "Nama" without " · " and without "800 m"', (tester) async {
@@ -354,6 +358,143 @@ void main() {
       expect(find.text('Super Indo Seturan'), findsWidgets);
       expect(find.textContaining('800 m'), findsNothing);
       expect(find.textContaining(' · '), findsNothing);
+    });
+
+    testWidgets('long store name "Manna Kampus (Mirota Kampus)" renders distance cleanly below store name without overflow on 320dp', (tester) async {
+      tester.view.physicalSize = const Size(320, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      fake.permission = LocationPermission.whileInUse;
+
+      final mockClient = MockClient((request) async {
+        final headers = {'content-type': 'application/json'};
+        if (request.url.path.contains('/price/compare/')) {
+          return http.Response(
+            jsonEncode({
+              'product_id': 'prod-001',
+              'nama_produk': 'Indomie Goreng',
+              'comparison': [
+                {
+                  'store_id': 's1',
+                  'nama_toko': 'Manna Kampus (Mirota Kampus)',
+                  'lat': -6.2088,
+                  'lng': 106.8456,
+                  'jarak_km': 0.8,
+                  'harga_terbaru': 3500,
+                },
+              ],
+            }),
+            200,
+            headers: headers,
+          );
+        }
+        if (request.url.path.contains('price-history')) {
+          return http.Response(
+            jsonEncode({'product_id': 'prod-001', 'total': 0, 'items': [], 'trend': []}),
+            200,
+            headers: headers,
+          );
+        }
+        return http.Response('{}', 404);
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: UnifiedProductPriceDetailPage(
+            product: RecommendedProduct(
+              id: 'prod-001',
+              nama: 'Indomie Goreng',
+              kategori: 'Makanan Instan',
+              harga: 3500.0,
+              namaToko: 'Manna Kampus (Mirota Kampus)',
+              updatedAt: '2026-10-10T00:00:00Z',
+            ),
+            baseUrl: 'http://localhost:8000',
+            httpClient: mockClient,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(fake.requestCount, 0, reason: 'Must not request permission from detail page');
+      expect(find.text('800 m'), findsOneWidget);
+      expect(find.text('Manna Kampus (Mirota Kampus)'), findsWidgets);
+    });
+
+    testWidgets('LocationService.cachedPosition is used by detail page when userLat is null without requesting permission', (tester) async {
+      LocationService.cachePosition(Position(
+        latitude: -7.78,
+        longitude: 110.40,
+        timestamp: DateTime.now(),
+        accuracy: 1,
+        altitude: 0,
+        altitudeAccuracy: 0,
+        heading: 0,
+        headingAccuracy: 0,
+        speed: 0,
+        speedAccuracy: 0,
+      ));
+
+      Uri? compareUri;
+      fake.permission = LocationPermission.denied;
+
+      final mockClient = MockClient((request) async {
+        final headers = {'content-type': 'application/json'};
+        if (request.url.path.contains('/price/compare/')) {
+          compareUri = request.url;
+          return http.Response(
+            jsonEncode({
+              'product_id': 'prod-001',
+              'nama_produk': 'Indomie Goreng',
+              'comparison': [
+                {
+                  'store_id': 's1',
+                  'nama_toko': 'Manna Kampus',
+                  'lat': -7.78,
+                  'lng': 110.40,
+                  'jarak_km': 0.8,
+                  'harga_terbaru': 3500,
+                },
+              ],
+            }),
+            200,
+            headers: headers,
+          );
+        }
+        if (request.url.path.contains('price-history')) {
+          return http.Response(
+            jsonEncode({'product_id': 'prod-001', 'total': 0, 'items': [], 'trend': []}),
+            200,
+            headers: headers,
+          );
+        }
+        return http.Response('{}', 404);
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: UnifiedProductPriceDetailPage(
+            product: RecommendedProduct(
+              id: 'prod-001',
+              nama: 'Indomie Goreng',
+              kategori: 'Makanan Instan',
+              harga: 3500.0,
+              namaToko: 'Manna Kampus',
+              updatedAt: '2026-10-10T00:00:00Z',
+            ),
+            baseUrl: 'http://localhost:8000',
+            httpClient: mockClient,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(compareUri, isNotNull);
+      expect(compareUri!.queryParameters['lat'], '-7.78');
+      expect(compareUri!.queryParameters['lng'], '110.4');
+      expect(find.text('800 m'), findsOneWidget);
     });
   });
 }

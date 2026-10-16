@@ -63,10 +63,16 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
     double? lng = widget.userLng;
 
     if (lat == null || lng == null) {
-      final locResult = await LocationService.resolveLocation(askPermission: false);
-      if (locResult.outcome == LocationOutcome.granted && locResult.position != null) {
-        lat = locResult.position!.latitude;
-        lng = locResult.position!.longitude;
+      final cached = LocationService.cachedPosition;
+      if (cached != null) {
+        lat = cached.latitude;
+        lng = cached.longitude;
+      } else {
+        final locResult = await LocationService.resolveLocation(askPermission: false);
+        if (locResult.outcome == LocationOutcome.granted && locResult.position != null) {
+          lat = locResult.position!.latitude;
+          lng = locResult.position!.longitude;
+        }
       }
     }
 
@@ -1174,7 +1180,6 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                         }
 
                         final distanceStr = ProductCard.formatDistance(effectiveDistance);
-                        final storeRowText = distanceStr != null ? '${item.namaToko} · $distanceStr' : item.namaToko;
 
                         return Container(
                           padding: const EdgeInsets.all(14.0),
@@ -1227,7 +1232,7 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      storeRowText,
+                                      item.namaToko,
                                       style: GoogleFonts.outfit(
                                         fontSize: 13.5,
                                         fontWeight: FontWeight.w800,
@@ -1236,6 +1241,32 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
+                                    if (distanceStr != null) ...[
+                                      const SizedBox(height: 2),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.place_outlined,
+                                            size: 11,
+                                            color: Color(0xFF6B7280),
+                                          ),
+                                          const SizedBox(width: 2),
+                                          Flexible(
+                                            child: Text(
+                                              distanceStr,
+                                              style: GoogleFonts.outfit(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                                color: const Color(0xFF6B7280),
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                     if (badgeWidget != null) ...[
                                       const SizedBox(height: 4),
                                       badgeWidget,

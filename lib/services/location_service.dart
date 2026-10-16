@@ -15,6 +15,33 @@ class LocationResult {
 
 /// Service that manages device location permissions and fetches current GPS coordinates.
 class LocationService {
+  static Position? _lastKnownPosition;
+  static DateTime? _lastKnownPositionTime;
+
+  /// Masa berlaku cache lokasi dalam memori (10 menit).
+  static const Duration locationCacheTtl = Duration(minutes: 10);
+
+  /// Mengembalikan posisi terakhir yang tersimpan jika masih dalam masa berlaku.
+  static Position? get cachedPosition {
+    if (_lastKnownPosition == null || _lastKnownPositionTime == null) return null;
+    if (DateTime.now().difference(_lastKnownPositionTime!) > locationCacheTtl) {
+      _lastKnownPosition = null;
+      _lastKnownPositionTime = null;
+      return null;
+    }
+    return _lastKnownPosition;
+  }
+
+  static void cachePosition(Position position) {
+    _lastKnownPosition = position;
+    _lastKnownPositionTime = DateTime.now();
+  }
+
+  static void clearCache() {
+    _lastKnownPosition = null;
+    _lastKnownPositionTime = null;
+  }
+
   /// Test override for checking if location service is enabled (for unit/widget tests).
   static bool? testIsLocationServiceEnabled;
 
@@ -106,11 +133,17 @@ class LocationService {
     if (forced != null && forced != LocationOutcome.granted) return LocationResult(forced);
     if (testIsLocationServiceEnabled == false) return const LocationResult(LocationOutcome.serviceDisabled);
     if (Platform.environment.containsKey('FLUTTER_TEST') && !testUsePlatform) {
-      return LocationResult(LocationOutcome.granted, _testPosition());
+      final pos = _testPosition();
+      cachePosition(pos);
+      return LocationResult(LocationOutcome.granted, pos);
+    }
+    if (!askPermission && cachedPosition != null) {
+      return LocationResult(LocationOutcome.granted, cachedPosition);
     }
     // Urutan: layanan aktif? -> izin? -> (ditolak/permanen: berhenti) -> baru ambil posisi.
     try {
       if (!await Geolocator.isLocationServiceEnabled().timeout(_statusTimeout)) {
+        clearCache();
         return const LocationResult(LocationOutcome.serviceDisabled);
       }
       var permission = await Geolocator.checkPermission().timeout(_statusTimeout);
@@ -118,9 +151,11 @@ class LocationService {
         permission = await _requestPermissionOnce();
       }
       if (permission == LocationPermission.deniedForever) {
+        clearCache();
         return const LocationResult(LocationOutcome.deniedForever);
       }
       if (permission == LocationPermission.denied) {
+        clearCache();
         return const LocationResult(LocationOutcome.denied);
       }
       if (permission == LocationPermission.unableToDetermine) {
@@ -130,6 +165,7 @@ class LocationService {
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: _positionTimeout,
       );
+      cachePosition(position);
       return LocationResult(LocationOutcome.granted, position);
     } catch (_) {
       // Galat platform/timeout: jangan melempar; layar menampilkan "Lokasi belum terdeteksi".
@@ -146,7 +182,7 @@ class LocationService {
       );
     }
     if (Platform.environment.containsKey('FLUTTER_TEST') && !testUsePlatform) {
-      return Position(
+      final pos = Position(
         longitude: 106.8456,
         latitude: -6.2088,
         timestamp: DateTime.now(),
@@ -158,6 +194,8 @@ class LocationService {
         speed: 0.0,
         speedAccuracy: 0.0,
       );
+      cachePosition(pos);
+      return pos;
     }
     bool serviceEnabled;
     LocationPermission permission;
@@ -190,10 +228,12 @@ class LocationService {
 
     // Fetch current GPS position with high accuracy.
     try {
-      return await Geolocator.getCurrentPosition(
+      final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: const Duration(seconds: 8),
       );
+      cachePosition(pos);
+      return pos;
     } catch (e) {
       throw LocationServiceException(
         'Gagal mengambil koordinat lokasi: $e',
