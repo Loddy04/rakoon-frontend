@@ -143,6 +143,72 @@ void main() {
     final size = tester.getSize(ruteGestureFinder);
     expect(size.width, greaterThanOrEqualTo(48.0));
     expect(size.height, greaterThanOrEqualTo(48.0));
+
+    // Button text size must be legible (fontSize >= 13)
+    final textWidget = tester.widget<Text>(find.text('Rute'));
+    expect(textWidget.style?.fontSize, greaterThanOrEqualTo(13.0));
+  });
+
+  testWidgets('Renders without overflow on 320dp narrow viewport with 48dp Rute button', (tester) async {
+    tester.view.physicalSize = const Size(320, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final mockClient = MockClient((request) async {
+      final headers = {'content-type': 'application/json'};
+      if (request.url.path.contains('/price/compare/')) {
+        return http.Response(
+          jsonEncode({
+            'product_id': 'prod-001',
+            'nama_produk': 'Indomie Goreng Rasa Ayam Bawang Ekstra Pedas Spesial',
+            'comparison': [
+              {
+                'store_id': 's1',
+                'nama_toko': 'Supermarket Sangat Panjang Namanya Sekali',
+                'lat': -7.78,
+                'lng': 110.40,
+                'jarak_km': 15.8,
+                'harga_terbaru': 125000,
+              },
+            ],
+          }),
+          200,
+          headers: headers,
+        );
+      }
+      if (request.url.path.contains('price-history')) {
+        return http.Response(
+          jsonEncode({'product_id': 'prod-001', 'total': 0, 'items': [], 'trend': []}),
+          200,
+          headers: headers,
+        );
+      }
+      return http.Response('{}', 404);
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UnifiedProductPriceDetailPage(
+          product: RecommendedProduct(
+            id: 'prod-001',
+            nama: 'Indomie Goreng Rasa Ayam Bawang Ekstra Pedas Spesial',
+            kategori: 'Makanan Instan',
+            harga: 125000.0,
+            namaToko: 'Supermarket Sangat Panjang Namanya Sekali',
+            updatedAt: '2026-10-10T00:00:00Z',
+          ),
+          baseUrl: 'http://localhost:8000',
+          httpClient: mockClient,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    final ruteFinder = find.ancestor(of: find.text('Rute'), matching: find.byType(GestureDetector));
+    final ruteSize = tester.getSize(ruteFinder);
+    expect(ruteSize.height, greaterThanOrEqualTo(48.0));
+    expect(ruteSize.width, greaterThanOrEqualTo(48.0));
   });
 
   group('Product detail location and distance behavior', () {

@@ -1269,10 +1269,10 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                                       child: Align(
                                         alignment: Alignment.centerRight,
                                         child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFEBF5EE),
-                                            borderRadius: BorderRadius.circular(10),
+                                            borderRadius: BorderRadius.circular(12),
                                             border: Border.all(color: const Color(0xFFA7F3D0)),
                                           ),
                                           child: Row(
@@ -1280,14 +1280,14 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                                             children: [
                                               const Icon(
                                                 Icons.near_me_rounded,
-                                                size: 12,
+                                                size: 15,
                                                 color: Color(0xFF059669),
                                               ),
                                               const SizedBox(width: 4),
                                               Text(
                                                 'Rute',
                                                 style: GoogleFonts.outfit(
-                                                  fontSize: 10.5,
+                                                  fontSize: 13,
                                                   fontWeight: FontWeight.w700,
                                                   color: const Color(0xFF059669),
                                                 ),
