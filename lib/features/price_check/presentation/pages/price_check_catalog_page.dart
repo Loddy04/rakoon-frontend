@@ -13,6 +13,8 @@ class PriceCheckCatalogPage extends StatefulWidget {
   final http.Client? httpClient;
   final double userLat;
   final double userLng;
+  // userLat/userLng punya nilai bawaan; hanya dikirim ke backend bila lokasi benar-benar terdeteksi.
+  final bool hasUserLocation;
 
   const PriceCheckCatalogPage({
     super.key,
@@ -20,6 +22,7 @@ class PriceCheckCatalogPage extends StatefulWidget {
     this.httpClient,
     this.userLat = -7.7829,
     this.userLng = 110.4083,
+    this.hasUserLocation = false,
   });
 
   @override
@@ -35,6 +38,9 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
   void initState() {
     super.initState();
     _priceCheckProvider = PriceCheckProvider();
+    if (widget.hasUserLocation) {
+      _priceCheckProvider.setUserLocation(widget.userLat, widget.userLng);
+    }
     _priceCheckProvider.fetchCatalog(
       baseUrl: widget.baseUrl,
       client: widget.httpClient,
@@ -379,7 +385,7 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
                                     ukuran: catalogItem.ukuran,
                                     satuan: catalogItem.satuan,
                                     namaToko: storeInfo,
-                                    jarakKm: null,
+                                    jarakKm: catalogItem.jarakKm,
                                     updatedAt: catalogItem.updatedAt ?? 'Baru saja',
                                     fotoUrl: catalogItem.fotoUrl,
                                     stale: catalogItem.stale,

@@ -43,6 +43,8 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String _locationLabel = 'Tidak Terdeteksi';
   double _userLat = -7.7829;
   double _userLng = 110.4083;
+  // _userLat/_userLng punya nilai bawaan; jangan dikirim ke backend sebelum lokasi terdeteksi.
+  bool _hasLocation = false;
 
   List<RecentScan>? _recentScans;
   bool _isLoadingScans = false;
@@ -121,6 +123,11 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     double? lng,
     double radiusKm = 1.0,
   }) async {
+    final sendLocation = _hasLocation || (lat != null && lng != null);
+    _catalogProvider.setUserLocation(
+      sendLocation ? (lat ?? _userLat) : null,
+      sendLocation ? (lng ?? _userLng) : null,
+    );
     await _catalogProvider.fetchCatalog(
       baseUrl: _getBaseUrl(),
       client: widget.httpClient,
@@ -128,8 +135,8 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Also trigger recommendation provider in background if needed
     _recommendationProvider.fetchRecommendedProducts(
       baseUrl: _getBaseUrl(),
-      lat: lat ?? _userLat,
-      lng: lng ?? _userLng,
+      lat: sendLocation ? (lat ?? _userLat) : null,
+      lng: sendLocation ? (lng ?? _userLng) : null,
       radiusKm: radiusKm,
       client: widget.httpClient,
     );
@@ -200,6 +207,7 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       setState(() {
         _userLat = position.latitude;
         _userLng = position.longitude;
+        _hasLocation = true;
         _locationLabel = areaName.isNotEmpty ? areaName : 'Lokasi Aktif';
       });
 
@@ -223,6 +231,7 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } catch (_) {
       if (!mounted) return;
       setState(() {
+        _hasLocation = false;
         _locationLabel = 'Tidak Terdeteksi';
       });
     }
@@ -569,6 +578,7 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 httpClient: widget.httpClient,
                                 userLat: _userLat,
                                 userLng: _userLng,
+                                hasUserLocation: _hasLocation,
                               ),
                             ),
                           );
@@ -686,6 +696,7 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                                 httpClient: widget.httpClient,
                                                 userLat: _userLat,
                                                 userLng: _userLng,
+                                                hasUserLocation: _hasLocation,
                                               ),
                                         ),
                                       );
@@ -806,6 +817,7 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     httpClient: widget.httpClient,
                                     userLat: _userLat,
                                     userLng: _userLng,
+                                    hasUserLocation: _hasLocation,
                                   ),
                                 ),
                               );
@@ -932,7 +944,7 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   ukuran: catalogItem.ukuran,
                                   satuan: catalogItem.satuan,
                                   namaToko: storeInfo,
-                                  jarakKm: null,
+                                  jarakKm: catalogItem.jarakKm,
                                   updatedAt:
                                       catalogItem.updatedAt ?? 'just now',
                                   fotoUrl: catalogItem.fotoUrl,
