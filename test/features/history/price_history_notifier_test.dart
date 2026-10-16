@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
+import 'package:rakoon_frontend/features/history/data/models/price_history_item.dart';
 import 'package:rakoon_frontend/features/history/data/repositories/price_history_repository.dart';
 import 'package:rakoon_frontend/features/history/presentation/providers/price_history_notifier.dart';
 
@@ -82,6 +83,20 @@ void main() {
       expect(notifier.errorMessage, 'Produk tidak ditemukan');
     });
 
+    test('fetchPriceHistory sanitizes raw technical exceptions with userMessage', () async {
+      final repository = _ThrowingPriceHistoryRepository(
+        Exception('SocketException: Failed host lookup http://internal.db'),
+      );
+      final notifier = PriceHistoryNotifier(repository: repository);
+
+      await notifier.fetchPriceHistory(productId: 1);
+
+      expect(notifier.isError, isTrue);
+      expect(notifier.errorMessage, isNot(contains('SocketException')));
+      expect(notifier.errorMessage, isNot(contains('http://internal.db')));
+      expect(notifier.errorMessage, 'Terjadi kesalahan, coba lagi');
+    });
+
     test('setRange updates selectedRange and re-fetches data', () async {
       late Uri lastRequestedUrl;
       final mockClient = MockClient((request) async {
@@ -104,4 +119,18 @@ void main() {
       expect(lastRequestedUrl.queryParameters['range'], '1m');
     });
   });
+}
+
+class _ThrowingPriceHistoryRepository extends PriceHistoryRepository {
+  final Object errorToThrow;
+  _ThrowingPriceHistoryRepository(this.errorToThrow);
+
+  @override
+  Future<PriceHistoryResponse> getPriceHistory({
+    required dynamic productId,
+    dynamic storeId,
+    String? range,
+  }) async {
+    throw errorToThrow;
+  }
 }

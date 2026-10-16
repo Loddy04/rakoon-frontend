@@ -259,7 +259,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Gagal mengambil gambar: $e';
+          _errorMessage = 'Gagal mengambil gambar. Coba lagi.';
         });
       }
     }
@@ -287,7 +287,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Gagal mengakses galeri: $e';
+          _errorMessage = 'Tidak dapat membuka galeri. Periksa izin akses foto.';
         });
       }
     }

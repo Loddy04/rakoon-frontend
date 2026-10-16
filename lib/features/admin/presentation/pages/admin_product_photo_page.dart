@@ -788,7 +788,7 @@ class _EditPhotoSheetState extends State<_EditPhotoSheet> with SingleTickerProvi
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Gagal memilih gambar: $e';
+        _errorMessage = 'Gagal memilih gambar. Coba lagi.';
       });
     }
   }

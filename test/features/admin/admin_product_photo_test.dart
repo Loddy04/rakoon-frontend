@@ -15,7 +15,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MockImagePicker extends ImagePicker {
   final XFile? fileToReturn;
-  MockImagePicker({this.fileToReturn});
+  final Object? errorToThrow;
+  MockImagePicker({this.fileToReturn, this.errorToThrow});
 
   @override
   Future<XFile?> pickImage({
@@ -26,6 +27,7 @@ class MockImagePicker extends ImagePicker {
     CameraDevice preferredCameraDevice = CameraDevice.rear,
     bool requestFullMetadata = true,
   }) async {
+    if (errorToThrow != null) throw errorToThrow!;
     return fileToReturn;
   }
 }
@@ -473,6 +475,33 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('berhasil diperbarui'), findsOneWidget);
+    });
+
+    testWidgets('Image picker failure displays friendly message without raw exception', (tester) async {
+      final client = createMockClient();
+      final mockPicker = MockImagePicker(
+        errorToThrow: Exception('PlatformException: permissions_revoked_at_runtime'),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AdminProductPhotoPage(
+            baseUrl: 'http://localhost:8000',
+            httpClient: client,
+            imagePicker: mockPicker,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('edit_photo_btn_prod-1')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('admin_pick_gallery_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('permissions_revoked_at_runtime'), findsNothing);
+      expect(find.text('Gagal memilih gambar. Coba lagi.'), findsOneWidget);
     });
   });
 

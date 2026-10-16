@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import '../../data/models/price_history_item.dart';
 import '../../data/repositories/price_history_repository.dart';
 
@@ -93,7 +94,7 @@ class PriceHistoryNotifier extends ChangeNotifier {
     } catch (e) {
       if (requestToken != _currentRequestCount || _isDisposed) return;
       _status = PriceHistoryStatus.error;
-      _errorMessage = 'Terjadi kesalahan: $e';
+      _errorMessage = userMessage(e);
     } finally {
       if (requestToken == _currentRequestCount && !_isDisposed) {
         notifyListeners();
