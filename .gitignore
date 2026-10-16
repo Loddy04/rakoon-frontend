@@ -56,3 +56,6 @@ android/build/reports/
 # Crash dumps
 *.stackdump
 
+
+# graphify
+graphify-out/
