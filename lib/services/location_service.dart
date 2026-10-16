@@ -66,7 +66,7 @@ class LocationService {
   /// Opens the device's location service settings screen (GPS toggle).
   static Future<bool> openLocationSettings() async {
     onOpenLocationSettings?.call();
-    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (Platform.environment.containsKey('FLUTTER_TEST') && !testUsePlatform) {
       return true;
     }
     return await Geolocator.openLocationSettings();

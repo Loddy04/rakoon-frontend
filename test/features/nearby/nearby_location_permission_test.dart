@@ -125,14 +125,15 @@ void main() {
     });
   });
 
-  testWidgets('layanan lokasi mati: pesan + "Coba lagi", tanpa panggilan toko', (tester) async {
+  testWidgets('layanan lokasi mati: pesan + "Buka pengaturan lokasi", tanpa panggilan toko', (tester) async {
     LocationService.testOutcome = LocationOutcome.serviceDisabled;
     await mockNetworkImagesFor(() async {
       final api = _Api();
       await _open(tester, api);
 
-      expect(find.text('Aktifkan layanan lokasi'), findsOneWidget);
-      expect(find.text('Coba lagi'), findsOneWidget);
+      expect(find.text('Layanan lokasi mati. Aktifkan lokasi di pengaturan.'), findsOneWidget);
+      expect(find.text('Buka pengaturan lokasi'), findsOneWidget);
+      expect(find.text('Coba lagi'), findsNothing);
       expect(api.nearby, isEmpty);
       expect(find.text('Toko Satu'), findsNothing);
     });

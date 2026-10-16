@@ -866,10 +866,11 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
         onAction = LocationService.openAppSettings;
         break;
       case LocationOutcome.serviceDisabled:
-        title = 'Aktifkan layanan lokasi';
-        body = 'Nyalakan GPS perangkat Anda agar kami bisa menampilkan toko di sekitar Anda.';
-        actionLabel = 'Coba lagi';
-        onAction = _fetchLocationAndStores;
+        title = 'Layanan lokasi mati. Aktifkan lokasi di pengaturan.';
+        body = 'Setelah GPS menyala, kembali ke sini dan toko di sekitar Anda akan dimuat.';
+        actionLabel = 'Buka pengaturan lokasi';
+        // Memuat ulang tidak berguna selama GPS mati; resume dari pengaturan yang memuat ulang.
+        onAction = LocationService.openLocationSettings;
         break;
       case LocationOutcome.failed:
         title = 'Lokasi belum terdeteksi';

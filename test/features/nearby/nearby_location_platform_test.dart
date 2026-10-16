@@ -18,6 +18,7 @@ class FakeGeolocator extends GeolocatorPlatform {
   Object? checkError;
   Completer<LocationPermission>? requestGate;
   Object? positionError;
+  int openLocationSettingsCount = 0;
 
   final calls = <String>[];
   int get requestCount => calls.where((c) => c == 'requestPermission').length;
@@ -60,6 +61,12 @@ class FakeGeolocator extends GeolocatorPlatform {
       speed: 0,
       speedAccuracy: 0,
     );
+  }
+
+  @override
+  Future<bool> openLocationSettings() async {
+    openLocationSettingsCount++;
+    return true;
   }
 
   @override
@@ -150,7 +157,7 @@ void main() {
     await mockNetworkImagesFor(() async {
       await open(tester);
 
-      expect(find.text('Aktifkan layanan lokasi'), findsOneWidget);
+      expect(find.text('Layanan lokasi mati. Aktifkan lokasi di pengaturan.'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(fake.calls, ['isLocationServiceEnabled']);
     });
@@ -200,5 +207,70 @@ void main() {
 
     expect(fake.requestCount, 1);
     expect(fake.positionCount, 0);
+  });
+
+  group('layanan lokasi mati', () {
+    Future<void> resumeApp(WidgetTester tester) async {
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('menampilkan "Buka pengaturan lokasi", bukan "Coba lagi"', (tester) async {
+      fake.serviceEnabled = false;
+      await mockNetworkImagesFor(() async {
+        await open(tester);
+
+        expect(find.text('Layanan lokasi mati. Aktifkan lokasi di pengaturan.'), findsOneWidget);
+        expect(find.text('Buka pengaturan lokasi'), findsOneWidget);
+        expect(find.text('Coba lagi'), findsNothing);
+      });
+    });
+
+    testWidgets('tombol membuka pengaturan lokasi tepat sekali, tanpa memuat ulang', (tester) async {
+      fake.serviceEnabled = false;
+      await mockNetworkImagesFor(() async {
+        final api = await open(tester);
+        final callsBefore = fake.calls.length;
+
+        await tester.tap(find.text('Buka pengaturan lokasi'));
+        await tester.pumpAndSettle();
+
+        expect(fake.openLocationSettingsCount, 1);
+        expect(fake.calls.length, callsBefore);
+        expect(api.nearby, isEmpty);
+      });
+    });
+
+    testWidgets('mati lalu diaktifkan di pengaturan lalu resume: toko dimuat tepat sekali', (tester) async {
+      fake.serviceEnabled = false;
+      await mockNetworkImagesFor(() async {
+        final api = await open(tester);
+
+        fake.serviceEnabled = true;
+        fake.permission = LocationPermission.whileInUse;
+        await resumeApp(tester);
+        await resumeApp(tester);
+
+        expect(api.nearby, hasLength(1));
+        expect(api.nearby.single.queryParameters['lat'], '-6.2088');
+        expect(fake.requestCount, 0);
+      });
+    });
+
+    testWidgets('resume berulang saat masih mati: tanpa panggilan toko dan tanpa requestPermission', (tester) async {
+      fake.serviceEnabled = false;
+      await mockNetworkImagesFor(() async {
+        final api = await open(tester);
+        for (var i = 0; i < 4; i++) {
+          await resumeApp(tester);
+        }
+
+        expect(api.nearby, isEmpty);
+        expect(fake.requestCount, 0);
+        expect(fake.positionCount, 0);
+        expect(find.text('Buka pengaturan lokasi'), findsOneWidget);
+      });
+    });
   });
 }
