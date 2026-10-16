@@ -15,7 +15,7 @@ void main() {
       expect(ProductCard.formatDistance(1.2), '1.2 km');
       expect(ProductCard.formatDistance(1.25), '1.3 km');
       expect(ProductCard.formatDistance(2.0), '2.0 km');
-      expect(ProductCard.formatDistance(null), '800 m');
+      expect(ProductCard.formatDistance(null), isNull);
     });
 
     test('formatTimeAgo parses ISO strings and relative strings dynamically', () {
@@ -70,7 +70,37 @@ void main() {
       );
 
       expect(find.text('800 m'), findsOneWidget);
+      expect(find.text(' · '), findsOneWidget);
       expect(find.text('15m ago'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('ProductCard hides distance and separator when jarakKm is null', (
+      WidgetTester tester,
+    ) async {
+      final product = RecommendedProduct(
+        id: 'test-2',
+        nama: 'INDOMIE GORENG 85G',
+        kategori: 'Makanan Instan',
+        harga: 3100,
+        namaToko: 'MANNA KAMPUS BABARSARI',
+        jarakKm: null,
+        updatedAt: '15 mnt lalu',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: ProductCard(product: product),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('800 m'), findsNothing);
+      expect(find.text(' · '), findsNothing);
+      expect(find.text('MANNA KAMPUS BABARSARI'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

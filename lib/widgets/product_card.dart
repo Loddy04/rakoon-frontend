@@ -27,8 +27,8 @@ class ProductCard extends StatelessWidget {
   });
 
   /// Format distance to lowercase units: 'm' and 'km' (per UI_RULES.md).
-  static String formatDistance(double? jarakKm) {
-    if (jarakKm == null) return '800 m';
+  static String? formatDistance(double? jarakKm) {
+    if (jarakKm == null) return null;
     if (jarakKm < 1.0) {
       final meters = (jarakKm * 1000).round();
       return '$meters m';
@@ -107,7 +107,7 @@ class ProductCard extends StatelessWidget {
             ? product.satuan!
             : product.kategori;
 
-    final String distanceStr = formatDistance(product.jarakKm);
+    final String? distanceStr = formatDistance(product.jarakKm);
 
     final effectiveMargin = margin ??
         (width == double.infinity
@@ -223,22 +223,24 @@ class ProductCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Text(
-                      ' · ',
-                      style: GoogleFonts.outfit(
-                        fontSize: 10.0,
-                        color: const Color(0xFF9E9E9E),
-                        fontWeight: FontWeight.w500,
+                    if (distanceStr != null) ...[
+                      Text(
+                        ' · ',
+                        style: GoogleFonts.outfit(
+                          fontSize: 10.0,
+                          color: const Color(0xFF9E9E9E),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                    Text(
-                      distanceStr,
-                      style: GoogleFonts.outfit(
-                        fontSize: 10.0,
-                        color: const Color(0xFF6B6B6B),
-                        fontWeight: FontWeight.w500,
+                      Text(
+                        distanceStr,
+                        style: GoogleFonts.outfit(
+                          fontSize: 10.0,
+                          color: const Color(0xFF6B6B6B),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ],
