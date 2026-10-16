@@ -10,6 +10,7 @@ import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 import 'package:rakoon_frontend/services/location_service.dart';
+import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/widgets/price_freshness_label.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
@@ -33,11 +34,13 @@ class NearbyStoresScreen extends StatefulWidget {
   State<NearbyStoresScreen> createState() => _NearbyStoresScreenState();
 }
 
-class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
+class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBindingObserver {
   final MapController _mapController = MapController();
   final DraggableScrollableController _sheetController = DraggableScrollableController();
   bool _isLoading = true;
   String? _errorMessage;
+  // Bukan granted = tidak ada lokasi: tanpa panggilan toko, daftar, atau marker lokasi pengguna.
+  LocationOutcome? _locationProblem;
 
   Position? _userPosition;
   NearbyStoresResponse? _storesResponse;
@@ -47,11 +50,25 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _fetchLocationAndStores();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Kembali dari pengaturan: coba lagi hanya bila sebelumnya terhalang izin/layanan.
+    final problem = _locationProblem;
+    if (state == AppLifecycleState.resumed &&
+        !_isLoading &&
+        problem != null &&
+        problem != LocationOutcome.failed) {
+      _fetchLocationAndStores();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _sheetController.dispose();
     super.dispose();
   }
@@ -132,26 +149,24 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _locationProblem = null;
       _selectedStore = null;
     });
 
     try {
-      Position position;
-      if (widget.initialLat != null && widget.initialLng != null) {
-        position = Position(
-          latitude: widget.initialLat!,
-          longitude: widget.initialLng!,
-          timestamp: DateTime.now(),
-          accuracy: 1.0,
-          altitude: 0.0,
-          altitudeAccuracy: 1.0,
-          heading: 0.0,
-          headingAccuracy: 1.0,
-          speed: 0.0,
-          speedAccuracy: 1.0,
-        );
-      } else {
-        position = await LocationService.getCurrentLocation();
+      // initialLat/initialLng dari pemanggil diabaikan: Home meneruskan titik bawaan saat lokasi belum
+      // terdeteksi, dan layar ini tidak boleh memakai koordinat bawaan.
+      final result = await LocationService.resolveLocation();
+      if (!mounted) return;
+      final position = result.position;
+      if (result.outcome != LocationOutcome.granted || position == null) {
+        setState(() {
+          _locationProblem = result.outcome == LocationOutcome.granted ? LocationOutcome.failed : result.outcome;
+          _userPosition = null;
+          _storesResponse = null;
+          _isLoading = false;
+        });
+        return;
       }
       _userPosition = position;
 
@@ -758,7 +773,9 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
       body: SafeArea(
         child: _isLoading
             ? _buildLoadingWidget()
-            : _errorMessage != null
+            : _locationProblem != null
+                ? _buildLocationProblemWidget()
+                : _errorMessage != null
                 ? _buildErrorWidget()
                 : hasData
                     ? _buildMainLayout()
@@ -787,6 +804,73 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> {
             style: GoogleFonts.outfit(color: const Color(0xFF6B7280), fontSize: 13),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Keadaan tanpa lokasi (izin ditolak/permanen, layanan mati, gagal): teks ramah + satu tombol aksi.
+  Widget _buildLocationProblemWidget() {
+    final problem = _locationProblem!;
+    final String title;
+    final String body;
+    final String actionLabel;
+    final VoidCallback onAction;
+    switch (problem) {
+      case LocationOutcome.deniedForever:
+        title = 'Izin lokasi diperlukan untuk melihat toko terdekat';
+        body = 'Izin lokasi dimatikan di pengaturan. Aktifkan izin lokasi untuk Rakoon, lalu kembali ke sini.';
+        actionLabel = 'Buka pengaturan';
+        onAction = LocationService.openAppSettings;
+        break;
+      case LocationOutcome.serviceDisabled:
+        title = 'Aktifkan layanan lokasi';
+        body = 'Nyalakan GPS perangkat Anda agar kami bisa menampilkan toko di sekitar Anda.';
+        actionLabel = 'Coba lagi';
+        onAction = _fetchLocationAndStores;
+        break;
+      case LocationOutcome.failed:
+        title = 'Lokasi belum terdeteksi';
+        body = 'Kami belum berhasil mengambil lokasi Anda. Coba lagi sebentar lagi.';
+        actionLabel = 'Coba lagi';
+        onAction = _fetchLocationAndStores;
+        break;
+      case LocationOutcome.denied:
+      case LocationOutcome.granted:
+        title = 'Izin lokasi diperlukan untuk melihat toko terdekat';
+        body = 'Izinkan akses lokasi agar kami bisa menampilkan toko di sekitar Anda.';
+        actionLabel = 'Izinkan lokasi';
+        onAction = _fetchLocationAndStores;
+        break;
+    }
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.location_off_outlined, size: 64, color: AppColors.muted),
+            const SizedBox(height: AppSpacing.l),
+            Text(title, textAlign: TextAlign.center, style: AppTextStyles.titleSmall),
+            const SizedBox(height: AppSpacing.s),
+            Text(
+              body,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.muted),
+            ),
+            const SizedBox(height: AppSpacing.xxl),
+            ElevatedButton(
+              key: const Key('nearby_location_action_button'),
+              onPressed: onAction,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.l)),
+              ),
+              child: Text(actionLabel),
+            ),
+          ],
+        ),
       ),
     );
   }

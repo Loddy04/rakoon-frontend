@@ -2,10 +2,23 @@ import 'dart:io';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
+/// Hasil permintaan lokasi, dipakai layar yang harus membedakan penyebab kegagalan.
+enum LocationOutcome { granted, denied, deniedForever, serviceDisabled, failed }
+
+class LocationResult {
+  final LocationOutcome outcome;
+  final Position? position;
+
+  const LocationResult(this.outcome, [this.position]);
+}
+
 /// Service that manages device location permissions and fetches current GPS coordinates.
 class LocationService {
   /// Test override for checking if location service is enabled (for unit/widget tests).
   static bool? testIsLocationServiceEnabled;
+
+  /// Test override: paksa hasil [resolveLocation] selain granted (null = perilaku normal).
+  static LocationOutcome? testOutcome;
 
   /// Test callback when openLocationSettings is invoked.
   static void Function()? onOpenLocationSettings;
@@ -40,6 +53,52 @@ class LocationService {
       return true;
     }
     return await Geolocator.openAppSettings();
+  }
+
+  static Position _testPosition() => Position(
+        longitude: 106.8456,
+        latitude: -6.2088,
+        timestamp: DateTime.now(),
+        accuracy: 1.0,
+        altitude: 0.0,
+        altitudeAccuracy: 0.0,
+        heading: 0.0,
+        headingAccuracy: 0.0,
+        speed: 0.0,
+        speedAccuracy: 0.0,
+      );
+
+  /// Meminta izin lokasi bila perlu dan mengembalikan posisi, atau penyebab tidak ada posisi
+  /// (tanpa melempar). Tidak pernah memakai koordinat bawaan.
+  static Future<LocationResult> resolveLocation() async {
+    final forced = testOutcome;
+    if (forced != null && forced != LocationOutcome.granted) return LocationResult(forced);
+    if (testIsLocationServiceEnabled == false) return const LocationResult(LocationOutcome.serviceDisabled);
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return LocationResult(LocationOutcome.granted, _testPosition());
+    }
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      return const LocationResult(LocationOutcome.serviceDisabled);
+    }
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.deniedForever) {
+      return const LocationResult(LocationOutcome.deniedForever);
+    }
+    if (permission == LocationPermission.denied) {
+      return const LocationResult(LocationOutcome.denied);
+    }
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 8),
+      );
+      return LocationResult(LocationOutcome.granted, position);
+    } catch (_) {
+      return const LocationResult(LocationOutcome.failed);
+    }
   }
 
   /// Requests GPS permission and returns the current [Position].
