@@ -466,6 +466,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                               Icons.close_rounded,
                               color: Color(0xFF9CA3AF),
                             ),
+                            tooltip: 'Tutup',
                             onPressed: () => Navigator.pop(modalContext),
                           ),
                         ],
@@ -592,6 +593,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                                         size: 18,
                                         color: Color(0xFFEF4444),
                                       ),
+                                      tooltip: 'Hapus barang',
                                       constraints: const BoxConstraints(
                                         minWidth: 48,
                                         minHeight: 48,
@@ -619,6 +621,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                                               size: 16,
                                               color: Color(0xFF4B5563),
                                             ),
+                                            tooltip: 'Kurangi kuantitas',
                                             constraints: const BoxConstraints(
                                               minWidth: 48,
                                               minHeight: 48,
@@ -650,6 +653,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                                               size: 16,
                                               color: Color(0xFF059669),
                                             ),
+                                            tooltip: 'Tambah kuantitas',
                                             constraints: const BoxConstraints(
                                               minWidth: 48,
                                               minHeight: 48,
@@ -1003,6 +1007,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                               color: Color(0xFF9CA3AF),
                               size: 18,
                             ),
+                            tooltip: 'Hapus pencarian',
                             onPressed: () {
                               _searchController.clear();
                               _searchProducts('');
@@ -1281,6 +1286,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                                 Icons.delete_outline_rounded,
                                 size: 18,
                               ),
+                              tooltip: 'Hapus barang',
                               color: const Color(0xFFEF4444),
                               constraints: const BoxConstraints(
                                 minWidth: 48,
@@ -1302,6 +1308,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                                 Icons.remove_circle_outline_rounded,
                                 size: 20,
                               ),
+                              tooltip: 'Kurangi kuantitas',
                               color: const Color(0xFF9CA3AF),
                               constraints: const BoxConstraints(
                                 minWidth: 48,
@@ -1338,6 +1345,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                                 Icons.add_circle_rounded,
                                 size: 20,
                               ),
+                              tooltip: 'Tambah kuantitas',
                               color: const Color(0xFF059669),
                               constraints: const BoxConstraints(
                                 minWidth: 48,
@@ -1531,6 +1539,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                       color: Color(0xFF9CA3AF),
                       size: 20,
                     ),
+                    tooltip: 'Sembunyikan daftar',
                     constraints: const BoxConstraints(
                       minWidth: 48,
                       minHeight: 48,
@@ -1686,6 +1695,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
               Icons.arrow_back_rounded,
               color: Color(0xFF111827),
             ),
+            tooltip: 'Kembali',
             onPressed: () => Navigator.of(context).maybePop(),
           ),
           bottom: PreferredSize(
