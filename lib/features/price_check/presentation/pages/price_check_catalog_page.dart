@@ -6,7 +6,6 @@ import 'package:rakoon_frontend/features/price_check/presentation/pages/unified_
 import 'package:rakoon_frontend/features/price_check/presentation/providers/price_check_provider.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
 import 'package:rakoon_frontend/widgets/interactive_scale.dart';
-import 'package:rakoon_frontend/widgets/price_freshness_label.dart';
 import 'package:rakoon_frontend/widgets/product_card.dart';
 
 class PriceCheckCatalogPage extends StatefulWidget {
@@ -367,7 +366,7 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
                                 (context, index) {
                                   final catalogItem = _priceCheckProvider.products[index];
                                   final storeInfo = catalogItem.namaTokoTerendah != null
-                                      ? catalogItem.namaTokoTerendah!
+                                      ? catalogItem.namaTokoTerendah!.trim()
                                       : (catalogItem.jumlahToko > 0
                                           ? 'Tersedia di ${catalogItem.jumlahToko} toko'
                                           : 'Toko Terdekat');
@@ -381,27 +380,15 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
                                     satuan: catalogItem.satuan,
                                     namaToko: storeInfo,
                                     jarakKm: null,
-                                    updatedAt: catalogItem.updatedAt ?? 'just now',
+                                    updatedAt: catalogItem.updatedAt ?? 'Baru saja',
                                     fotoUrl: catalogItem.fotoUrl,
+                                    stale: catalogItem.stale,
                                   );
 
-                                  return Stack(
-                                    children: [
-                                      ProductCard(
-                                        product: recommendedProd,
-                                        onTap: () => _navigateToDetail(recommendedProd),
-                                        width: double.infinity,
-                                      ),
-                                      if (catalogItem.stale)
-                                        Positioned(
-                                          top: 8,
-                                          left: 8,
-                                          child: PriceFreshnessLabel(
-                                            isStale: catalogItem.stale,
-                                            updatedAt: catalogItem.updatedAt,
-                                          ),
-                                        ),
-                                    ],
+                                  return ProductCard(
+                                    product: recommendedProd,
+                                    onTap: () => _navigateToDetail(recommendedProd),
+                                    width: double.infinity,
                                   );
                                 },
                                 childCount: _priceCheckProvider.products.length,
