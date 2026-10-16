@@ -14,6 +14,8 @@ class PriceCheckProvider extends ChangeNotifier {
   String? _errorMessage;
   String _searchQuery = '';
   String _selectedCategory = 'Semua';
+  double? _userLat;
+  double? _userLng;
 
   // Infinite scroll state; a page is "full" when it has pageSize items.
   static const int pageSize = 100;
@@ -76,6 +78,12 @@ class PriceCheckProvider extends ChangeNotifier {
     }
   }
 
+  /// Lokasi pengguna untuk jarak_km di katalog; null = tidak dikirim. Tidak memuat ulang sendiri.
+  void setUserLocation(double? lat, double? lng) {
+    _userLat = lat;
+    _userLng = lng;
+  }
+
   Future<void> fetchCatalog({
     String? search,
     String? category,
@@ -98,6 +106,8 @@ class PriceCheckProvider extends ChangeNotifier {
         search: _searchQuery,
         category: _selectedCategory,
         limit: pageSize,
+        lat: _userLat,
+        lng: _userLng,
         baseUrl: baseUrl,
         client: client,
       );
@@ -130,6 +140,8 @@ class PriceCheckProvider extends ChangeNotifier {
         category: _selectedCategory,
         limit: pageSize,
         offset: _products.length,
+        lat: _userLat,
+        lng: _userLng,
         baseUrl: baseUrl,
         client: client,
       );

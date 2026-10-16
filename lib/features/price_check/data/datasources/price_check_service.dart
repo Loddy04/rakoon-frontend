@@ -13,6 +13,8 @@ class PriceCheckService {
     String? category,
     int limit = 100,
     int offset = 0,
+    double? lat,
+    double? lng,
     String? baseUrl,
     http.Client? client,
   }) async {
@@ -32,6 +34,12 @@ class PriceCheckService {
     }
     if (category != null && category.trim().isNotEmpty && category.trim().toLowerCase() != 'semua') {
       queryParams['category'] = category.trim();
+    }
+
+    // Backend menolak lat tanpa lng (422): kirim hanya sebagai pasangan.
+    if (lat != null && lng != null) {
+      queryParams['lat'] = lat.toString();
+      queryParams['lng'] = lng.toString();
     }
 
     final uri = Uri.parse('$cleanBaseUrl/products/catalog')
