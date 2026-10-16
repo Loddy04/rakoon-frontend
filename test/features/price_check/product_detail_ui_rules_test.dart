@@ -79,4 +79,65 @@ void main() {
     // Verification 5: Back button has tooltip "Kembali"
     expect(find.byTooltip('Kembali'), findsOneWidget);
   });
+
+  testWidgets('Chip Rute touch target size is at least 48x48', (tester) async {
+    final mockClient = MockClient((request) async {
+      final headers = {'content-type': 'application/json'};
+      if (request.url.path.contains('/price/compare/')) {
+        return http.Response(
+          jsonEncode({
+            'product_id': 'prod-001',
+            'nama_produk': 'Indomie Goreng',
+            'comparison': [
+              {
+                'store_id': 's1',
+                'nama_toko': 'Toko Berjarak',
+                'lat': -7.78,
+                'lng': 110.40,
+                'jarak_km': 1.5,
+                'harga_terbaru': 3500,
+              },
+            ],
+          }),
+          200,
+          headers: headers,
+        );
+      }
+      if (request.url.path.contains('price-history')) {
+        return http.Response(
+          jsonEncode({'product_id': 'prod-001', 'total': 0, 'items': [], 'trend': []}),
+          200,
+          headers: headers,
+        );
+      }
+      return http.Response('{}', 404);
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UnifiedProductPriceDetailPage(
+          product: RecommendedProduct(
+            id: 'prod-001',
+            nama: 'Indomie Goreng',
+            kategori: 'Makanan Instan',
+            harga: 3500.0,
+            namaToko: 'Toko Berjarak',
+            updatedAt: '2026-10-10T00:00:00Z',
+          ),
+          baseUrl: 'http://localhost:8000',
+          httpClient: mockClient,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final ruteGestureFinder = find.ancestor(
+      of: find.text('Rute'),
+      matching: find.byType(GestureDetector),
+    );
+    expect(ruteGestureFinder, findsOneWidget);
+    final size = tester.getSize(ruteGestureFinder);
+    expect(size.width, greaterThanOrEqualTo(48.0));
+    expect(size.height, greaterThanOrEqualTo(48.0));
+  });
 }

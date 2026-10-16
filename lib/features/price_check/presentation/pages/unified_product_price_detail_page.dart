@@ -1208,31 +1208,37 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                                   const SizedBox(height: 6),
                                   InteractiveScale(
                                     onTap: () => _launchRoute(item.lat, item.lng, item.namaToko),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFEBF5EE),
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(color: const Color(0xFFA7F3D0)),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.near_me_rounded,
-                                            size: 12,
-                                            color: Color(0xFF059669),
+                                    child: ConstrainedBox(
+                                      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                                      child: Align(
+                                        alignment: Alignment.centerRight,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFEBF5EE),
+                                            borderRadius: BorderRadius.circular(10),
+                                            border: Border.all(color: const Color(0xFFA7F3D0)),
                                           ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'Rute',
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 10.5,
-                                              fontWeight: FontWeight.w700,
-                                              color: const Color(0xFF059669),
-                                            ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(
+                                                Icons.near_me_rounded,
+                                                size: 12,
+                                                color: Color(0xFF059669),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                'Rute',
+                                                style: GoogleFonts.outfit(
+                                                  fontSize: 10.5,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: const Color(0xFF059669),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ],
+                                        ),
                                       ),
                                     ),
                                   ),
