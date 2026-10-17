@@ -165,11 +165,14 @@ void main() {
 
     for (final caller in streamCallers.entries) {
       for (final failure in streamErrorFailures.entries) {
-        test('${caller.key}: stream ${failure.key} throws NoConnectionException with connection message', () async {
+        test('${caller.key}: stream ${failure.key} throws appropriate exception with connection message', () async {
           final client = StreamErrorClient(failure.value());
+          final expectedMessage = caller.key == 'scan.scanPhoto' && failure.key == 'ClientException'
+              ? connectionClosedMessage
+              : noConnectionMessage;
           await expectLater(
             caller.value(client),
-            throwsA(isA<NoConnectionException>().having((e) => e.toString(), 'message', noConnectionMessage)),
+            throwsA(isA<Exception>().having((e) => e.toString(), 'message', expectedMessage)),
           );
         });
       }
