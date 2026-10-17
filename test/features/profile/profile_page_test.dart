@@ -27,6 +27,7 @@ void main() {
 
   tearDown(() {
     AuthService.mockSession = null;
+    AuthService.mockIsAdmin = null;
   });
 
   group('ProfilePage - Unauthenticated State', () {
@@ -198,6 +199,34 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
       await tester.pumpAndSettle();
 
+      expect(find.text('Akun Terverifikasi'), findsNothing);
+    });
+
+    testWidgets('admin with confirmed email displays only "Admin Rakoon" badge and no "Akun Terverifikasi" badge', (
+      WidgetTester tester,
+    ) async {
+      AuthService.mockSession = Session(
+        accessToken: 'mock-token',
+        refreshToken: 'mock-refresh-token',
+        expiresIn: 3600,
+        tokenType: 'bearer',
+        user: User(
+          id: 'admin-confirmed-user',
+          appMetadata: {'role': 'admin'},
+          userMetadata: {'role': 'admin', 'name': 'Admin Terverifikasi'},
+          aud: 'authenticated',
+          email: 'admin@rakoon.co',
+          emailConfirmedAt: '2026-01-02T00:00:00Z',
+          createdAt: DateTime.now().toIso8601String(),
+        ),
+      );
+      AuthService.mockIsAdmin = true;
+
+      await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('profile_admin_badge')), findsOneWidget);
+      expect(find.text('Admin Rakoon'), findsOneWidget);
       expect(find.text('Akun Terverifikasi'), findsNothing);
     });
 

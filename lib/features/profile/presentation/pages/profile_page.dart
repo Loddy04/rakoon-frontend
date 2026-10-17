@@ -543,42 +543,6 @@ class _ProfilePageState extends State<ProfilePage> {
                           ],
                         ),
                       ),
-                    // Lencana "Akun Terverifikasi": sembunyikan untuk pengguna biasa; lencana "Admin Rakoon" tetap untuk admin.
-                    if (AuthService.isAdmin && session.user.emailConfirmedAt != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFECFDF5),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFA7F3D0)),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.check_circle_rounded,
-                              color: Color(0xFF059669),
-                              size: 14,
-                              semanticLabel: 'Akun Terverifikasi',
-                            ),
-                            SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                'Akun Terverifikasi',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11,
-                                  color: Color(0xFF059669),
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                   ],
                 ),
               ],
