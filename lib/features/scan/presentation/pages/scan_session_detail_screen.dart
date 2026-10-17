@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
 
@@ -48,11 +48,7 @@ class _ScanSessionDetailScreenState extends State<ScanSessionDetailScreen> {
     if (widget.baseUrl != null && widget.baseUrl!.isNotEmpty) {
       return widget.baseUrl!;
     }
-    const envBaseUrl = String.fromEnvironment('API_BASE_URL');
-    if (envBaseUrl.isNotEmpty) {
-      return envBaseUrl;
-    }
-    return kIsWeb ? 'http://localhost:8000' : 'https://rakoon-backend.onrender.com';
+    return AppConfig.backendBaseUrl;
   }
 
   Future<void> _fetchDetail() async {
