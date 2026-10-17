@@ -589,6 +589,15 @@ class BudgetResultScreen extends StatelessWidget {
                                     color: diff >= 0 ? const Color(0xFFDC2626) : const Color(0xFF059669),
                                   ),
                                 ),
+                                if (alt.storeInfo.lat != null && alt.storeInfo.lng != null) ...[
+                                  const SizedBox(height: 6),
+                                  StoreRouteButton(
+                                    buttonKey: Key('budget_alt_store_route_button_${alt.storeInfo.storeId}'),
+                                    lat: alt.storeInfo.lat!,
+                                    lng: alt.storeInfo.lng!,
+                                    storeName: alt.storeInfo.nama,
+                                  ),
+                                ],
                               ],
                             ),
                           ],

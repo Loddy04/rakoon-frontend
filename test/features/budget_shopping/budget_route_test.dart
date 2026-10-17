@@ -162,5 +162,146 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.byKey(const Key('budget_store_route_button')), findsOneWidget);
     });
+
+    testWidgets('displays Rute button on alternative stores with coordinates and launches Google Maps', (
+      WidgetTester tester,
+    ) async {
+      Uri? launchedUri;
+      setMockRouteUrlLauncher((uri, {mode = LaunchMode.platformDefault}) async {
+        launchedUri = uri;
+        return true;
+      });
+
+      final response = BudgetRecommendResponse(
+        budget: 50000.0,
+        totalCost: 45000.0,
+        remainingBudget: 5000.0,
+        isFullMatch: true,
+        recommendedStore: StoreInfoOutput(
+          storeId: 'store-budget-rec',
+          nama: 'Super Indo Babarsari',
+          alamat: 'Jl. Babarsari No. 12',
+          lat: -7.7812,
+          lng: 110.4156,
+          distanceKm: 0.8,
+        ),
+        items: [],
+        explanation: 'Rekomendasi terbaik',
+        storeAlternatives: [
+          AlternativeStoreOutput(
+            storeInfo: StoreInfoOutput(
+              storeId: 'store-alt-1',
+              nama: 'Alfamart Seturan',
+              alamat: 'Jl. Seturan No. 5',
+              lat: -7.7715,
+              lng: 110.4095,
+              distanceKm: 0.5,
+            ),
+            totalCost: 48000.0,
+            remainingBudget: 2000.0,
+            isFullMatch: true,
+            matchedProductsCount: 1,
+            items: [],
+          ),
+          AlternativeStoreOutput(
+            storeInfo: StoreInfoOutput(
+              storeId: 'store-alt-no-coord',
+              nama: 'Warung Kelontong',
+              alamat: 'Jl. Kaliurang No. 1',
+              lat: null,
+              lng: null,
+            ),
+            totalCost: 49000.0,
+            remainingBudget: 1000.0,
+            isFullMatch: true,
+            matchedProductsCount: 1,
+            items: [],
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BudgetResultScreen(result: response),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final altRouteBtnFinder = find.byKey(const Key('budget_alt_store_route_button_store-alt-1'));
+      expect(altRouteBtnFinder, findsOneWidget);
+
+      final size = tester.getSize(altRouteBtnFinder);
+      expect(size.height, greaterThanOrEqualTo(48.0));
+      expect(size.width, greaterThanOrEqualTo(48.0));
+
+      final noCoordBtnFinder = find.byKey(const Key('budget_alt_store_route_button_store-alt-no-coord'));
+      expect(noCoordBtnFinder, findsNothing);
+
+      await tester.ensureVisible(altRouteBtnFinder);
+      await tester.tap(altRouteBtnFinder);
+      await tester.pumpAndSettle();
+
+      expect(launchedUri, isNotNull);
+      expect(
+        launchedUri.toString(),
+        'https://www.google.com/maps/dir/?api=1&origin=-6.2088,106.8456&destination=-7.7715,110.4095&travelmode=driving',
+      );
+      expect(launchedUri!.queryParameters['destination'], '-7.7715,110.4095');
+    });
+
+    testWidgets('renders cleanly without overflow at 320dp width with alternative stores having Rute buttons', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final response = BudgetRecommendResponse(
+        budget: 50000.0,
+        totalCost: 45000.0,
+        remainingBudget: 5000.0,
+        isFullMatch: true,
+        recommendedStore: StoreInfoOutput(
+          storeId: 'store-budget-rec',
+          nama: 'Super Indo Babarsari',
+          alamat: 'Jl. Babarsari No. 12',
+          lat: -7.7812,
+          lng: 110.4156,
+          distanceKm: 0.8,
+        ),
+        items: [],
+        explanation: 'Rekomendasi terbaik',
+        storeAlternatives: [
+          AlternativeStoreOutput(
+            storeInfo: StoreInfoOutput(
+              storeId: 'store-alt-1',
+              nama: 'Alfamart Seturan Raya Istimewa',
+              alamat: 'Jl. Seturan No. 5',
+              lat: -7.7715,
+              lng: 110.4095,
+              distanceKm: 1.5,
+            ),
+            totalCost: 48000.0,
+            remainingBudget: 2000.0,
+            isFullMatch: true,
+            matchedProductsCount: 1,
+            items: [],
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BudgetResultScreen(result: response),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('budget_alt_store_route_button_store-alt-1')), findsOneWidget);
+    });
   });
 }
