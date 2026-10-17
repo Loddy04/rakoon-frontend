@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 
@@ -107,11 +108,8 @@ const Map<int, String> _confirmErrorMessages = {
 const Duration scanTimeout = Duration(seconds: 90);
 
 class ScanService {
-  // Default Base URL for Android / Cloud Backend
-  static String defaultBaseUrl = const String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'https://rakoon-backend.onrender.com',
-  );
+  /// Default Base URL resolved from central AppConfig.backendBaseUrl.
+  static String get defaultBaseUrl => AppConfig.backendBaseUrl;
 
   /// Sends the photo file to the POST /scan/ endpoint
   static Future<List<ScanResultItem>> scanPhoto(

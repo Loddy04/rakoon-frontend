@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:camera/camera.dart';
+import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
@@ -13,7 +14,7 @@ import 'package:rakoon_frontend/features/scan/presentation/widgets/add_product_b
 import 'package:rakoon_frontend/theme/app_theme.dart';
 
 class ScanCameraScreen extends StatefulWidget {
-  final String baseUrl;
+  final String? baseUrl;
   final VoidCallback? onClose;
   final bool isActive;
   final CameraController? customCameraController;
@@ -24,7 +25,7 @@ class ScanCameraScreen extends StatefulWidget {
 
   const ScanCameraScreen({
     super.key,
-    required this.baseUrl,
+    this.baseUrl,
     this.onClose,
     this.isActive = true,
     this.customCameraController,
@@ -44,6 +45,11 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
   File? _imageFile;
   bool _isScanning = false;
   String? _errorMessage;
+
+  String get _effectiveBaseUrl =>
+      (widget.baseUrl != null && widget.baseUrl!.isNotEmpty)
+          ? widget.baseUrl!
+          : AppConfig.backendBaseUrl;
 
   // Camera settings
   List<CameraDescription> _cameras = [];
@@ -318,7 +324,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
       context,
       MaterialPageRoute(
         builder: (context) => ScanResultScreen(
-          baseUrl: widget.baseUrl,
+          baseUrl: _effectiveBaseUrl,
           detectedItems: [newItem],
           httpClient: widget.httpClient,
         ),
@@ -367,7 +373,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     try {
       final items = await ScanService.scanPhoto(
         _imageFile!,
-        baseUrl: widget.baseUrl,
+        baseUrl: _effectiveBaseUrl,
         client: widget.httpClient,
       );
 
@@ -377,7 +383,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
         context,
         MaterialPageRoute(
           builder: (context) => ScanResultScreen(
-            baseUrl: widget.baseUrl,
+            baseUrl: _effectiveBaseUrl,
             detectedItems: items,
           ),
         ),

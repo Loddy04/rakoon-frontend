@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
@@ -16,7 +17,7 @@ import 'package:rakoon_frontend/widgets/product_card.dart';
 import 'package:rakoon_frontend/features/scan/presentation/widgets/add_product_bottom_sheet.dart';
 
 class ScanResultScreen extends StatefulWidget {
-  final String baseUrl;
+  final String? baseUrl;
   final List<ScanResultItem> detectedItems;
   final String? initialStoreId;
   final String? initialUserId;
@@ -24,7 +25,7 @@ class ScanResultScreen extends StatefulWidget {
 
   const ScanResultScreen({
     super.key,
-    required this.baseUrl,
+    this.baseUrl,
     required this.detectedItems,
     this.initialStoreId,
     this.initialUserId,
@@ -39,6 +40,11 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
   bool _isSaving = false;
   bool _isDialogShowing = false;
   String? _errorMessage;
+
+  String get _effectiveBaseUrl =>
+      (widget.baseUrl != null && widget.baseUrl!.isNotEmpty)
+          ? widget.baseUrl!
+          : AppConfig.backendBaseUrl;
 
   // Store selection state
   bool _isLoadingStores = true;
@@ -90,7 +96,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
         lat: _defaultFallbackLat,
         lng: _defaultFallbackLng,
         radiusKm: 15.0,
-        baseUrl: widget.baseUrl,
+        baseUrl: _effectiveBaseUrl,
         client: widget.httpClient,
       );
 
@@ -152,7 +158,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
       final response = await StoresService.getNearbyStores(
         lat: position.latitude,
         lng: position.longitude,
-        baseUrl: widget.baseUrl,
+        baseUrl: _effectiveBaseUrl,
         client: widget.httpClient,
       );
 
@@ -358,7 +364,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => RecommendationScreen(
-          baseUrl: widget.baseUrl,
+          baseUrl: _effectiveBaseUrl,
           initialCandidates: candidates,
           httpClient: widget.httpClient,
         ),
@@ -1445,7 +1451,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
         storeId: storeId,
         userId: userId,
         items: confirmedItems,
-        baseUrl: widget.baseUrl,
+        baseUrl: _effectiveBaseUrl,
         client: widget.httpClient,
       );
 

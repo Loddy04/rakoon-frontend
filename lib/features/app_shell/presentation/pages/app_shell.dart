@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/home_screen.dart';
 import 'package:rakoon_frontend/features/profile/presentation/pages/profile_page.dart';
 import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
@@ -45,7 +46,7 @@ class _AppShellState extends State<AppShell> {
             httpClient: widget.httpClient,
           ),
           ScanCameraScreen(
-            baseUrl: widget.baseUrl ?? 'http://10.0.2.2:8000',
+            baseUrl: widget.baseUrl ?? AppConfig.backendBaseUrl,
             onClose: () => _onItemTapped(0),
             isActive: _selectedIndex == 1,
           ),
