@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/services/api_error_messages.dart';
@@ -135,6 +136,9 @@ class ScanService {
     
     // Attach the photo file
     final bytes = imageFile.readAsBytesSync();
+    if (kDebugMode) {
+      debugPrint('[ScanService] Uploading photo payload: ${bytes.length} bytes (${(bytes.length / 1024).toStringAsFixed(1)} KB)');
+    }
     final multipartFile = http.MultipartFile.fromBytes(
       'file',
       bytes,

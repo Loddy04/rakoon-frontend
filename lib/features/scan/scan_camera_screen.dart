@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -379,6 +380,13 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
       _isScanning = true;
       _errorMessage = null;
     });
+
+    if (kDebugMode && _imageFile != null) {
+      try {
+        final length = _imageFile!.lengthSync();
+        debugPrint('[ScanUpload] Photo file size: $length bytes (${(length / 1024).toStringAsFixed(1)} KB)');
+      } catch (_) {}
+    }
 
     try {
       final items = await ScanService.scanPhoto(

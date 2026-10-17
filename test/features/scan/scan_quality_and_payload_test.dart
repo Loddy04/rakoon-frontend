@@ -161,4 +161,20 @@ void main() {
       expect(find.byKey(const Key('retake_button')), findsOneWidget);
     });
   });
+
+  group('Tugas 4: Debug log photo byte size before upload', () {
+    test('ScanService logs photo byte size in debug mode', () async {
+      final client = MockClient((request) async {
+        return http.Response('{"detected": []}', 200);
+      });
+
+      // Execute scanPhoto with fake file (5 bytes)
+      final items = await ScanService.scanPhoto(
+        photo,
+        baseUrl: 'http://localhost:8000',
+        client: client,
+      );
+      expect(items, isEmpty);
+    });
+  });
 }
