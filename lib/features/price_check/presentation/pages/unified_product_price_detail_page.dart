@@ -140,9 +140,6 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
     );
   }
 
-  Future<void> _launchRoute(double lat, double lng, String storeName) =>
-      launchStoreRoute(context, lat: lat, lng: lng, storeName: storeName);
-
   Widget _buildTrendBadge(List<PriceTrendPoint>? trendPoints) {
     if (trendPoints == null || trendPoints.length < 2) {
       return Container(
@@ -1273,7 +1270,9 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                                   ),
                                   const SizedBox(height: 6),
                                   StoreRouteButton(
-                                    onTap: () => _launchRoute(item.lat, item.lng, item.namaToko),
+                                    lat: item.lat,
+                                    lng: item.lng,
+                                    storeName: item.namaToko,
                                   ),
                                 ],
                               ),

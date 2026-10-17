@@ -85,7 +85,7 @@ void main() {
       });
     });
 
-    testWidgets('tapping Rute opens Google Maps with destination coordinates and without origin', (
+    testWidgets('tapping Rute opens Google Maps with origin, destination, and travelmode', (
       WidgetTester tester,
     ) async {
       Uri? launchedUri;
@@ -114,8 +114,12 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(launchedUri, isNotNull);
-        expect(launchedUri.toString(), 'https://www.google.com/maps/dir/?api=1&destination=-7.7712,110.4089');
-        expect(launchedUri!.queryParameters.containsKey('origin'), isFalse);
+        expect(
+          launchedUri.toString(),
+          'https://www.google.com/maps/dir/?api=1&origin=-6.2088,106.8456&destination=-7.7712,110.4089&travelmode=driving',
+        );
+        expect(launchedUri!.queryParameters['origin'], '-6.2088,106.8456');
+        expect(launchedUri!.queryParameters['destination'], '-7.7712,110.4089');
         expect(usedMode, equals(LaunchMode.externalApplication));
       });
     });

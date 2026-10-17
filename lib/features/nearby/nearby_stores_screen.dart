@@ -111,8 +111,12 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
   }
 
   /// Launches Google Maps navigation route to the destination store.
-  Future<void> _launchRoute(double lat, double lng, String storeName) =>
-      launchStoreRoute(context, lat: lat, lng: lng, storeName: storeName);
+  Future<void> _launchRoute(double lat, double lng, String storeName) async {
+    final origin = await LocationService.getFreshPosition();
+    if (mounted) {
+      await launchStoreRoute(context, lat: lat, lng: lng, storeName: storeName, origin: origin);
+    }
+  }
 
   /// Centers the map on the store and scrolls the card into view if needed.
   void _scrollToStore(StoreNearby store) {
@@ -1260,7 +1264,9 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
                     const SizedBox(width: 8),
                     StoreRouteButton(
                       buttonKey: Key('nearby_store_route_button_${store.storeId}'),
-                      onTap: () => _launchRoute(store.lat, store.lng, store.nama),
+                      lat: store.lat,
+                      lng: store.lng,
+                      storeName: store.nama,
                     ),
                   ],
                 ),

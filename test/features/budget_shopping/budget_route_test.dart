@@ -65,7 +65,7 @@ void main() {
       expect(semantics.label, contains('Rute'));
     });
 
-    testWidgets('tapping Rute button opens Google Maps without origin and with destination lat,lng', (
+    testWidgets('tapping Rute button opens Google Maps with origin, destination, and travelmode', (
       WidgetTester tester,
     ) async {
       Uri? launchedUri;
@@ -92,8 +92,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(launchedUri, isNotNull);
-      expect(launchedUri.toString(), 'https://www.google.com/maps/dir/?api=1&destination=-7.7812,110.4156');
-      expect(launchedUri!.queryParameters.containsKey('origin'), isFalse);
+      expect(
+        launchedUri.toString(),
+        'https://www.google.com/maps/dir/?api=1&origin=-6.2088,106.8456&destination=-7.7812,110.4156&travelmode=driving',
+      );
+      expect(launchedUri!.queryParameters['origin'], '-6.2088,106.8456');
+      expect(launchedUri!.queryParameters['destination'], '-7.7812,110.4156');
       expect(usedMode, equals(LaunchMode.externalApplication));
     });
 

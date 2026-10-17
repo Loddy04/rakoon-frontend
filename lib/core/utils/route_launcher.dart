@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:rakoon_frontend/services/location_service.dart';
 import 'package:rakoon_frontend/widgets/interactive_scale.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -12,14 +15,34 @@ void setMockRouteUrlLauncher(UrlLauncherFn? mock) {
   _routeUrlLauncher = mock ?? launchUrl;
 }
 
-/// Helper function to open Google Maps navigation route to a store without origin coordinates.
+/// Helper function to open Google Maps navigation route to a store with optional origin coordinates.
 Future<bool> launchStoreRoute(
   BuildContext context, {
   required double lat,
   required double lng,
   required String storeName,
+  Position? origin,
+  double? originLat,
+  double? originLng,
 }) async {
-  final uri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
+  final Uri uri;
+  final oLat = origin?.latitude ?? originLat;
+  final oLng = origin?.longitude ?? originLng;
+
+  if (oLat != null && oLng != null) {
+    uri = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&origin=$oLat,$oLng&destination=$lat,$lng&travelmode=driving',
+    );
+  } else {
+    uri = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
+    );
+  }
+
+  if (kDebugMode) {
+    debugPrint(uri.toString());
+  }
+
   try {
     final launched = await _routeUrlLauncher(uri, mode: LaunchMode.externalApplication);
     if (!launched && context.mounted) {
@@ -44,16 +67,66 @@ Future<bool> launchStoreRoute(
   }
 }
 
-/// Reusable Standard Route Button with touch target >= 48x48dp and Indonesian semantics.
-class StoreRouteButton extends StatelessWidget {
-  final VoidCallback onTap;
+/// Reusable Standard Route Button with touch target >= 48x48dp, Indonesian semantics,
+/// progress indicator while fetching fresh location, and double-tap prevention.
+class StoreRouteButton extends StatefulWidget {
+  final VoidCallback? onTap;
+  final double? lat;
+  final double? lng;
+  final String? storeName;
   final Key? buttonKey;
+  final Future<Position?> Function({Duration timeout})? getFreshPosition;
 
   const StoreRouteButton({
     super.key,
-    required this.onTap,
+    this.onTap,
+    this.lat,
+    this.lng,
+    this.storeName,
     this.buttonKey,
+    this.getFreshPosition,
   });
+
+  @override
+  State<StoreRouteButton> createState() => _StoreRouteButtonState();
+}
+
+class _StoreRouteButtonState extends State<StoreRouteButton> {
+  bool _isLoading = false;
+
+  Future<void> _handlePress() async {
+    if (_isLoading) return;
+
+    if (widget.lat != null && widget.lng != null && widget.storeName != null) {
+      setState(() => _isLoading = true);
+      try {
+        final getPos = widget.getFreshPosition ?? LocationService.getFreshPosition;
+        final freshPos = await getPos();
+        if (mounted) {
+          await launchStoreRoute(
+            context,
+            lat: widget.lat!,
+            lng: widget.lng!,
+            storeName: widget.storeName!,
+            origin: freshPos,
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
+    } else if (widget.onTap != null) {
+      setState(() => _isLoading = true);
+      try {
+        widget.onTap!();
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,8 +134,8 @@ class StoreRouteButton extends StatelessWidget {
       button: true,
       label: 'Rute',
       child: InteractiveScale(
-        key: buttonKey,
-        onTap: onTap,
+        key: widget.buttonKey,
+        onTap: _isLoading ? () {} : _handlePress,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           child: Align(
@@ -77,11 +150,21 @@ class StoreRouteButton extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.near_me_rounded,
-                    size: 15,
-                    color: Color(0xFF059669),
-                  ),
+                  if (_isLoading)
+                    const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
+                      ),
+                    )
+                  else
+                    const Icon(
+                      Icons.near_me_rounded,
+                      size: 15,
+                      color: Color(0xFF059669),
+                    ),
                   const SizedBox(width: 4),
                   Text(
                     'Rute',

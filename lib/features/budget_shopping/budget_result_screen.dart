@@ -326,12 +326,9 @@ class BudgetResultScreen extends StatelessWidget {
                           const SizedBox(height: 10),
                           StoreRouteButton(
                             buttonKey: const Key('budget_store_route_button'),
-                            onTap: () => launchStoreRoute(
-                              context,
-                              lat: store.lat!,
-                              lng: store.lng!,
-                              storeName: store.nama,
-                            ),
+                            lat: store.lat!,
+                            lng: store.lng!,
+                            storeName: store.nama,
                           ),
                         ],
                       ],
