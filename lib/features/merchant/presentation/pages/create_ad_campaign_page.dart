@@ -39,6 +39,17 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
   int _selectedDurationDays = 7;
   bool _isOpeningCheckout = false;
 
+  // Status create/pay disimpan di State halaman (bukan di builder sheet) agar tahan tutup-buka sheet:
+  // kampanye yang sudah dibuat dipakai ulang (pay ulang), tidak dibuat lagi.
+  bool _isSubmitting = false;
+  bool _isPaying = false;
+  String? _createdCampaignId;
+  String? _createdPaymentRef;
+  String? _createdSignature;
+
+  String _campaignSignature() =>
+      '${_titleController.text.trim()}|$_selectedDurationDays|${_uploadedBannerUrl ?? ''}';
+
   @override
   void initState() {
     super.initState();
@@ -169,14 +180,12 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
-        bool isProcessing = false;
-        bool isSuccess = false;
-        String? createdCampaignId;
-        String? paymentRef;
         String? errorMessage;
 
        return StatefulBuilder(
          builder: (context, setModalState) {
+            final isProcessing = _isSubmitting;
+            final isSuccess = _createdCampaignId != null && _createdSignature == _campaignSignature();
             final maxHeight = MediaQuery.of(context).size.height * 0.9;
             return Padding(
               padding: EdgeInsets.only(
@@ -191,8 +200,10 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                   physics: const ClampingScrollPhysics(),
                 child: isSuccess
                     ? _buildPaymentSuccessView(
-                        paymentRef: paymentRef ?? 'INV-PENDING',
-                        campaignId: createdCampaignId,
+                        paymentRef: _createdPaymentRef ?? 'INV-PENDING',
+                        campaignId: _createdCampaignId,
+                        isPaying: _isPaying,
+                        onPay: () => _payExistingCampaign(_createdCampaignId!, context, setModalState),
                         onFinish: () {
                           Navigator.pop(ctx);
                           Navigator.pop(context, true);
@@ -331,37 +342,35 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
                             onPressed: isProcessing
                                 ? null
                                 : () async {
-                                    setModalState(() {
-                                      isProcessing = true;
-                                      errorMessage = null;
-                                    });
+                                    if (_isSubmitting) return; // tap ganda sebelum rebuild
+                                    _isSubmitting = true;
+                                    setModalState(() => errorMessage = null);
                                     final genRef = 'QRIS-2026-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+                                    final signature = _campaignSignature();
+                                    String? failure;
                                     try {
-                                      final created = await AdsService.createCampaign(
-                                        storeId: widget.storeId,
-                                        title: _titleController.text.trim(),
-                                        bannerUrl: _uploadedBannerUrl!,
-                                        durationDays: _selectedDurationDays,
-                                        paymentMethod: 'QRIS',
-                                        paymentRef: genRef,
-                                        baseUrl: widget.baseUrl,
-                                        client: widget.httpClient,
-                                      );
-                                      if (mounted) {
-                                        setModalState(() {
-                                          isProcessing = false;
-                                          isSuccess = true;
-                                          createdCampaignId = created.id;
-                                          paymentRef = created.paymentRef ?? created.id;
-                                        });
+                                      if (_createdCampaignId == null || _createdSignature != signature) {
+                                        final created = await AdsService.createCampaign(
+                                          storeId: widget.storeId,
+                                          title: _titleController.text.trim(),
+                                          bannerUrl: _uploadedBannerUrl!,
+                                          durationDays: _selectedDurationDays,
+                                          paymentMethod: 'QRIS',
+                                          paymentRef: genRef,
+                                          baseUrl: widget.baseUrl,
+                                          client: widget.httpClient,
+                                        );
+                                        _createdCampaignId = created.id;
+                                        _createdPaymentRef = created.paymentRef ?? created.id;
+                                        _createdSignature = signature;
                                       }
                                     } catch (e) {
-                                      if (mounted) {
-                                        setModalState(() {
-                                          isProcessing = false;
-                                          errorMessage = 'Gagal membuat kampanye iklan: ${userMessage(e)}';
-                                        });
-                                      }
+                                      failure = 'Gagal membuat kampanye iklan: ${userMessage(e)}';
+                                    } finally {
+                                      _isSubmitting = false;
+                                    }
+                                    if (mounted && context.mounted) {
+                                      setModalState(() => errorMessage = failure);
                                     }
                                   },
                             style: ElevatedButton.styleFrom(
@@ -589,9 +598,39 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
     );
   }
 
+  Future<void> _payExistingCampaign(String campaignId, BuildContext sheetContext, StateSetter setModalState) async {
+    if (_isPaying) return; // tap ganda sebelum rebuild
+    _isPaying = true;
+    setModalState(() {});
+    try {
+      final checkout = await AdsService.initiatePayment(
+        campaignId: campaignId,
+        baseUrl: widget.baseUrl,
+        client: widget.httpClient,
+      );
+      if (mounted) {
+        _showCheckoutDialog(context, checkout);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(userMessage(e)),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    } finally {
+      _isPaying = false;
+      if (mounted && sheetContext.mounted) setModalState(() {});
+    }
+  }
+
   Widget _buildPaymentSuccessView({
     required String paymentRef,
     String? campaignId,
+    required bool isPaying,
+    required VoidCallback onPay,
     required VoidCallback onFinish,
   }) {
     return Column(
@@ -704,27 +743,7 @@ class _CreateAdCampaignPageState extends State<CreateAdCampaignPage> {
 
         if (campaignId != null && campaignId.isNotEmpty) ...[
           OutlinedButton.icon(
-            onPressed: () async {
-              try {
-                final checkout = await AdsService.initiatePayment(
-                  campaignId: campaignId,
-                  baseUrl: widget.baseUrl,
-                  client: widget.httpClient,
-                );
-                if (mounted) {
-                  _showCheckoutDialog(context, checkout);
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(userMessage(e)),
-                      backgroundColor: const Color(0xFFDC2626),
-                    ),
-                  );
-                }
-              }
-            },
+            onPressed: isPaying ? null : onPay,
             icon: const Icon(Icons.open_in_new_rounded, color: Color(0xFF166534), size: 18),
             label: Text(
               'Buka Checkout Xendit Sandbox',
