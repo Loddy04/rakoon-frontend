@@ -107,6 +107,10 @@ const Map<int, String> _confirmErrorMessages = {
 /// Timeout for scanning shelf photos (AI vision processing pipeline).
 const Duration scanTimeout = Duration(seconds: 90);
 
+/// Friendly error message when server responds with 413 Payload Too Large.
+const String payloadTooLargeMessage =
+    'Foto terlalu besar. Coba ambil lebih dekat atau pilih dari galeri.';
+
 class ScanService {
   /// Default Base URL resolved from central AppConfig.backendBaseUrl.
   static String get defaultBaseUrl => AppConfig.backendBaseUrl;
@@ -161,6 +165,8 @@ class ScanService {
         throw Exception('Sesi telah berakhir, silakan login ulang');
       } else if (response.statusCode == 429) {
         throw Exception('Terlalu banyak scan, coba lagi nanti');
+      } else if (response.statusCode == 413) {
+        throw Exception(payloadTooLargeMessage);
       } else {
         throwIfServerError(response);
         throw Exception('Gagal memproses scan. Silakan coba lagi nanti.');
