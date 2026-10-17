@@ -196,11 +196,8 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
                       color: Color(0xFF059669),
                       size: 22,
                     ),
-                    suffixIcon: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_searchController.text.isNotEmpty)
-                          IconButton(
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
                             icon: const Icon(
                               Icons.close_rounded,
                               color: Color(0xFF9CA3AF),
@@ -215,23 +212,8 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
                                 client: widget.httpClient,
                               );
                             },
-                          ),
-                        Container(
-                          margin: const EdgeInsets.only(right: 8),
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFE8E4DC)),
-                          ),
-                          child: const Icon(
-                            Icons.qr_code_scanner_rounded,
-                            color: Color(0xFF059669),
-                            size: 18,
-                          ),
-                        ),
-                      ],
-                    ),
+                          )
+                        : null,
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
                       vertical: 12.0,
@@ -500,95 +482,20 @@ class _PriceCheckCatalogPageState extends State<PriceCheckCatalogPage> {
     return ListenableBuilder(
       listenable: _priceCheckProvider,
       builder: (context, child) {
-        final sortFilterRow = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE8E4DC)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.swap_vert_rounded, size: 13, color: Color(0xFF0D2818)),
-                  const SizedBox(width: 3),
-                  Text(
-                    'Harga Terendah',
-                    style: GoogleFonts.outfit(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF0D2818),
-                    ),
-                  ),
-                  const SizedBox(width: 1),
-                  const Icon(Icons.keyboard_arrow_down_rounded, size: 13, color: Color(0xFF6B7280)),
-                ],
-              ),
-            ),
-            const SizedBox(width: 5),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE8E4DC)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.tune_rounded, size: 13, color: Color(0xFF0D2818)),
-                  const SizedBox(width: 3),
-                  Text(
-                    'Filter',
-                    style: GoogleFonts.outfit(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF0D2818),
-                    ),
-                  ),
-                  const SizedBox(width: 3),
-                  Container(
-                    width: 5,
-                    height: 5,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF059669),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
-
         return Padding(
           padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Text(
-                  'Ditemukan ${_priceCheckProvider.products.length} Produk',
-                  style: GoogleFonts.outfit(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF6B7280),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Ditemukan ${_priceCheckProvider.products.length} Produk',
+              style: GoogleFonts.outfit(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF6B7280),
               ),
-              const SizedBox(width: 6),
-              Flexible(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: sortFilterRow,
-                ),
-              ),
-            ],
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         );
       },
