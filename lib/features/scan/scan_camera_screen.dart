@@ -9,6 +9,7 @@ import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
 import 'package:rakoon_frontend/features/auth/presentation/widgets/login_bottom_sheet.dart';
 import 'package:rakoon_frontend/features/scan/scan_result_screen.dart';
+import 'package:rakoon_frontend/features/scan/presentation/widgets/add_product_bottom_sheet.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 
 class ScanCameraScreen extends StatefulWidget {
@@ -295,6 +296,45 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     }
   }
 
+  /// Opens the manual product input bottom sheet
+  Future<void> _openManualAdd() async {
+    setState(() {
+      _errorMessage = null;
+    });
+
+    final ScanResultItem? newItem = await showModalBottomSheet<ScanResultItem>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => const AddProductBottomSheet(),
+    );
+
+    if (newItem == null || !mounted) return;
+
+    final bool? saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ScanResultScreen(
+          baseUrl: widget.baseUrl,
+          detectedItems: [newItem],
+          httpClient: widget.httpClient,
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+    if (saved == true) {
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context, true);
+      } else if (widget.onClose != null) {
+        widget.onClose!();
+      }
+    }
+  }
+
   /// Sends the photo file to the backend /scan/ endpoint
   Future<void> _scanPhoto() async {
     if (_imageFile == null) return;
@@ -529,8 +569,19 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
                             ),
                           ),
                         ),
-                        // Spacer
-                        const SizedBox(width: 52),
+                        // Manual Add Button
+                        Semantics(
+                          label: 'Tambah produk manual',
+                          child: InkWell(
+                            key: const Key('manual_add_button'),
+                            onTap: _openManualAdd,
+                            child: const CircleAvatar(
+                              radius: 26,
+                              backgroundColor: Colors.white24,
+                              child: Icon(Icons.edit_note_rounded, color: Colors.white, size: 28),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -585,6 +636,21 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.accent,
                 foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.l),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              key: const Key('manual_add_fallback_btn'),
+              onPressed: _openManualAdd,
+              icon: const Icon(Icons.edit_note_rounded),
+              label: const Text('Tambah Manual'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: const BorderSide(color: Colors.white38),
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.l),
