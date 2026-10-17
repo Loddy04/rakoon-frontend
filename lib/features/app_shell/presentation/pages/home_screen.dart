@@ -857,7 +857,7 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       const SizedBox(height: 12.0),
 
                       SizedBox(
-                        height: 250,
+                        height: 236,
                         child: ListenableBuilder(
                           listenable: _catalogProvider,
                           builder: (context, _) {
@@ -959,6 +959,7 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   updatedAt:
                                       catalogItem.updatedAt ?? 'just now',
                                   fotoUrl: catalogItem.fotoUrl,
+                                  stale: catalogItem.stale,
                                 );
 
                                 return ProductCard(
