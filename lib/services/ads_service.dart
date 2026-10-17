@@ -681,7 +681,7 @@ class AdsService {
     );
 
     final streamedResponse = await FriendlyHttpClient(client ?? http.Client()).send(request);
-    final response = await http.Response.fromStream(streamedResponse);
+    final response = await mapNetworkErrors(() => http.Response.fromStream(streamedResponse));
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -729,7 +729,7 @@ class AdsService {
     );
 
     final streamedResponse = await FriendlyHttpClient(client ?? http.Client()).send(request);
-    final response = await http.Response.fromStream(streamedResponse);
+    final response = await mapNetworkErrors(() => http.Response.fromStream(streamedResponse));
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -812,7 +812,7 @@ class AdsService {
     );
 
     final streamedResponse = await FriendlyHttpClient(client ?? http.Client()).send(request);
-    final response = await http.Response.fromStream(streamedResponse);
+    final response = await mapNetworkErrors(() => http.Response.fromStream(streamedResponse));
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;

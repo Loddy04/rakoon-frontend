@@ -9,6 +9,7 @@ import 'package:rakoon_frontend/services/admin_product_service.dart';
 import 'package:rakoon_frontend/services/ads_service.dart';
 import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
+import 'package:rakoon_frontend/services/scan_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -39,6 +40,16 @@ final Map<String, _Call> _calls = {
         client: c,
       ),
 };
+
+class StreamErrorClient extends http.BaseClient {
+  final Object error;
+  StreamErrorClient(this.error);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    return http.StreamedResponse(Stream<List<int>>.error(error), 200);
+  }
+}
 
 Future<String> _messageOf(_Call call, http.Client client) async {
   try {
@@ -101,4 +112,67 @@ void main() {
       expect(msg, isNotEmpty);
     });
   }
+
+  final streamErrorFailures = <String, Object Function()>{
+    'ClientException': () => http.ClientException('ClientException: stream connection broken'),
+    'SocketException': () => const SocketException('SocketException: connection reset'),
+  };
+
+  group('Response.fromStream stream network error handling', () {
+    late File tempPhoto;
+    setUpAll(() {
+      tempPhoto = File('${Directory.systemTemp.createTempSync('stream_err').path}/shelf.jpg')
+        ..writeAsBytesSync([1, 2, 3]);
+    });
+    tearDownAll(() {
+      if (tempPhoto.existsSync()) {
+        tempPhoto.parent.deleteSync(recursive: true);
+      }
+    });
+
+    final streamCallers = <String, _Call>{
+      'ads.uploadClaimDocument': (c) => AdsService.uploadClaimDocument(
+            bytes: Uint8List.fromList([1, 2, 3]),
+            filename: 'doc.pdf',
+            baseUrl: _base,
+            client: c,
+          ),
+      'ads.uploadClaimPhoto': (c) => AdsService.uploadClaimPhoto(
+            bytes: Uint8List.fromList([1, 2, 3]),
+            filename: 'photo.jpg',
+            baseUrl: _base,
+            client: c,
+          ),
+      'ads.uploadBannerImage': (c) => AdsService.uploadBannerImage(
+            bytes: Uint8List.fromList([1, 2, 3]),
+            filename: 'banner.jpg',
+            baseUrl: _base,
+            client: c,
+          ),
+      'admin.uploadProductPhotoFile': (c) => AdminProductService.uploadProductPhotoFile(
+            productId: 'p1',
+            fileBytes: Uint8List.fromList([1, 2, 3]),
+            fileName: 'a.jpg',
+            baseUrl: _base,
+            client: c,
+          ),
+      'scan.scanPhoto': (c) => ScanService.scanPhoto(
+            tempPhoto,
+            baseUrl: _base,
+            client: c,
+          ),
+    };
+
+    for (final caller in streamCallers.entries) {
+      for (final failure in streamErrorFailures.entries) {
+        test('${caller.key}: stream ${failure.key} throws NoConnectionException with connection message', () async {
+          final client = StreamErrorClient(failure.value());
+          await expectLater(
+            caller.value(client),
+            throwsA(isA<NoConnectionException>().having((e) => e.toString(), 'message', noConnectionMessage)),
+          );
+        });
+      }
+    }
+  });
 }

@@ -165,7 +165,8 @@ class AdminProductService {
     final httpClient = FriendlyHttpClient(client ?? http.Client());
     final http.Response response;
     try {
-      response = await http.Response.fromStream(await httpClient.send(request));
+      final streamedResponse = await httpClient.send(request);
+      response = await mapNetworkErrors(() => http.Response.fromStream(streamedResponse));
     } finally {
       if (client == null) httpClient.close();
     }
