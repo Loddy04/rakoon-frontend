@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -438,13 +437,7 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (widget.baseUrl != null && widget.baseUrl!.isNotEmpty) {
       return widget.baseUrl!;
     }
-    const envBaseUrl = String.fromEnvironment('API_BASE_URL');
-    if (envBaseUrl.isNotEmpty) {
-      return envBaseUrl;
-    }
-    return kIsWeb
-        ? 'http://localhost:8000'
-        : 'https://rakoon-backend.onrender.com';
+    return AppConfig.backendBaseUrl;
   }
 
   @override
