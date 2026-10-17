@@ -13,6 +13,15 @@ import 'package:rakoon_frontend/features/scan/scan_result_screen.dart';
 import 'package:rakoon_frontend/features/scan/presentation/widgets/add_product_bottom_sheet.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 
+/// Camera resolution preset for shelf scanning (~1080p for OCR price tag clarity).
+const ResolutionPreset scanCameraPreset = ResolutionPreset.veryHigh;
+
+/// Maximum width and height for gallery photos.
+const double galleryMaxDimension = 1600.0;
+
+/// JPEG quality setting for gallery photos.
+const int galleryImageQuality = 80;
+
 class ScanCameraScreen extends StatefulWidget {
   final String? baseUrl;
   final VoidCallback? onClose;
@@ -207,7 +216,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
 
       final controller = CameraController(
         _cameras.first,
-        ResolutionPreset.medium,
+        scanCameraPreset,
         enableAudio: false,
       );
 
