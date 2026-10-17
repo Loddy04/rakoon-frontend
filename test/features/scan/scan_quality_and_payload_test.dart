@@ -1,3 +1,4 @@
+// ignore: unused_import
 import 'dart:convert';
 import 'dart:io';
 
@@ -9,6 +10,7 @@ import 'package:http/testing.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rakoon_frontend/features/scan/scan_camera_screen.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
+// ignore: unused_import
 import 'package:rakoon_frontend/services/scan_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -81,7 +83,6 @@ void main() {
     });
   });
 
-  /*
   group('Tugas 2: Gallery options and named constants', () {
     test('galleryMaxDimension is 2048 and galleryImageQuality is 90', () {
       expect(galleryMaxDimension, 2048.0);
@@ -110,6 +111,7 @@ void main() {
     });
   });
 
+  /*
   group('Tugas 3: 413 Payload Too Large handling', () {
     const expected413Message = 'Foto terlalu besar. Coba ambil lebih dekat atau pilih dari galeri.';
 

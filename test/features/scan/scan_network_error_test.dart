@@ -192,7 +192,7 @@ void main() {
       expect(find.text('Hasil Scan'), findsOneWidget);
     });
 
-    testWidgets('Picking image uses maxWidth: 1600, maxHeight: 1600, and imageQuality: 80', (tester) async {
+    testWidgets('Picking image uses maxWidth: 2048, maxHeight: 2048, and imageQuality: 90', (tester) async {
       final client = MockClient((request) async => http.Response('{"detected": []}', 200));
       final picker = _RecordingPicker(XFile(photo.path));
 
@@ -208,9 +208,9 @@ void main() {
       await tester.tap(find.byKey(const Key('gallery_picker_fallback_btn')));
       await tester.pumpAndSettle();
 
-      expect(picker.recordedMaxWidth, 1600.0);
-      expect(picker.recordedMaxHeight, 1600.0);
-      expect(picker.recordedImageQuality, 80);
+      expect(picker.recordedMaxWidth, galleryMaxDimension);
+      expect(picker.recordedMaxHeight, galleryMaxDimension);
+      expect(picker.recordedImageQuality, galleryImageQuality);
     });
   });
 }

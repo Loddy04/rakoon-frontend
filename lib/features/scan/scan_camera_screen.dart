@@ -16,11 +16,11 @@ import 'package:rakoon_frontend/theme/app_theme.dart';
 /// Camera resolution preset for shelf scanning (~1080p for OCR price tag clarity).
 const ResolutionPreset scanCameraPreset = ResolutionPreset.veryHigh;
 
-/// Maximum width and height for gallery photos.
-const double galleryMaxDimension = 1600.0;
+/// Maximum width and height for gallery photos (2048px).
+const double galleryMaxDimension = 2048.0;
 
-/// JPEG quality setting for gallery photos.
-const int galleryImageQuality = 80;
+/// JPEG quality setting for gallery photos (90).
+const int galleryImageQuality = 90;
 
 class ScanCameraScreen extends StatefulWidget {
   final String? baseUrl;
@@ -290,9 +290,10 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     try {
       final XFile? photo = await _picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1600,
-        maxHeight: 1600,
-        imageQuality: 80,
+        maxWidth: galleryMaxDimension,
+        maxHeight: galleryMaxDimension,
+        imageQuality: galleryImageQuality,
+        requestFullMetadata: true,
       );
 
       if (!mounted) return;
