@@ -157,7 +157,7 @@ const DocumentContent helpContent = DocumentContent(
       bulletPoints: [
         'Smart Shelf Scanning: Pindai label harga rak supermarket secara otomatis dengan kamera gawai. Pengambilan foto rak memerlukan pengguna telah masuk (login) agar sesi pemindaian tersimpan ke riwayat akun.',
         'Normalisasi Nilai (Best Value): Sistem menghitung nilai riil harga per unit standar (Rp/g, Rp/ml) untuk membantu Anda memilih produk yang benar-benar ekonomis dan menghindari shrinkflation.',
-        'Komparasi Multi-Ritel Terdekat: Menemukan dan membandingkan harga produk di minimarket atau gerai terdekat (seperti Indomaret, Alfamart, Super Indo). Fitur ini memerlukan izin akses lokasi GPS yang aktif.',
+        'Komparasi Multi-Ritel Terdekat: Menemukan dan membandingkan harga produk di minimarket atau gerai terdekat (seperti Indomaret, Alfamart, Super Indo). Fitur ini memerlukan izin akses lokasi GPS yang aktif. Jarak dihitung garis lurus dari lokasimu. Jarak tempuh sebenarnya bisa lebih jauh; gunakan tombol Rute untuk melihatnya di Maps.',
         'Informasi Kebaruan Harga: Menampilkan riwayat fluktuasi harga. Data harga produk yang berumur lebih dari 90 hari akan diberi tanda label informasi kebaruan harga.',
         'Asisten Anggaran (Smart Budget Shopping): Membantu menyusun keranjang belanja sesuai batas anggaran harian Anda.',
       ],

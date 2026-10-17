@@ -26,14 +26,15 @@ class ProductCard extends StatelessWidget {
     this.margin,
   });
 
-  /// Format distance to lowercase units: 'm' and 'km' (per UI_RULES.md).
+  /// Format distance to lowercase units: 'm' and 'km' (per UI_RULES.md) with straight-line prefix '± '.
   static String? formatDistance(double? jarakKm) {
     if (jarakKm == null) return null;
     if (jarakKm < 1.0) {
       final meters = (jarakKm * 1000).round();
-      return '$meters m';
+      return '± $meters m';
     } else {
-      return '${jarakKm.toStringAsFixed(1)} km';
+      final formattedKm = jarakKm.toStringAsFixed(1).replaceAll('.', ',');
+      return '± $formattedKm km';
     }
   }
 

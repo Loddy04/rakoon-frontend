@@ -75,7 +75,7 @@ void main() {
 
     // Verification 3: Store row with distance shows store name and distance
     expect(find.text('Toko Berjarak'), findsWidgets);
-    expect(find.text('1.5 km'), findsOneWidget);
+    expect(find.text('± 1,5 km'), findsOneWidget);
 
     // Verification 4: Empty price displays "Tidak tersedia" instead of "N/A"
     expect(find.text('N/A'), findsNothing);
@@ -233,7 +233,7 @@ void main() {
       LocationService.clearCache();
     });
 
-    testWidgets('with location: sends lat/lng and shows "Nama · 800 m"', (tester) async {
+    testWidgets('with location: sends lat/lng and shows "Nama · ± 800 m"', (tester) async {
       Uri? compareUri;
       fake.permission = LocationPermission.whileInUse;
 
@@ -293,10 +293,10 @@ void main() {
       expect(compareUri!.queryParameters['lng'], isNotNull);
       expect(fake.requestCount, 0, reason: 'Must not request permission from detail page');
       expect(find.text('Super Indo Seturan'), findsWidgets);
-      expect(find.text('800 m'), findsOneWidget);
+      expect(find.text('± 800 m'), findsOneWidget);
     });
 
-    testWidgets('without location: does not send lat/lng, does not call requestPermission, and shows "Nama" without " · " and without "800 m"', (tester) async {
+    testWidgets('without location: does not send lat/lng, does not call requestPermission, and shows "Nama" without " · " and without "± 800 m"', (tester) async {
       Uri? compareUri;
       fake.permission = LocationPermission.denied;
 
@@ -356,6 +356,7 @@ void main() {
       expect(compareUri!.queryParameters.containsKey('lng'), isFalse, reason: 'Must not send default lng without real location');
       expect(fake.requestCount, 0, reason: 'Must not request permission from detail page');
       expect(find.text('Super Indo Seturan'), findsWidgets);
+      expect(find.textContaining('± 800 m'), findsNothing);
       expect(find.textContaining('800 m'), findsNothing);
       expect(find.textContaining(' · '), findsNothing);
     });
@@ -419,7 +420,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(fake.requestCount, 0, reason: 'Must not request permission from detail page');
-      expect(find.text('800 m'), findsOneWidget);
+      expect(find.text('± 800 m'), findsOneWidget);
       expect(find.text('Manna Kampus (Mirota Kampus)'), findsWidgets);
     });
 
@@ -494,7 +495,7 @@ void main() {
       expect(compareUri, isNotNull);
       expect(compareUri!.queryParameters['lat'], '-7.78');
       expect(compareUri!.queryParameters['lng'], '110.4');
-      expect(find.text('800 m'), findsOneWidget);
+      expect(find.text('± 800 m'), findsOneWidget);
     });
   });
 }

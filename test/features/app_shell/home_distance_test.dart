@@ -79,7 +79,7 @@ void main() {
   });
 
   group('HomeScreen distance', () {
-    testWidgets('with location: lat/lng are sent and the store row shows "Nama · 800 m"', (tester) async {
+    testWidgets('with location: lat/lng are sent and the store row shows "Nama · ± 800 m"', (tester) async {
       await mockNetworkImagesFor(() async {
         final api = _Api(jarakKm: 0.8);
         await tester.pumpWidget(MaterialApp(home: HomeScreen(baseUrl: _base, httpClient: api.client)));
@@ -91,7 +91,7 @@ void main() {
         expect(_hasCoords(api.recommended.last), isTrue);
         expect(find.text('Toko Murah'), findsOneWidget);
         expect(find.text(' · '), findsOneWidget);
-        expect(find.text('800 m'), findsOneWidget);
+        expect(find.text('± 800 m'), findsOneWidget);
       });
     });
 
@@ -107,7 +107,7 @@ void main() {
         expect(api.recommended.any(_hasCoords), isFalse);
         expect(find.text('Toko Murah'), findsOneWidget);
         expect(find.text(' · '), findsNothing);
-        expect(find.text('800 m'), findsNothing);
+        expect(find.text('± 800 m'), findsNothing);
       });
     });
 
@@ -141,7 +141,7 @@ void main() {
 
         expect(api.catalog.first.queryParameters['lat'], '-7.78');
         expect(api.catalog.first.queryParameters['lng'], '110.4');
-        expect(find.text('800 m'), findsOneWidget);
+        expect(find.text('± 800 m'), findsOneWidget);
         expect(find.text(' · '), findsOneWidget);
       });
     });
@@ -155,7 +155,7 @@ void main() {
         expect(api.catalog.any(_hasCoords), isFalse);
         expect(find.text('Toko Murah'), findsOneWidget);
         expect(find.text(' · '), findsNothing);
-        expect(find.text('800 m'), findsNothing);
+        expect(find.text('± 800 m'), findsNothing);
       });
     });
   });

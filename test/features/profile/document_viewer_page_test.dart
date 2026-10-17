@@ -52,6 +52,10 @@ void main() {
       expect(find.text('1. Tentang Rakoon'), findsOneWidget);
       expect(find.textContaining('asisten belanja cerdas'), findsOneWidget);
 
+      final distanceNoteFinder = find.textContaining('Jarak dihitung garis lurus dari lokasimu');
+      await tester.scrollUntilVisible(distanceNoteFinder, 100);
+      expect(distanceNoteFinder, findsOneWidget);
+
       final emailFinder = find.textContaining('ayyasheufrat2@gmail.com');
       await tester.scrollUntilVisible(emailFinder, 100);
       expect(emailFinder, findsOneWidget);

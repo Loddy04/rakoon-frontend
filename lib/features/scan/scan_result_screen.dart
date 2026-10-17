@@ -12,6 +12,7 @@ import 'package:rakoon_frontend/services/recommendation_service.dart';
 import 'package:rakoon_frontend/services/scan_service.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/widgets/interactive_scale.dart';
+import 'package:rakoon_frontend/widgets/product_card.dart';
 
 class ScanResultScreen extends StatefulWidget {
   final String baseUrl;
@@ -634,7 +635,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      '${store.jarakKm.toStringAsFixed(1)} km dari lokasi Anda',
+                                      '${ProductCard.formatDistance(store.jarakKm)} dari lokasi Anda',
                                       style: GoogleFonts.outfit(
                                         color: const Color(0xFF6B7280),
                                         fontSize: 11.5,
@@ -845,9 +846,9 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                     spacing: 4,
                     runSpacing: 2,
                     children: [
-                      if (_selectedStore != null)
+                      if (_selectedStore != null && ProductCard.formatDistance(_selectedStore!.jarakKm) != null)
                         Text(
-                          '${_selectedStore!.jarakKm.toStringAsFixed(1)} km',
+                          ProductCard.formatDistance(_selectedStore!.jarakKm)!,
                           style: GoogleFonts.outfit(
                             fontSize: 10.5,
                             color: const Color(0xFF6B7280),
