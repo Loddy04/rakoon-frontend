@@ -7,6 +7,7 @@ import 'package:rakoon_frontend/features/auth/presentation/widgets/google_sign_i
 import 'package:rakoon_frontend/features/admin/presentation/pages/admin_product_photo_page.dart';
 import 'package:rakoon_frontend/features/admin/presentation/pages/admin_store_claims_page.dart';
 import 'package:rakoon_frontend/features/merchant/presentation/pages/merchant_dashboard_page.dart';
+import 'package:rakoon_frontend/features/scan/presentation/pages/scan_history_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Profile / Account screen showing user identity, sync status, app metadata,
@@ -124,6 +125,83 @@ class _ProfilePageState extends State<ProfilePage> {
         });
       }
     }
+  }
+
+  Future<void> _showLogoutConfirmationDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Text(
+          'Keluar dari akun?',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF111827),
+          ),
+        ),
+        content: const Text(
+          'Apakah Anda yakin ingin keluar dari akun Rakoon?',
+          style: TextStyle(
+            fontSize: 14,
+            color: Color(0xFF6B7280),
+          ),
+        ),
+        actions: [
+          TextButton(
+            key: const Key('logout_cancel_button'),
+            style: TextButton.styleFrom(
+              minimumSize: const Size(64, 48),
+            ),
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text(
+              'Batal',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF6B7280),
+              ),
+            ),
+          ),
+          TextButton(
+            key: const Key('logout_confirm_button'),
+            style: TextButton.styleFrom(
+              minimumSize: const Size(64, 48),
+            ),
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: const Text(
+              'Keluar',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFFEF4444),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _handleSignOut();
+    }
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 20, bottom: 8, left: 2),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF6B7280),
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
   }
 
   String _getDisplayName(Session session) {
@@ -438,8 +516,8 @@ class _ProfilePageState extends State<ProfilePage> {
                           ],
                         ),
                       ),
-                    // Hanya bila Supabase mencatat email_confirmed_at (bukan lencana statis).
-                    if (session.user.emailConfirmedAt != null)
+                    // Lencana "Akun Terverifikasi": sembunyikan untuk pengguna biasa; lencana "Admin Rakoon" tetap untuk admin.
+                    if (AuthService.isAdmin && session.user.emailConfirmedAt != null)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -457,6 +535,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               Icons.check_circle_rounded,
                               color: Color(0xFF059669),
                               size: 14,
+                              semanticLabel: 'Akun Terverifikasi',
                             ),
                             SizedBox(width: 6),
                             Flexible(
@@ -475,139 +554,190 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                   ],
                 ),
-                const SizedBox(height: 18),
-                const Divider(color: Color(0xFFF3F4F6), height: 1),
-                const SizedBox(height: 18),
-                // Logout Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: Semantics(
-                    button: true,
-                    label: 'Keluar dari Akun',
-                    child: ElevatedButton.icon(
-                      key: const Key('profile_logout_button'),
-                      onPressed: _isLoggingOut ? null : _handleSignOut,
-                      icon: _isLoggingOut
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.logout_rounded, size: 20),
-                      label: Text(
-                        _isLoggingOut ? 'Sedang Keluar...' : 'Keluar dari Akun',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFEF4444),
-                        disabledBackgroundColor: const Color(0xFFEF4444).withValues(alpha: 0.6),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
 
           if (AuthService.isAdmin) ...[
-            const SizedBox(height: 16),
-            InkWell(
-              key: const Key('admin_panel_tile'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AdminProductPhotoPage(
-                      baseUrl: widget.baseUrl,
-                      httpClient: widget.httpClient,
+            _buildSectionHeader('Admin'),
+            Semantics(
+              button: true,
+              label: 'Kelola Foto Produk',
+              child: InkWell(
+                key: const Key('admin_panel_tile'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AdminProductPhotoPage(
+                        baseUrl: widget.baseUrl,
+                        httpClient: widget.httpClient,
+                      ),
                     ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
-                );
-              },
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
-                        borderRadius: BorderRadius.circular(14),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(
+                          Icons.add_photo_alternate_outlined,
+                          color: Color(0xFF2563EB),
+                          size: 24,
+                          semanticLabel: 'Kelola Foto Produk',
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.add_photo_alternate_outlined,
-                        color: Color(0xFF2563EB),
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Kelola Foto Produk',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15,
-                              color: Color(0xFF111827),
+                      SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Kelola Foto Produk',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                                color: Color(0xFF111827),
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 3),
-                          Text(
-                            'Upload atau masukkan tautan foto produk',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF6B7280),
+                            SizedBox(height: 3),
+                            Text(
+                              'Upload atau masukkan tautan foto produk',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF6B7280),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 16,
-                      color: Color(0xFF9CA3AF),
-                    ),
-                  ],
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 16,
+                        color: Color(0xFF9CA3AF),
+                        semanticLabel: 'Buka Kelola Foto Produk',
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 12),
-            InkWell(
-              key: const Key('admin_claim_approval_tile'),
+            Semantics(
+              button: true,
+              label: 'Verifikasi Klaim Toko',
+              child: InkWell(
+                key: const Key('admin_claim_approval_tile'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AdminStoreClaimsPage(
+                        baseUrl: widget.baseUrl,
+                        httpClient: widget.httpClient,
+                      ),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFECFDF5),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(
+                          Icons.verified_user_rounded,
+                          color: Color(0xFF059669),
+                          size: 24,
+                          semanticLabel: 'Verifikasi Klaim Toko',
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Verifikasi Klaim Toko',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                                color: Color(0xFF111827),
+                              ),
+                            ),
+                            SizedBox(height: 3),
+                            Text(
+                              'Tinjau, setujui, atau tolak klaim toko merchant',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 16,
+                        color: Color(0xFF9CA3AF),
+                        semanticLabel: 'Buka Verifikasi Klaim Toko',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+
+          _buildSectionHeader('Toko'),
+          Semantics(
+            button: true,
+            label: 'Mode Mitra Toko',
+            child: InkWell(
+              key: const Key('merchant_hub_tile'),
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => AdminStoreClaimsPage(
+                    builder: (context) => MerchantDashboardPage(
                       baseUrl: widget.baseUrl,
                       httpClient: widget.httpClient,
                     ),
@@ -639,9 +769,10 @@ class _ProfilePageState extends State<ProfilePage> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Icon(
-                        Icons.verified_user_rounded,
+                        Icons.storefront_rounded,
                         color: Color(0xFF059669),
                         size: 24,
+                        semanticLabel: 'Mode Mitra Toko',
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -650,7 +781,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Verifikasi Klaim Toko',
+                            'Mode Mitra Toko',
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 15,
@@ -659,7 +790,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           SizedBox(height: 3),
                           Text(
-                            'Tinjau, setujui, atau tolak klaim toko merchant',
+                            'Pasang flyer promo offline & kelola etalase toko',
                             style: TextStyle(
                               fontSize: 12,
                               color: Color(0xFF6B7280),
@@ -672,93 +803,147 @@ class _ProfilePageState extends State<ProfilePage> {
                       Icons.arrow_forward_ios_rounded,
                       size: 16,
                       color: Color(0xFF9CA3AF),
+                      semanticLabel: 'Buka Mode Mitra Toko',
                     ),
                   ],
                 ),
               ),
             ),
-          ],
+          ),
 
-          const SizedBox(height: 16),
-          InkWell(
-            key: const Key('merchant_hub_tile'),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => MerchantDashboardPage(
-                    baseUrl: widget.baseUrl,
-                    httpClient: widget.httpClient,
+          _buildSectionHeader('Akun'),
+          Semantics(
+            button: true,
+            label: 'Riwayat Scan',
+            child: InkWell(
+              key: const Key('scan_history_tile'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ScanHistoryScreen(
+                      baseUrl: widget.baseUrl,
+                      httpClient: widget.httpClient,
+                    ),
                   ),
+                );
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
-              );
-            },
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFECFDF5),
-                      borderRadius: BorderRadius.circular(14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.history_rounded,
+                        color: Color(0xFF059669),
+                        size: 24,
+                        semanticLabel: 'Riwayat Scan',
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.storefront_rounded,
-                      color: Color(0xFF059669),
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Mode Mitra Toko',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                            color: Color(0xFF111827),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Riwayat Scan',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                              color: Color(0xFF111827),
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 3),
-                        Text(
-                          'Pasang flyer promo offline & kelola etalase toko',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF6B7280),
+                          SizedBox(height: 3),
+                          Text(
+                            'Daftar sesi pemindaian rak belanja',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF6B7280),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 16,
-                    color: Color(0xFF9CA3AF),
-                  ),
-                ],
+                    const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 16,
+                      color: Color(0xFF9CA3AF),
+                      semanticLabel: 'Buka Riwayat Scan',
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
 
           const SizedBox(height: 16),
           _buildAppInfoCard(),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: Semantics(
+              button: true,
+              label: 'Keluar dari Akun',
+              child: OutlinedButton.icon(
+                key: const Key('profile_logout_button'),
+                onPressed: _isLoggingOut ? null : _showLogoutConfirmationDialog,
+                icon: _isLoggingOut
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFFEF4444),
+                        ),
+                      )
+                    : const Icon(
+                        Icons.logout_rounded,
+                        size: 20,
+                        color: Color(0xFFEF4444),
+                        semanticLabel: 'Keluar dari Akun',
+                      ),
+                label: Text(
+                  _isLoggingOut ? 'Sedang Keluar...' : 'Keluar dari Akun',
+                  style: const TextStyle(
+                    color: Color(0xFFEF4444),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFEF4444),
+                  backgroundColor: Colors.transparent,
+                  side: const BorderSide(
+                    color: Color(0xFFFCA5A5),
+                    width: 1.5,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: 32),
         ],
       ),
@@ -795,6 +980,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   Icons.info_outline_rounded,
                   size: 18,
                   color: Color(0xFF6B7280),
+                  semanticLabel: 'Informasi Aplikasi',
                 ),
               ),
               const SizedBox(width: 10),
@@ -812,8 +998,6 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 14),
           _buildInfoRow('Versi Aplikasi', '1.0.0 (Release Candidate)'),
-          const Divider(color: Color(0xFFF3F4F6), height: 16),
-          _buildInfoRow('Engine AI', 'Computer Vision & OCR'),
         ],
       ),
     );

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/app_shell.dart';
 import 'package:rakoon_frontend/features/auth/presentation/widgets/login_bottom_sheet.dart';
 import 'package:rakoon_frontend/features/profile/presentation/pages/profile_page.dart';
+import 'package:rakoon_frontend/features/scan/presentation/pages/scan_history_screen.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -173,7 +174,7 @@ void main() {
       expect(find.byKey(const Key('signin_invitation_button')), findsNothing);
     });
 
-    testWidgets('shows "Akun Terverifikasi" only when the email is confirmed (P1-17)', (
+    testWidgets('hides "Akun Terverifikasi" badge for regular user even if email is confirmed', (
       WidgetTester tester,
     ) async {
       AuthService.mockSession = Session(
@@ -191,11 +192,12 @@ void main() {
           createdAt: DateTime.now().toIso8601String(),
         ),
       );
+      AuthService.mockIsAdmin = false;
 
       await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Akun Terverifikasi'), findsOneWidget);
+      expect(find.text('Akun Terverifikasi'), findsNothing);
     });
 
     testWidgets('admin claims in user metadata do not show admin UI (P1-14)', (
@@ -277,8 +279,8 @@ void main() {
     });
   });
 
-  group('ProfilePage - Logout Behavior & Loading State', () {
-    testWidgets('tapping logout triggers AuthService.signOut and clears mock session', (
+  group('ProfilePage - Logout Behavior & Confirmation Dialog', () {
+    testWidgets('tapping logout opens confirmation dialog, and tapping Batal does not sign out', (
       WidgetTester tester,
     ) async {
       final mockSession = Session(
@@ -303,14 +305,60 @@ void main() {
       final logoutBtn = find.byKey(const Key('profile_logout_button'));
       expect(logoutBtn, findsOneWidget);
 
+      await tester.ensureVisible(logoutBtn);
       await tester.tap(logoutBtn);
+      await tester.pumpAndSettle();
+
+      // Confirmation dialog should be visible
+      expect(find.text('Keluar dari akun?'), findsOneWidget);
+      expect(find.byKey(const Key('logout_cancel_button')), findsOneWidget);
+      expect(find.byKey(const Key('logout_confirm_button')), findsOneWidget);
+
+      // Tap Batal
+      await tester.tap(find.byKey(const Key('logout_cancel_button')));
+      await tester.pumpAndSettle();
+
+      // Dialog dismissed, session NOT cleared
+      expect(find.text('Keluar dari akun?'), findsNothing);
+      expect(AuthService.currentSession, isNotNull);
+    });
+
+    testWidgets('tapping Keluar in confirmation dialog calls signOut and clears session', (
+      WidgetTester tester,
+    ) async {
+      final mockSession = Session(
+        accessToken: 'mock-token',
+        refreshToken: 'mock-refresh-token',
+        expiresIn: 3600,
+        tokenType: 'bearer',
+        user: User(
+          id: 'user-logout-test',
+          appMetadata: {},
+          userMetadata: {'name': 'Budi'},
+          aud: 'authenticated',
+          email: 'budi@rakoon.co',
+          createdAt: DateTime.now().toIso8601String(),
+        ),
+      );
+      AuthService.mockSession = mockSession;
+
+      await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+      await tester.pumpAndSettle();
+
+      final logoutBtn = find.byKey(const Key('profile_logout_button'));
+      await tester.ensureVisible(logoutBtn);
+      await tester.tap(logoutBtn);
+      await tester.pumpAndSettle();
+
+      // Tap Keluar
+      await tester.tap(find.byKey(const Key('logout_confirm_button')));
       await tester.pumpAndSettle();
 
       // Session should be cleared
       expect(AuthService.currentSession, isNull);
     });
 
-    testWidgets('logout button has >= 48dp height and semantics', (
+    testWidgets('logout button is an outline button positioned after Informasi Aplikasi', (
       WidgetTester tester,
     ) async {
       final mockSession = Session(
@@ -338,7 +386,261 @@ void main() {
 
       final semantics = tester.getSemantics(logoutBtn);
       expect(semantics.label, contains('Keluar'));
+
+      // Check button is OutlinedButton
+      expect(tester.widget(logoutBtn), isA<OutlinedButton>());
+
+      // Check position: logout button is below "Informasi Aplikasi"
+      final appInfoFinder = find.text('Informasi Aplikasi');
+      expect(appInfoFinder, findsOneWidget);
+      final appInfoCenter = tester.getCenter(appInfoFinder);
+      final logoutCenter = tester.getCenter(logoutBtn);
+      expect(logoutCenter.dy, greaterThan(appInfoCenter.dy));
     });
+  });
+
+  group('ProfilePage - Menu Sections & Navigation', () {
+    testWidgets('admin sees section Admin (Kelola Foto Produk, Verifikasi Klaim Toko) and Toko (Mode Mitra Toko)', (
+      WidgetTester tester,
+    ) async {
+      AuthService.mockSession = Session(
+        accessToken: 'mock-token',
+        refreshToken: 'mock-refresh-token',
+        expiresIn: 3600,
+        tokenType: 'bearer',
+        user: const User(
+          id: 'admin-user',
+          email: 'admin@rakoon.app',
+          appMetadata: {'role': 'admin'},
+          userMetadata: {'role': 'admin', 'name': 'Super Admin'},
+          aud: 'authenticated',
+          createdAt: '2026-01-01',
+        ),
+      );
+      AuthService.mockIsAdmin = true;
+
+      await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Admin'), findsOneWidget);
+      expect(find.text('Kelola Foto Produk'), findsOneWidget);
+      expect(find.text('Verifikasi Klaim Toko'), findsOneWidget);
+
+      expect(find.text('Toko'), findsOneWidget);
+      expect(find.text('Mode Mitra Toko'), findsOneWidget);
+
+      expect(find.text('Akun'), findsOneWidget);
+      expect(find.text('Riwayat Scan'), findsOneWidget);
+    });
+
+    testWidgets('regular user sees section Toko and Akun, but NOT section Admin or admin tiles', (
+      WidgetTester tester,
+    ) async {
+      AuthService.mockSession = Session(
+        accessToken: 'mock-token',
+        refreshToken: 'mock-refresh-token',
+        expiresIn: 3600,
+        tokenType: 'bearer',
+        user: const User(
+          id: 'regular-user',
+          email: 'user@rakoon.co',
+          appMetadata: {},
+          userMetadata: {'name': 'Regular User'},
+          aud: 'authenticated',
+          createdAt: '2026-01-01',
+        ),
+      );
+      AuthService.mockIsAdmin = false;
+
+      await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Admin'), findsNothing);
+      expect(find.text('Kelola Foto Produk'), findsNothing);
+      expect(find.text('Verifikasi Klaim Toko'), findsNothing);
+
+      expect(find.text('Toko'), findsOneWidget);
+      expect(find.text('Mode Mitra Toko'), findsOneWidget);
+
+      expect(find.text('Akun'), findsOneWidget);
+      expect(find.text('Riwayat Scan'), findsOneWidget);
+    });
+
+    testWidgets('tapping Riwayat Scan navigates to ScanHistoryScreen', (
+      WidgetTester tester,
+    ) async {
+      AuthService.mockSession = Session(
+        accessToken: 'mock-token',
+        refreshToken: 'mock-refresh-token',
+        expiresIn: 3600,
+        tokenType: 'bearer',
+        user: const User(
+          id: 'regular-user',
+          email: 'user@rakoon.co',
+          appMetadata: {},
+          userMetadata: {'name': 'Regular User'},
+          aud: 'authenticated',
+          createdAt: '2026-01-01',
+        ),
+      );
+      AuthService.mockIsAdmin = false;
+
+      await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+      await tester.pumpAndSettle();
+
+      final scanHistoryTile = find.byKey(const Key('scan_history_tile'));
+      expect(scanHistoryTile, findsOneWidget);
+
+      await tester.ensureVisible(scanHistoryTile);
+      await tester.tap(scanHistoryTile);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ScanHistoryScreen), findsOneWidget);
+    });
+
+    testWidgets('unauthenticated state does not show section Akun or Riwayat Scan', (
+      WidgetTester tester,
+    ) async {
+      AuthService.mockSession = null;
+
+      await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Akun'), findsNothing);
+      expect(find.text('Riwayat Scan'), findsNothing);
+    });
+  });
+
+  group('ProfilePage - App Info Row Updates', () {
+    testWidgets('does not display Engine AI row in app info card (authenticated and unauthenticated)', (
+      WidgetTester tester,
+    ) async {
+      AuthService.mockSession = null;
+      await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Engine AI'), findsNothing);
+      expect(find.text('Computer Vision & OCR'), findsNothing);
+      expect(find.text('Informasi Aplikasi'), findsOneWidget);
+      expect(find.text('Versi Aplikasi'), findsOneWidget);
+      expect(find.text('1.0.0 (Release Candidate)'), findsOneWidget);
+    });
+  });
+
+  group('ProfilePage - Accessibility & Touch Targets', () {
+    testWidgets('all menu tiles and action buttons have touch targets >= 48dp and Indonesian semantics', (
+      WidgetTester tester,
+    ) async {
+      AuthService.mockSession = Session(
+        accessToken: 'mock-token',
+        refreshToken: 'mock-refresh-token',
+        expiresIn: 3600,
+        tokenType: 'bearer',
+        user: const User(
+          id: 'admin-user',
+          email: 'admin@rakoon.app',
+          appMetadata: {'role': 'admin'},
+          userMetadata: {'role': 'admin', 'name': 'Super Admin'},
+          aud: 'authenticated',
+          createdAt: '2026-01-01',
+        ),
+      );
+      AuthService.mockIsAdmin = true;
+
+      await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+      await tester.pumpAndSettle();
+
+      for (final key in [
+        const Key('admin_panel_tile'),
+        const Key('admin_claim_approval_tile'),
+        const Key('merchant_hub_tile'),
+        const Key('scan_history_tile'),
+        const Key('profile_logout_button'),
+      ]) {
+        final finder = find.byKey(key);
+        expect(finder, findsOneWidget);
+        await tester.ensureVisible(finder);
+        final size = tester.getSize(finder);
+        expect(size.height, greaterThanOrEqualTo(48.0), reason: 'Key $key height should be >= 48dp');
+        final semantics = tester.getSemantics(finder);
+        expect(semantics.label.isNotEmpty, isTrue, reason: 'Key $key should have a non-empty semantics label');
+      }
+    });
+  });
+
+  group('ProfilePage - Padding and Responsive across States', () {
+    for (final width in [320.0, 390.0]) {
+      testWidgets('renders cleanly without overflow at ${width.toInt()}dp width for admin', (
+        WidgetTester tester,
+      ) async {
+        tester.view.physicalSize = Size(width, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        AuthService.mockSession = Session(
+          accessToken: 'mock-token',
+          refreshToken: 'mock-refresh-token',
+          expiresIn: 3600,
+          tokenType: 'bearer',
+          user: const User(
+            id: 'admin-user',
+            email: 'admin@rakoon.app',
+            appMetadata: {'role': 'admin'},
+            userMetadata: {'role': 'admin', 'name': 'Super Admin'},
+            aud: 'authenticated',
+            createdAt: '2026-01-01',
+          ),
+        );
+        AuthService.mockIsAdmin = true;
+
+        await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+
+        // Check horizontal padding consistency (20dp)
+        final headerTopLeft = tester.getTopLeft(find.text('Profil Saya'));
+        expect(headerTopLeft.dx, equals(20.0));
+      });
+
+      testWidgets('padding horizontal header and content is consistent at ${width.toInt()}dp for regular user', (
+        WidgetTester tester,
+      ) async {
+        tester.view.physicalSize = Size(width, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        AuthService.mockSession = Session(
+          accessToken: 'mock-token',
+          refreshToken: 'mock-refresh-token',
+          expiresIn: 3600,
+          tokenType: 'bearer',
+          user: const User(
+            id: 'reg-user',
+            email: 'reg@rakoon.app',
+            appMetadata: {},
+            userMetadata: {'name': 'Reg User'},
+            aud: 'authenticated',
+            createdAt: '2026-01-01',
+          ),
+        );
+        AuthService.mockIsAdmin = false;
+
+        await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+
+        final headerTopLeft = tester.getTopLeft(find.text('Profil Saya'));
+        expect(headerTopLeft.dx, equals(20.0));
+      });
+    }
   });
 
   group('ProfilePage - AppShell Tab Integration', () {
