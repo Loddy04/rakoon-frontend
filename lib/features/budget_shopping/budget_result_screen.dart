@@ -4,6 +4,8 @@ import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
 import 'package:rakoon_frontend/services/budget_shopping_service.dart';
 import 'package:rakoon_frontend/widgets/price_freshness_label.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
+import 'package:rakoon_frontend/widgets/product_card.dart';
+import 'package:rakoon_frontend/core/utils/route_launcher.dart';
 
 class BudgetResultScreen extends StatelessWidget {
   final BudgetRecommendResponse result;
@@ -299,42 +301,37 @@ class BudgetResultScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        if (store.distanceKm != null) ...[
+                        if (store.distanceKm != null && ProductCard.formatDistance(store.distanceKm) != null) ...[
                           const SizedBox(height: 6),
                           Row(
                             children: [
                               const Icon(Icons.directions_walk_rounded, size: 16, color: Color(0xFF059669)),
                               const SizedBox(width: 6),
-                              Text(
-                                'Jarak: ~${store.distanceKm} km dari lokasi Anda',
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF059669),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                        if (store.lat != null && store.lng != null) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(Icons.my_location_rounded, size: 16, color: Color(0xFF059669)),
-                              const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  'Koordinat: ${store.lat}, ${store.lng}',
+                                  'Jarak: ${ProductCard.formatDistance(store.distanceKm)} dari lokasi Anda',
                                   style: const TextStyle(
-                                    fontSize: 12,
-                                    fontFamily: 'monospace',
-                                    color: Color(0xFF4B5563),
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF059669),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
+                          ),
+                        ],
+                        if (store.lat != null && store.lng != null) ...[
+                          const SizedBox(height: 10),
+                          StoreRouteButton(
+                            buttonKey: const Key('budget_store_route_button'),
+                            onTap: () => launchStoreRoute(
+                              context,
+                              lat: store.lat!,
+                              lng: store.lng!,
+                              storeName: store.nama,
+                            ),
                           ),
                         ],
                       ],
@@ -566,8 +563,8 @@ class BudgetResultScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    alt.storeInfo.distanceKm != null
-                                        ? 'Sisa Budget: ${_formatRupiah(alt.remainingBudget)} • ~${alt.storeInfo.distanceKm} km'
+                                    alt.storeInfo.distanceKm != null && ProductCard.formatDistance(alt.storeInfo.distanceKm) != null
+                                        ? 'Sisa Budget: ${_formatRupiah(alt.remainingBudget)} • ${ProductCard.formatDistance(alt.storeInfo.distanceKm)}'
                                         : 'Sisa Budget: ${_formatRupiah(alt.remainingBudget)}',
                                     style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
                                   ),
