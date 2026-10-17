@@ -75,7 +75,12 @@ Future<T> mapNetworkErrors<T>(
     return await body();
   } on SocketException catch (e) {
     if (kDebugMode) {
-      debugPrint('[mapNetworkErrors] SocketException: ${e.message}');
+      final host = e.address?.host;
+      final port = e.port;
+      final target = (host != null && host.isNotEmpty)
+          ? ' [$host${port != null ? ':$port' : ''}]'
+          : '';
+      debugPrint('[mapNetworkErrors] SocketException$target: ${e.message}');
     }
     throw const NoConnectionException();
   } on TimeoutException catch (e) {
@@ -88,7 +93,12 @@ Future<T> mapNetworkErrors<T>(
     throw const NoConnectionException();
   } on http.ClientException catch (e) {
     if (kDebugMode) {
-      debugPrint('[mapNetworkErrors] ClientException: ${e.message}');
+      final host = e.uri?.host;
+      final port = e.uri?.hasPort == true ? e.uri?.port : null;
+      final target = (host != null && host.isNotEmpty)
+          ? ' [$host${port != null ? ':$port' : ''}]'
+          : '';
+      debugPrint('[mapNetworkErrors] ClientException$target: ${e.message}');
     }
     if (differentiate) {
       final msg = e.message.toLowerCase();

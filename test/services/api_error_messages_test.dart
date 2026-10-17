@@ -33,6 +33,25 @@ void main() {
         throwsA(isA<InvalidRequestException>()),
       );
     });
+
+    test('SocketException with address/port and ClientException with uri still map to friendly messages', () async {
+      await expectLater(
+        mapNetworkErrors<void>(() async => throw SocketException(
+              'Connection timed out',
+              address: InternetAddress.tryParse('10.0.2.2'),
+              port: 8000,
+            )),
+        throwsA(isA<NoConnectionException>().having((e) => e.toString(), 'toString', _offline)),
+      );
+
+      await expectLater(
+        mapNetworkErrors<void>(() async => throw http.ClientException(
+              'Connection closed',
+              Uri.parse('http://10.0.2.2:8000/scan/'),
+            )),
+        throwsA(isA<NoConnectionException>().having((e) => e.toString(), 'toString', _offline)),
+      );
+    });
   });
 
   group('throwIfServerError', () {
