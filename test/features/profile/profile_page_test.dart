@@ -461,6 +461,9 @@ void main() {
 
       expect(find.text('Akun'), findsOneWidget);
       expect(find.text('Riwayat Scan'), findsOneWidget);
+      expect(find.text('Bantuan'), findsOneWidget);
+      expect(find.text('Kebijakan Privasi'), findsOneWidget);
+      expect(find.text('Syarat & Ketentuan'), findsOneWidget);
     });
 
     testWidgets('regular user sees section Toko and Akun, but NOT section Admin or admin tiles', (
@@ -494,6 +497,9 @@ void main() {
 
       expect(find.text('Akun'), findsOneWidget);
       expect(find.text('Riwayat Scan'), findsOneWidget);
+      expect(find.text('Bantuan'), findsOneWidget);
+      expect(find.text('Kebijakan Privasi'), findsOneWidget);
+      expect(find.text('Syarat & Ketentuan'), findsOneWidget);
     });
 
     testWidgets('tapping Riwayat Scan navigates to ScanHistoryScreen', (
@@ -528,7 +534,106 @@ void main() {
       expect(find.byType(ScanHistoryScreen), findsOneWidget);
     });
 
-    testWidgets('unauthenticated state does not show section Akun or Riwayat Scan', (
+    testWidgets('tapping Bantuan navigates to DocumentViewerPage and shows title and first section', (
+      WidgetTester tester,
+    ) async {
+      AuthService.mockSession = Session(
+        accessToken: 'mock-token',
+        refreshToken: 'mock-refresh-token',
+        expiresIn: 3600,
+        tokenType: 'bearer',
+        user: const User(
+          id: 'regular-user',
+          email: 'user@rakoon.co',
+          appMetadata: {},
+          userMetadata: {'name': 'Regular User'},
+          aud: 'authenticated',
+          createdAt: '2026-01-01',
+        ),
+      );
+      AuthService.mockIsAdmin = false;
+
+      await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+      await tester.pumpAndSettle();
+
+      final tile = find.byKey(const Key('help_center_tile'));
+      expect(tile, findsOneWidget);
+
+      await tester.ensureVisible(tile);
+      await tester.tap(tile);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Bantuan'), findsOneWidget);
+      expect(find.text('1. Tentang Rakoon'), findsOneWidget);
+    });
+
+    testWidgets('tapping Kebijakan Privasi navigates to DocumentViewerPage and shows title and first section', (
+      WidgetTester tester,
+    ) async {
+      AuthService.mockSession = Session(
+        accessToken: 'mock-token',
+        refreshToken: 'mock-refresh-token',
+        expiresIn: 3600,
+        tokenType: 'bearer',
+        user: const User(
+          id: 'regular-user',
+          email: 'user@rakoon.co',
+          appMetadata: {},
+          userMetadata: {'name': 'Regular User'},
+          aud: 'authenticated',
+          createdAt: '2026-01-01',
+        ),
+      );
+      AuthService.mockIsAdmin = false;
+
+      await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+      await tester.pumpAndSettle();
+
+      final tile = find.byKey(const Key('privacy_policy_tile'));
+      expect(tile, findsOneWidget);
+
+      await tester.ensureVisible(tile);
+      await tester.tap(tile);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Kebijakan Privasi'), findsOneWidget);
+      expect(find.text('1. Pendahuluan'), findsOneWidget);
+    });
+
+    testWidgets('tapping Syarat & Ketentuan navigates to DocumentViewerPage and shows title and first section', (
+      WidgetTester tester,
+    ) async {
+      AuthService.mockSession = Session(
+        accessToken: 'mock-token',
+        refreshToken: 'mock-refresh-token',
+        expiresIn: 3600,
+        tokenType: 'bearer',
+        user: const User(
+          id: 'regular-user',
+          email: 'user@rakoon.co',
+          appMetadata: {},
+          userMetadata: {'name': 'Regular User'},
+          aud: 'authenticated',
+          createdAt: '2026-01-01',
+        ),
+      );
+      AuthService.mockIsAdmin = false;
+
+      await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+      await tester.pumpAndSettle();
+
+      final tile = find.byKey(const Key('terms_of_service_tile'));
+      expect(tile, findsOneWidget);
+
+      await tester.ensureVisible(tile);
+      await tester.tap(tile);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Syarat & Ketentuan'), findsOneWidget);
+      expect(find.text('1. Penerimaan Ketentuan'), findsOneWidget);
+    });
+
+    testWidgets('unauthenticated state does not show section Akun, Bantuan, Privasi, or Syarat Ketentuan', (
       WidgetTester tester,
     ) async {
       AuthService.mockSession = null;
@@ -538,6 +643,9 @@ void main() {
 
       expect(find.text('Akun'), findsNothing);
       expect(find.text('Riwayat Scan'), findsNothing);
+      expect(find.text('Bantuan'), findsNothing);
+      expect(find.text('Kebijakan Privasi'), findsNothing);
+      expect(find.text('Syarat & Ketentuan'), findsNothing);
     });
   });
 
@@ -607,6 +715,9 @@ void main() {
         const Key('admin_claim_approval_tile'),
         const Key('merchant_hub_tile'),
         const Key('scan_history_tile'),
+        const Key('help_center_tile'),
+        const Key('privacy_policy_tile'),
+        const Key('terms_of_service_tile'),
         const Key('profile_logout_button'),
       ]) {
         final finder = find.byKey(key);
