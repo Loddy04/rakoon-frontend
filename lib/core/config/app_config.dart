@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class AppConfig {
   /// Supabase project URL injected via build environment.
   static const String supabaseUrl = String.fromEnvironment(
@@ -13,6 +15,18 @@ class AppConfig {
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
   );
+
+  static String? _overrideApiBaseUrl;
+
+  /// Test-only override for backend API base URL.
+  @visibleForTesting
+  static set overrideApiBaseUrl(String? value) {
+    _overrideApiBaseUrl = value;
+  }
+
+  /// Single accessor for backend API base URL across the entire application.
+  /// Returns [overrideApiBaseUrl] if set during tests, otherwise [apiBaseUrl].
+  static String get backendBaseUrl => _overrideApiBaseUrl ?? apiBaseUrl;
 
   /// Google OAuth Web Client ID for native Google Sign-In.
   static const String googleWebClientId = String.fromEnvironment(
