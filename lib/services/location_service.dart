@@ -60,6 +60,11 @@ class LocationService {
   /// Test hook: jalankan jalur Geolocator sungguhan (dengan GeolocatorPlatform palsu) meski di FLUTTER_TEST.
   static bool testUsePlatform = false;
 
+  /// Test hooks untuk getFreshPosition.
+  static Position? testFreshPosition;
+  static bool testFreshPositionNull = false;
+  static Future<Position?> Function({Duration timeout})? testGetFreshPosition;
+
   // Satu permintaan izin pada satu waktu: pemanggil lain (mis. Home saat resume) memakai hasil yang sama,
   // supaya plugin tidak menerima requestPermission ganda (galat "request in progress", dialog ganda).
   static Future<LocationPermission>? _pendingPermission;
@@ -147,7 +152,11 @@ class LocationService {
   /// Mengembalikan posisi, atau penyebab tidak ada posisi (tanpa melempar). Tidak pernah memakai
   /// koordinat bawaan. [askPermission] false = hanya memeriksa status (tanpa dialog izin), dipakai
   /// saat aplikasi resume; izin yang sudah ditolak permanen tidak pernah diminta lagi.
-  static Future<LocationResult> resolveLocation({bool askPermission = true}) async {
+  static Future<LocationResult> resolveLocation({
+    bool askPermission = true,
+    bool useCache = true,
+    bool fetchPosition = true,
+  }) async {
     testResolveCalls++;
     final forced = testOutcome;
     if (forced == LocationOutcome.denied && askPermission) testPermissionRequests++;
@@ -155,11 +164,14 @@ class LocationService {
     if (forced != null && forced != LocationOutcome.granted) return LocationResult(forced);
     if (testIsLocationServiceEnabled == false) return const LocationResult(LocationOutcome.serviceDisabled);
     if (Platform.environment.containsKey('FLUTTER_TEST') && !testUsePlatform) {
+      if (!fetchPosition) {
+        return const LocationResult(LocationOutcome.granted);
+      }
       final pos = _testPosition();
-      cachePosition(pos);
+      if (useCache) cachePosition(pos);
       return LocationResult(LocationOutcome.granted, pos);
     }
-    if (!askPermission && cachedPosition != null) {
+    if (useCache && !askPermission && cachedPosition != null) {
       return LocationResult(LocationOutcome.granted, cachedPosition);
     }
     // Urutan: layanan aktif? -> izin? -> (ditolak/permanen: berhenti) -> baru ambil posisi.
@@ -183,15 +195,59 @@ class LocationService {
       if (permission == LocationPermission.unableToDetermine) {
         return const LocationResult(LocationOutcome.failed);
       }
+      if (!fetchPosition) {
+        return const LocationResult(LocationOutcome.granted);
+      }
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: _positionTimeout,
       );
-      cachePosition(position);
+      if (useCache) cachePosition(position);
       return LocationResult(LocationOutcome.granted, position);
     } catch (_) {
       // Galat platform/timeout: jangan melempar; layar menampilkan "Lokasi belum terdeteksi".
       return const LocationResult(LocationOutcome.failed);
+    }
+  }
+
+  /// Mengambil posisi terkini perangkat dengan akurasi sedang tanpa meminta izin baru
+  /// dan tanpa memakai cache lama atau koordinat default.
+  /// Bila izin belum granted, GPS mati, terjadi galat, atau waktu habis ([timeout]),
+  /// mengembalikan `null`.
+  static Future<Position?> getFreshPosition({
+    Duration timeout = const Duration(seconds: 4),
+  }) async {
+    if (testGetFreshPosition != null) {
+      return await testGetFreshPosition!(timeout: timeout);
+    }
+    if (testFreshPositionNull) {
+      return null;
+    }
+    if (testFreshPosition != null) {
+      return testFreshPosition;
+    }
+
+    final status = await resolveLocation(
+      askPermission: false,
+      useCache: false,
+      fetchPosition: false,
+    );
+    if (status.outcome != LocationOutcome.granted) {
+      return null;
+    }
+
+    if (Platform.environment.containsKey('FLUTTER_TEST') && !testUsePlatform) {
+      return _testPosition();
+    }
+
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: timeout,
+      );
+      return position;
+    } catch (_) {
+      return null;
     }
   }
 
