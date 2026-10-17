@@ -51,11 +51,16 @@ void main() {
 
   for (final call in calls.entries) {
     for (final failure in failures.entries) {
-      test('${call.key}: ${failure.key} gives NoConnectionException', () async {
+      test('${call.key}: ${failure.key} gives appropriate exception', () async {
         final client = MockClient((_) async => throw failure.value());
+        final expectedMessage = call.key == 'scanPhoto' && failure.key == 'TimeoutException'
+            ? timeoutErrorMessage
+            : call.key == 'scanPhoto' && failure.key == 'ClientException'
+                ? connectionClosedMessage
+                : noConnectionMessage;
         await expectLater(
           call.value(client),
-          throwsA(isA<NoConnectionException>().having((e) => e.toString(), 'message', noConnectionMessage)),
+          throwsA(isA<Exception>().having((e) => e.toString(), 'message', expectedMessage)),
         );
       });
     }

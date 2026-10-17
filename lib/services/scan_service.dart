@@ -103,6 +103,9 @@ const Map<int, String> _confirmErrorMessages = {
   429: 'Batas konfirmasi harian tercapai, coba lagi besok',
 };
 
+/// Timeout for scanning shelf photos (AI vision processing pipeline).
+const Duration scanTimeout = Duration(seconds: 90);
+
 class ScanService {
   // Default Base URL for Android / Cloud Backend
   static String defaultBaseUrl = const String.fromEnvironment(
@@ -142,9 +145,9 @@ class ScanService {
     // Send request
     try {
       final response = await mapNetworkErrors(() async {
-        final streamedResponse = await httpClient.send(request).timeout(const Duration(seconds: 35));
+        final streamedResponse = await httpClient.send(request).timeout(scanTimeout);
         return http.Response.fromStream(streamedResponse);
-      });
+      }, differentiate: true);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
