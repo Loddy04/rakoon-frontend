@@ -761,7 +761,7 @@ class _BudgetShoppingScreenState extends State<BudgetShoppingScreen> {
                                 SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    'Rakoon AI akan menemukan toko dengan kombinasi harga paling hemat di sekitar Anda.',
+                                    'Rakoon akan menemukan toko dengan kombinasi harga paling hemat di sekitar Anda.',
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
