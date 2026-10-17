@@ -25,7 +25,7 @@ void main() {
       await tester.scrollUntilVisible(distanceNoteFinder, 100);
       expect(distanceNoteFinder, findsOneWidget);
 
-      final emailFinder = find.textContaining('ayyasheufrat2@gmail.com');
+      final emailFinder = find.textContaining('rakoon935@gmail.com');
       await tester.scrollUntilVisible(emailFinder, 100);
       expect(emailFinder, findsOneWidget);
 
