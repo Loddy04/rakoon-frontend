@@ -7,6 +7,7 @@ import 'package:rakoon_frontend/features/auth/presentation/widgets/google_sign_i
 import 'package:rakoon_frontend/features/admin/presentation/pages/admin_product_photo_page.dart';
 import 'package:rakoon_frontend/features/admin/presentation/pages/admin_store_claims_page.dart';
 import 'package:rakoon_frontend/features/merchant/presentation/pages/merchant_dashboard_page.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:rakoon_frontend/features/scan/presentation/pages/scan_history_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -19,11 +20,15 @@ class ProfilePage extends StatefulWidget {
   /// Hanya untuk test: pengganti AuthService.signInWithGoogle.
   final Future<AuthResponse> Function()? signInWithGoogle;
 
+  /// Hanya untuk test: penyedia PackageInfo agar test tidak memanggil platform channel.
+  final Future<PackageInfo> Function()? getPackageInfo;
+
   const ProfilePage({
     super.key,
     this.baseUrl,
     this.httpClient,
     this.signInWithGoogle,
+    this.getPackageInfo,
   });
 
   @override
@@ -34,15 +39,37 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isLoggingOut = false;
   bool _isSigningIn = false;
   bool _isCheckingAdmin = false;
+  String _appVersion = '-';
   StreamSubscription<AuthState>? _authSubscription;
 
   @override
   void initState() {
     super.initState();
     _checkAdminStatus();
+    _loadAppVersion();
     _authSubscription = AuthService.authStateChanges.listen((_) {
       _checkAdminStatus();
     });
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await (widget.getPackageInfo ?? PackageInfo.fromPlatform)();
+      final formatted = info.buildNumber.trim().isNotEmpty
+          ? '${info.version} (${info.buildNumber})'
+          : info.version;
+      if (mounted) {
+        setState(() {
+          _appVersion = formatted;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _appVersion = '-';
+        });
+      }
+    }
   }
 
   @override
@@ -997,7 +1024,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           ),
           const SizedBox(height: 14),
-          _buildInfoRow('Versi Aplikasi', '1.0.0 (Release Candidate)'),
+          _buildInfoRow('Versi Aplikasi', _appVersion),
         ],
       ),
     );

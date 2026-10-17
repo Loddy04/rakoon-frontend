@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:rakoon_frontend/features/app_shell/presentation/pages/app_shell.dart';
 import 'package:rakoon_frontend/features/auth/presentation/widgets/login_bottom_sheet.dart';
 import 'package:rakoon_frontend/features/profile/presentation/pages/profile_page.dart';
@@ -55,7 +56,7 @@ void main() {
 
       // Verify App Info card is present
       expect(find.text('Informasi Aplikasi'), findsOneWidget);
-      expect(find.text('1.0.0 (Release Candidate)'), findsOneWidget);
+      expect(find.text('Versi Aplikasi'), findsOneWidget);
     });
 
     testWidgets('tapping "Masuk dengan Google" signs in directly, with no login popup', (
@@ -512,18 +513,40 @@ void main() {
   });
 
   group('ProfilePage - App Info Row Updates', () {
-    testWidgets('does not display Engine AI row in app info card (authenticated and unauthenticated)', (
+    testWidgets('displays dynamic app version from fake PackageInfo (format version (buildNumber))', (
       WidgetTester tester,
     ) async {
-      AuthService.mockSession = null;
-      await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+      await tester.pumpWidget(MaterialApp(
+        home: ProfilePage(
+          getPackageInfo: () async => PackageInfo(
+            appName: 'Rakoon',
+            packageName: 'com.rakoon',
+            version: '1.2.3',
+            buildNumber: '45',
+          ),
+        ),
+      ));
       await tester.pumpAndSettle();
 
       expect(find.text('Engine AI'), findsNothing);
-      expect(find.text('Computer Vision & OCR'), findsNothing);
-      expect(find.text('Informasi Aplikasi'), findsOneWidget);
       expect(find.text('Versi Aplikasi'), findsOneWidget);
-      expect(find.text('1.0.0 (Release Candidate)'), findsOneWidget);
+      expect(find.text('1.2.3 (45)'), findsOneWidget);
+      expect(find.textContaining('Release Candidate'), findsNothing);
+    });
+
+    testWidgets('displays "-" when package info fails to load or throws', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(MaterialApp(
+        home: ProfilePage(
+          getPackageInfo: () async => throw Exception('Platform channel failed'),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Versi Aplikasi'), findsOneWidget);
+      expect(find.text('-'), findsOneWidget);
+      expect(find.textContaining('Release Candidate'), findsNothing);
     });
   });
 
