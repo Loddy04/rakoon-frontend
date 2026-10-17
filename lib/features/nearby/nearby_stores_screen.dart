@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/core/utils/brand_assets.dart';
 import 'package:rakoon_frontend/core/utils/currency_formatter.dart';
@@ -15,6 +14,8 @@ import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/widgets/price_freshness_label.dart';
 import 'package:rakoon_frontend/widgets/status_badge.dart';
 import 'package:rakoon_frontend/widgets/rakoon_location_map.dart';
+import 'package:rakoon_frontend/core/utils/route_launcher.dart';
+import 'package:rakoon_frontend/widgets/product_card.dart';
 
 class NearbyStoresScreen extends StatefulWidget {
   final String baseUrl;
@@ -110,29 +111,8 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
   }
 
   /// Launches Google Maps navigation route to the destination store.
-  Future<void> _launchRoute(double lat, double lng, String storeName) async {
-    final uri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
-    try {
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!launched && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Tidak dapat membuka rute ke $storeName', style: GoogleFonts.outfit()),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal membuka aplikasi navigasi', style: GoogleFonts.outfit()),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    }
-  }
+  Future<void> _launchRoute(double lat, double lng, String storeName) =>
+      launchStoreRoute(context, lat: lat, lng: lng, storeName: storeName);
 
   /// Centers the map on the store and scrolls the card into view if needed.
   void _scrollToStore(StoreNearby store) {
@@ -399,14 +379,15 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
                                         ),
                                       ),
                                       const SizedBox(height: 2),
-                                      Text(
-                                        '${store.jarakKm.toStringAsFixed(2)} km dari lokasi Anda',
-                                        style: GoogleFonts.outfit(
-                                          fontSize: 12,
-                                          color: const Color(0xFF059669),
-                                          fontWeight: FontWeight.w600,
+                                      if (ProductCard.formatDistance(store.jarakKm) != null)
+                                        Text(
+                                          '${ProductCard.formatDistance(store.jarakKm)} dari lokasi Anda',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 12,
+                                            color: const Color(0xFF059669),
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
-                                      ),
                                     ],
                                   ),
                                 ),
@@ -1198,7 +1179,6 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
 
   /// Renders simplified individual store card with full clickable area
   Widget _buildStoreCard(StoreNearby store, bool isSelected, bool isFirst) {
-    final walkingMinutes = (store.jarakKm * 12).round();
     final cardKey = _cardKeys.putIfAbsent(store.storeId, () => GlobalKey());
     final cleanAlamat = cleanAddress(store.alamat);
 
@@ -1264,7 +1244,9 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '${(store.jarakKm * 1000).round()} m · $cleanAlamat',
+                            ProductCard.formatDistance(store.jarakKm) != null
+                                ? '${ProductCard.formatDistance(store.jarakKm)} · $cleanAlamat'
+                                : cleanAlamat,
                             style: GoogleFonts.outfit(
                               fontSize: 11,
                               color: const Color(0xFF6B7280),
@@ -1276,39 +1258,9 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
                       ),
                     ),
                     const SizedBox(width: 8),
-                    // "Terdekat" or "X menit" walking badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFECFDF5),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFA7F3D0)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isFirst ? Icons.near_me_rounded : Icons.directions_walk_rounded,
-                            size: 13,
-                            color: const Color(0xFF059669),
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            isFirst ? 'Terdekat' : '$walkingMinutes menit',
-                            style: GoogleFonts.outfit(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF059669),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.chevron_right_rounded,
-                      size: 18,
-                      color: Color(0xFF9CA3AF),
+                    StoreRouteButton(
+                      buttonKey: Key('nearby_store_route_button_${store.storeId}'),
+                      onTap: () => _launchRoute(store.lat, store.lng, store.nama),
                     ),
                   ],
                 ),

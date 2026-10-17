@@ -15,7 +15,7 @@ import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/widgets/interactive_scale.dart';
 import 'package:rakoon_frontend/widgets/price_freshness_label.dart';
 import 'package:rakoon_frontend/widgets/product_card.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:rakoon_frontend/core/utils/route_launcher.dart';
 
 class UnifiedProductPriceDetailPage extends StatefulWidget {
   final RecommendedProduct product;
@@ -140,29 +140,8 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
     );
   }
 
-  Future<void> _launchRoute(double lat, double lng, String storeName) async {
-    final uri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
-    try {
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!launched && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Tidak dapat membuka rute ke $storeName', style: GoogleFonts.outfit()),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal membuka aplikasi navigasi', style: GoogleFonts.outfit()),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    }
-  }
+  Future<void> _launchRoute(double lat, double lng, String storeName) =>
+      launchStoreRoute(context, lat: lat, lng: lng, storeName: storeName);
 
   Widget _buildTrendBadge(List<PriceTrendPoint>? trendPoints) {
     if (trendPoints == null || trendPoints.length < 2) {
@@ -1293,41 +1272,8 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                                     ),
                                   ),
                                   const SizedBox(height: 6),
-                                  InteractiveScale(
+                                  StoreRouteButton(
                                     onTap: () => _launchRoute(item.lat, item.lng, item.namaToko),
-                                    child: ConstrainedBox(
-                                      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                                      child: Align(
-                                        alignment: Alignment.centerRight,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFEBF5EE),
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(color: const Color(0xFFA7F3D0)),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Icon(
-                                                Icons.near_me_rounded,
-                                                size: 15,
-                                                color: Color(0xFF059669),
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                'Rute',
-                                                style: GoogleFonts.outfit(
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: const Color(0xFF059669),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
                                   ),
                                 ],
                               ),
