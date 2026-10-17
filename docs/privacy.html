@@ -47,7 +47,7 @@
           Dokumen Resmi Kepatuhan & Privasi
         </div>
         <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Kebijakan Privasi (Privacy Policy)</h1>
-        <p class="text-sm text-slate-500 mt-2">Terakhir diperbarui: 30 September 2026</p>
+        <p class="text-sm text-slate-500 mt-2">Terakhir diperbarui: 17 Oktober 2026</p>
       </div>
 
       <div class="prose prose-slate max-w-none space-y-8 text-slate-700 leading-relaxed text-sm sm:text-base">
@@ -66,16 +66,28 @@
           <p>Kami hanya mengumpulkan data yang benar-benar dibutuhkan untuk menyediakan dan meningkatkan fungsionalitas layanan Rakoon:</p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
             <li>
-              <strong>Informasi Akun Google (Google OAuth):</strong> Saat Anda masuk menggunakan Google Sign-In, kami hanya mengakses informasi dasar profil publik yang Anda izinkan, yaitu: <strong>nama lengkap</strong>, <strong>alamat email</strong>, dan <strong>foto profil</strong>.
+              <strong>Informasi Akun Google (Google OAuth):</strong> Saat Anda masuk menggunakan Google Sign-In, aplikasi meminta akses ke informasi dasar akun Google Anda (cakupan <em>email</em> dan <em>profile</em>). Kami menggunakan <strong>nama</strong> dan <strong>alamat email</strong> Anda untuk mengenali akun. Aplikasi tidak menampilkan atau memakai foto profil Google Anda.
             </li>
             <li>
-              <strong>Data Gambar / Citra Kamera:</strong> Gambar label harga rak toko fisik yang Anda ambil melalui kamera gawai Anda untuk diproses oleh sistem Vision AI ekstraksi harga dan produk.
+              <strong>Data Gambar / Citra Kamera:</strong> Foto rak toko fisik yang Anda ambil atau pilih untuk dipindai. Foto dikirim ke server Rakoon dan diteruskan ke penyedia layanan AI vision untuk mengekstraksi produk dan harga. Server Rakoon tidak menyimpan foto rak tersebut sebagai berkas setelah diproses.
             </li>
             <li>
-              <strong>Data Lokasi Geografis (GPS):</strong> Data koordinat perkiraan lokasi Anda (hanya jika Anda memberikan izin akses lokasi) yang digunakan untuk menemukan dan membandingkan harga minimarket/ritel terdekat di sekitar Anda.
+              <strong>Riwayat Pindaian dan Harga Kontribusi:</strong> Saat Anda mengonfirmasi hasil pindaian, kami menyimpan sesi pindaian (ID akun, toko, dan waktu) serta harga yang Anda konfirmasi (produk, toko, harga, waktu, dan status verifikasi) yang terkait dengan ID akun Anda. Harga ini menjadi bagian dari data harga yang dapat dilihat pengguna lain; tampilan harga di aplikasi tidak memuat nama atau email Anda.
             </li>
             <li>
-              <strong>Data Keranjang & Preferensi Belanja:</strong> Daftar belanjaan, riwayat pencarian harga, dan batas anggaran yang Anda simpan di dalam aplikasi.
+              <strong>Data Lokasi Geografis (GPS):</strong> Koordinat perkiraan lokasi Anda (hanya jika Anda memberikan izin akses lokasi) dikirim ke server saat fitur yang memerlukannya dipakai, misalnya mencari toko terdekat, membandingkan harga, menampilkan banner promo di sekitar Anda, dan asisten anggaran. Kami tidak menyimpannya sebagai riwayat lokasi Anda.
+            </li>
+            <li>
+              <strong>Data Mitra Toko (klaim toko dan pengajuan toko baru):</strong> Jika Anda mengklaim toko atau mengajukan toko baru, kami mengumpulkan nama pemohon, nomor telepon, peran pemohon, dokumen legalitas usaha, foto tampak depan toko, serta, untuk pengajuan toko baru, nama toko, alamat, nama badan usaha (bila diisi), dan titik koordinat toko yang Anda pilih di peta. Kami juga mencatat status verifikasi, alasan penolakan (bila ada), serta pemeriksa dan waktu pemeriksaannya. Dokumen dan foto disimpan di penyimpanan privat dan hanya dibuka oleh admin Rakoon melalui tautan sementara.
+            </li>
+            <li>
+              <strong>Data Iklan Banner:</strong> Judul promo, gambar banner, durasi tayang, dan status kampanye milik toko Anda. Banner yang aktif tampil di beranda aplikasi kepada pengguna lain di sekitar toko.
+            </li>
+            <li>
+              <strong>Data Pembayaran Iklan:</strong> Catatan transaksi pembayaran kampanye (ID akun pemilik, nominal, mata uang, status, ID dan tautan invoice, serta waktu pembayaran). Pembayaran diproses oleh pemroses pembayaran pihak ketiga; kami tidak menyimpan data kartu atau rekening Anda. Saat ini pembayaran berjalan di mode uji (<em>sandbox</em>).
+            </li>
+            <li>
+              <strong>Catatan Teknis Server:</strong> Server mencatat log operasional untuk menjaga layanan, antara lain ID akun dan nama berkas saat pindaian diproses, serta pesan kesalahan.
             </li>
           </ul>
         </section>
@@ -86,9 +98,11 @@
           <p>Informasi yang kami kumpulkan digunakan semata-mata untuk:</p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
             <li>Memverifikasi identitas Anda dan mengelola sesi autentikasi akun secara aman.</li>
-            <li>Menyimpan dan menyinkronkan keranjang belanja, histori pindaian, dan preferensi anggaran Anda di seluruh perangkat.</li>
-            <li>Melakukan komparasi harga dan merekomendasikan rute ritel terdekat yang paling hemat.</li>
-            <li>Meningkatkan kualitas performa dan akurasi model pembacaan label rak.</li>
+            <li>Membaca label rak dari foto Anda, menghitung nilai per satuan, dan menyimpan histori pindaian serta harga yang Anda konfirmasi.</li>
+            <li>Membangun data riwayat harga dan melakukan komparasi harga di toko terdekat, serta menyusun rekomendasi toko dengan total belanja paling hemat sesuai anggaran Anda.</li>
+            <li>Memeriksa klaim toko dan pengajuan toko baru, serta mengelola status kemitraan toko.</li>
+            <li>Menayangkan banner promo dan memproses pembayaran kampanye iklan.</li>
+            <li>Menjaga keamanan layanan, mencegah penyalahgunaan, dan memoderasi harga kontribusi yang tidak wajar.</li>
           </ul>
         </section>
 
@@ -103,13 +117,33 @@
             <li><strong>KAMI TIDAK MENJUAL DATA PRIBADI ANDA:</strong> Data pribadi Anda, termasuk data yang diperoleh dari akun Google, tidak akan pernah dijual, disewakan, atau diperdagangkan kepada pihak ketiga atau jaringan periklanan.</li>
             <li>Kami tidak menggunakan data akun Google untuk keperluan periklanan bertarget (targeted ads) atau pembuatan profil komersial pihak ketiga.</li>
           </ul>
+
+          <h3 class="text-lg font-bold text-slate-900 mt-5 mb-2">Pihak yang menerima data</h3>
+          <p class="mb-2">
+            Kami tidak menjual data, tetapi untuk menjalankan layanan, data tertentu diproses oleh penyedia layanan pihak ketiga berikut. Mereka menerima data sebatas yang diperlukan untuk fungsi tersebut:
+          </p>
+          <ul class="list-disc pl-6 space-y-2">
+            <li><strong>Penyedia layanan AI vision:</strong> menerima foto rak yang Anda pindai untuk mengenali produk dan membaca harga.</li>
+            <li><strong>Pemroses pembayaran (Xendit):</strong> menerima data kampanye yang dibayar (ID transaksi, nominal, serta deskripsi invoice yang memuat judul kampanye dan durasinya) untuk membuat invoice pembayaran iklan. Data yang Anda isi langsung di halaman pembayaran diproses oleh pemroses tersebut sesuai ketentuannya.</li>
+            <li><strong>Penyedia infrastruktur (Supabase dan Render):</strong> Supabase menyediakan autentikasi akun, basis data, dan penyimpanan berkas (termasuk dokumen dan foto klaim toko, serta gambar banner); Render menjalankan server backend Rakoon.</li>
+            <li><strong>Google:</strong> menyediakan layanan Google Sign-In. Aplikasi juga memuat jenis huruf melalui Google Fonts, dan fitur nama area dari koordinat memakai layanan geocoding bawaan perangkat.</li>
+            <li><strong>OpenStreetMap:</strong> peta di aplikasi memuat ubin peta dari server OpenStreetMap, yang dapat menerima alamat IP perangkat dan area peta yang Anda lihat.</li>
+            <li><strong>Pengguna lain dan admin Rakoon:</strong> banner iklan aktif serta nama dan alamat toko mitra terlihat oleh pengguna lain; admin Rakoon dapat melihat data klaim dan pengajuan toko untuk keperluan verifikasi.</li>
+          </ul>
+          <p class="mt-3">
+            Kami juga dapat mengungkapkan data bila diwajibkan oleh hukum yang berlaku.
+          </p>
         </section>
 
         <!-- Section 5 -->
         <section>
           <h2 class="text-xl font-bold text-slate-900 mb-3">5. Penyimpanan dan Keamanan Data</h2>
           <p>
-            Keamanan data Anda adalah prioritas kami. Semua transmisi data antara aplikasi gawai Anda dan peladen (server) dilindungi dengan enkripsi standar industri (HTTPS / TLS 1.3). Data akun dan basis data disimpan secara aman menggunakan infrastruktur terenkripsi dengan kontrol akses yang ketat.
+            Keamanan data Anda adalah prioritas kami. Transmisi data antara aplikasi gawai Anda dan peladen (server) dilindungi dengan HTTPS/TLS. Data akun, basis data, dan berkas disimpan pada infrastruktur penyedia layanan yang disebutkan di bagian 4. Dokumen legalitas dan foto klaim toko disimpan di penyimpanan privat tanpa akses publik; hanya admin yang dapat membukanya melalui tautan sementara yang berlaku singkat. Peran admin diberikan hanya kepada email yang terdaftar dan sudah terverifikasi.
+          </p>
+          <p class="mt-3">
+            <!-- KEPUTUSAN PEMILIK: tetapkan berapa lama dokumen legalitas dan foto klaim toko disimpan (retensi), termasuk setelah klaim ditolak atau toko tidak lagi menjadi mitra. Isi kalimat ini setelah diputuskan. -->
+            Jangka waktu penyimpanan dokumen klaim toko, data pengajuan, dan catatan transaksi belum ditetapkan secara tertulis. Selama belum ditetapkan, data tersebut disimpan selama masih diperlukan untuk verifikasi, pengelolaan kemitraan, dan pencatatan transaksi.
           </p>
         </section>
 
@@ -121,7 +155,9 @@
           </p>
           <ul class="list-disc pl-6 space-y-2 mt-2">
             <li>Anda dapat mencabut izin akses Google Sign-In kapan saja melalui pengaturan Akun Google Anda (<a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener" class="text-brand-600 underline font-medium">Google Account Security Settings</a>).</li>
-            <li>Untuk meminta penghapusan permanen akun Rakoon beserta seluruh riwayat belanja dan data terkait dari server kami, silakan hubungi kami melalui email pengembang di bawah ini. Kami akan memproses permintaan Anda dalam waktu maksimal 7 hari kerja.</li>
+            <!-- KEPUTUSAN PEMILIK: tetapkan proses dan batas waktu penghapusan akun/data (kode saat ini tidak punya fitur hapus akun; penghapusan dilakukan manual), serta data apa yang dihapus dan apa yang tetap disimpan (harga kontribusi, catatan transaksi pembayaran). Angka "7 hari kerja" pada versi sebelumnya dihapus karena belum ada keputusan tertulis. -->
+            <li>Aplikasi belum menyediakan fitur hapus akun. Untuk meminta penghapusan akun Rakoon dan data yang terkait dengan akun Anda (riwayat pindaian, harga kontribusi, data klaim toko, dan data kampanye), silakan hubungi kami melalui email pengembang di bawah ini. Permintaan diproses secara manual oleh tim.</li>
+            <li>Sebagian data, seperti catatan transaksi pembayaran atau harga yang telah menjadi bagian dari data harga bersama, mungkin memerlukan penanganan khusus. Kami akan menginformasikan data apa yang dihapus dan apa yang tetap disimpan saat permintaan Anda diproses.</li>
           </ul>
         </section>
 
@@ -129,6 +165,7 @@
         <section>
           <h2 class="text-xl font-bold text-slate-900 mb-3">7. Hubungi Kami</h2>
           <p>Jika Anda memiliki pertanyaan, saran, atau permohonan terkait privasi data Anda, silakan hubungi tim pengembang kami melalui:</p>
+          <!-- KEPUTUSAN PEMILIK: kontak resmi. Email di bawah adalah alamat pengembang yang sudah ada sejak versi sebelumnya (alamat pribadi satu anggota tim). Putuskan apakah dipakai sebagai kontak resmi atau diganti alamat tim/organisasi. -->
           <div class="mt-3 p-4 bg-slate-100 rounded-xl">
             <p><strong>Tim Pengembang Rakoon</strong></p>
             <p class="text-slate-600 mt-1">Kontak Pengembang: <a href="mailto:ayyasheufrat2@gmail.com" class="text-brand-600 font-semibold underline">ayyasheufrat2@gmail.com</a></p>
