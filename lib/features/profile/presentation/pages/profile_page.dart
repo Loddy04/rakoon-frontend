@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
@@ -8,10 +9,12 @@ import 'package:rakoon_frontend/features/admin/presentation/pages/admin_product_
 import 'package:rakoon_frontend/features/admin/presentation/pages/admin_store_claims_page.dart';
 import 'package:rakoon_frontend/features/merchant/presentation/pages/merchant_dashboard_page.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:rakoon_frontend/core/constants/legal_urls.dart';
 import 'package:rakoon_frontend/features/profile/data/static_legal_content.dart';
 import 'package:rakoon_frontend/features/profile/presentation/pages/document_viewer_page.dart';
 import 'package:rakoon_frontend/features/scan/presentation/pages/scan_history_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Profile / Account screen showing user identity, sync status, app metadata,
 /// and authentication controls.
@@ -25,12 +28,16 @@ class ProfilePage extends StatefulWidget {
   /// Hanya untuk test: penyedia PackageInfo agar test tidak memanggil platform channel.
   final Future<PackageInfo> Function()? getPackageInfo;
 
+  /// Hanya untuk test: pengganti launchUrl.
+  final Future<bool> Function(Uri url, {LaunchMode mode})? launchUrlFn;
+
   const ProfilePage({
     super.key,
     this.baseUrl,
     this.httpClient,
     this.signInWithGoogle,
     this.getPackageInfo,
+    this.launchUrlFn,
   });
 
   @override
@@ -154,6 +161,33 @@ class _ProfilePageState extends State<ProfilePage> {
         });
       }
     }
+  }
+
+  Future<void> _openExternalUrl(String urlString) async {
+    final uri = Uri.parse(urlString);
+    try {
+      final launch = widget.launchUrlFn ?? launchUrl;
+      final ok = await launch(uri, mode: LaunchMode.externalApplication);
+      if (!ok && mounted) {
+        _showUrlErrorSnackBar();
+      }
+    } catch (_) {
+      if (mounted) {
+        _showUrlErrorSnackBar();
+      }
+    }
+  }
+
+  void _showUrlErrorSnackBar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Tidak dapat membuka halaman. Periksa koneksi internet.',
+          style: GoogleFonts.outfit(),
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _showLogoutConfirmationDialog() async {
@@ -897,8 +931,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const DocumentViewerPage(
+                    builder: (context) => DocumentViewerPage(
                       content: helpContent,
+                      launchUrlFn: widget.launchUrlFn,
                     ),
                   ),
                 );
@@ -975,16 +1010,7 @@ class _ProfilePageState extends State<ProfilePage> {
             label: 'Kebijakan Privasi',
             child: InkWell(
               key: const Key('privacy_policy_tile'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const DocumentViewerPage(
-                      content: privacyPolicyContent,
-                    ),
-                  ),
-                );
-              },
+              onTap: () => _openExternalUrl(privacyPolicyUrl),
               borderRadius: BorderRadius.circular(20),
               child: Container(
                 padding: const EdgeInsets.all(16),
@@ -1057,16 +1083,7 @@ class _ProfilePageState extends State<ProfilePage> {
             label: 'Syarat & Ketentuan',
             child: InkWell(
               key: const Key('terms_of_service_tile'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const DocumentViewerPage(
-                      content: termsOfServiceContent,
-                    ),
-                  ),
-                );
-              },
+              onTap: () => _openExternalUrl(termsOfServiceUrl),
               borderRadius: BorderRadius.circular(20),
               child: Container(
                 padding: const EdgeInsets.all(16),

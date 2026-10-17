@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:rakoon_frontend/features/profile/data/static_legal_content.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-/// Reusable in-app viewer for legal and support documents (Privacy Policy, Terms of Service, Help).
+/// Reusable in-app viewer for legal and support documents (Help).
 class DocumentViewerPage extends StatelessWidget {
   final DocumentContent content;
+  final Future<bool> Function(Uri url, {LaunchMode mode})? launchUrlFn;
 
   const DocumentViewerPage({
     super.key,
     required this.content,
+    this.launchUrlFn,
   });
 
   @override
@@ -69,6 +73,33 @@ class DocumentViewerPage extends StatelessWidget {
               const SizedBox(height: 18),
             ],
             ...content.sections.map((section) => _buildSection(section)),
+            if (content.links.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    for (int i = 0; i < content.links.length; i++) ...[
+                      if (i > 0) const Divider(color: Color(0xFFF3F4F6), height: 1),
+                      _buildLinkRow(context, content.links[i]),
+                    ],
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
           ],
         ),
@@ -153,6 +184,75 @@ class DocumentViewerPage extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildLinkRow(BuildContext context, DocumentLinkItem link) {
+    return Semantics(
+      button: true,
+      label: link.label,
+      child: InkWell(
+        key: Key('document_link_${link.label.toLowerCase().replaceAll(RegExp(r'\s+'), '_')}'),
+        onTap: () async {
+          final uri = Uri.parse(link.url);
+          try {
+            final launch = launchUrlFn ?? launchUrl;
+            final ok = await launch(uri, mode: LaunchMode.externalApplication);
+            if (!ok && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Tidak dapat membuka halaman. Periksa koneksi internet.',
+                    style: GoogleFonts.outfit(),
+                  ),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            }
+          } catch (_) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Tidak dapat membuka halaman. Periksa koneksi internet.',
+                    style: GoogleFonts.outfit(),
+                  ),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            }
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.open_in_new_rounded,
+                size: 18,
+                color: Color(0xFF059669),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  link.label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: Color(0xFF9CA3AF),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

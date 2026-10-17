@@ -567,9 +567,12 @@ void main() {
       expect(find.text('1. Tentang Rakoon'), findsOneWidget);
     });
 
-    testWidgets('tapping Kebijakan Privasi navigates to DocumentViewerPage and shows title and first section', (
+    testWidgets('tapping Kebijakan Privasi launches external URL in external application mode', (
       WidgetTester tester,
     ) async {
+      Uri? launchedUri;
+      LaunchMode? usedMode;
+
       AuthService.mockSession = Session(
         accessToken: 'mock-token',
         refreshToken: 'mock-refresh-token',
@@ -586,7 +589,15 @@ void main() {
       );
       AuthService.mockIsAdmin = false;
 
-      await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+      await tester.pumpWidget(MaterialApp(
+        home: ProfilePage(
+          launchUrlFn: (url, {mode = LaunchMode.platformDefault}) async {
+            launchedUri = url;
+            usedMode = mode;
+            return true;
+          },
+        ),
+      ));
       await tester.pumpAndSettle();
 
       final tile = find.byKey(const Key('privacy_policy_tile'));
@@ -596,11 +607,57 @@ void main() {
       await tester.tap(tile);
       await tester.pumpAndSettle();
 
-      expect(find.text('Kebijakan Privasi'), findsOneWidget);
-      expect(find.text('1. Pendahuluan'), findsOneWidget);
+      expect(launchedUri, isNotNull);
+      expect(launchedUri.toString(), 'https://loddy04.github.io/rakoon-frontend/privacy.html');
+      expect(usedMode, LaunchMode.externalApplication);
     });
 
-    testWidgets('tapping Syarat & Ketentuan navigates to DocumentViewerPage and shows title and first section', (
+    testWidgets('tapping Syarat & Ketentuan launches external URL in external application mode', (
+      WidgetTester tester,
+    ) async {
+      Uri? launchedUri;
+      LaunchMode? usedMode;
+
+      AuthService.mockSession = Session(
+        accessToken: 'mock-token',
+        refreshToken: 'mock-refresh-token',
+        expiresIn: 3600,
+        tokenType: 'bearer',
+        user: const User(
+          id: 'regular-user',
+          email: 'user@rakoon.co',
+          appMetadata: {},
+          userMetadata: {'name': 'Regular User'},
+          aud: 'authenticated',
+          createdAt: '2026-01-01',
+        ),
+      );
+      AuthService.mockIsAdmin = false;
+
+      await tester.pumpWidget(MaterialApp(
+        home: ProfilePage(
+          launchUrlFn: (url, {mode = LaunchMode.platformDefault}) async {
+            launchedUri = url;
+            usedMode = mode;
+            return true;
+          },
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      final tile = find.byKey(const Key('terms_of_service_tile'));
+      expect(tile, findsOneWidget);
+
+      await tester.ensureVisible(tile);
+      await tester.tap(tile);
+      await tester.pumpAndSettle();
+
+      expect(launchedUri, isNotNull);
+      expect(launchedUri.toString(), 'https://loddy04.github.io/rakoon-frontend/terms.html');
+      expect(usedMode, LaunchMode.externalApplication);
+    });
+
+    testWidgets('when launchUrl fails or throws on privacy/terms, shows friendly SnackBar', (
       WidgetTester tester,
     ) async {
       AuthService.mockSession = Session(
@@ -619,18 +676,21 @@ void main() {
       );
       AuthService.mockIsAdmin = false;
 
-      await tester.pumpWidget(const MaterialApp(home: ProfilePage()));
+      await tester.pumpWidget(MaterialApp(
+        home: ProfilePage(
+          launchUrlFn: (url, {mode = LaunchMode.platformDefault}) async {
+            return false;
+          },
+        ),
+      ));
       await tester.pumpAndSettle();
 
-      final tile = find.byKey(const Key('terms_of_service_tile'));
-      expect(tile, findsOneWidget);
-
+      final tile = find.byKey(const Key('privacy_policy_tile'));
       await tester.ensureVisible(tile);
       await tester.tap(tile);
       await tester.pumpAndSettle();
 
-      expect(find.text('Syarat & Ketentuan'), findsOneWidget);
-      expect(find.text('1. Penerimaan Ketentuan'), findsOneWidget);
+      expect(find.text('Tidak dapat membuka halaman. Periksa koneksi internet.'), findsOneWidget);
     });
 
     testWidgets('unauthenticated state does not show section Akun, Bantuan, Privasi, or Syarat Ketentuan', (

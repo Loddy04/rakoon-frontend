@@ -2,42 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rakoon_frontend/features/profile/data/static_legal_content.dart';
 import 'package:rakoon_frontend/features/profile/presentation/pages/document_viewer_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
-  group('DocumentViewerPage - Content Rendering Tests', () {
-    testWidgets('renders Kebijakan Privasi with title, last updated, and first section', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: DocumentViewerPage(content: privacyPolicyContent),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Kebijakan Privasi'), findsOneWidget);
-      expect(find.text('Terakhir diperbarui: 30 September 2026'), findsOneWidget);
-      expect(find.text('1. Pendahuluan'), findsOneWidget);
-      expect(find.textContaining('Selamat datang di RAKOON'), findsOneWidget);
-    });
-
-    testWidgets('renders Syarat & Ketentuan with title, last updated, and first section', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: DocumentViewerPage(content: termsOfServiceContent),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Syarat & Ketentuan'), findsOneWidget);
-      expect(find.text('Terakhir diperbarui: 30 September 2026'), findsOneWidget);
-      expect(find.text('1. Penerimaan Ketentuan'), findsOneWidget);
-      expect(find.textContaining('Dengan mengunduh, mengakses, atau menggunakan'), findsOneWidget);
-    });
-
-    testWidgets('renders Bantuan with title, first section, and developer contact without last updated header', (
+  group('DocumentViewerPage - Content & Links Rendering Tests', () {
+    testWidgets('renders Bantuan with title, first section, developer contact, and two external links', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -59,6 +28,76 @@ void main() {
       final emailFinder = find.textContaining('ayyasheufrat2@gmail.com');
       await tester.scrollUntilVisible(emailFinder, 100);
       expect(emailFinder, findsOneWidget);
+
+      final privacyLinkFinder = find.text('Kebijakan Privasi');
+      await tester.scrollUntilVisible(privacyLinkFinder, 100);
+      expect(privacyLinkFinder, findsOneWidget);
+
+      final termsLinkFinder = find.text('Syarat & Ketentuan');
+      await tester.scrollUntilVisible(termsLinkFinder, 100);
+      expect(termsLinkFinder, findsOneWidget);
+    });
+
+    testWidgets('tapping legal links in Bantuan launches corresponding URLs in external mode', (
+      WidgetTester tester,
+    ) async {
+      Uri? launchedUri;
+      LaunchMode? usedMode;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: DocumentViewerPage(
+            content: helpContent,
+            launchUrlFn: (url, {mode = LaunchMode.platformDefault}) async {
+              launchedUri = url;
+              usedMode = mode;
+              return true;
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final privacyLink = find.text('Kebijakan Privasi');
+      await tester.scrollUntilVisible(privacyLink, 100);
+      await tester.tap(privacyLink);
+      await tester.pumpAndSettle();
+
+      expect(launchedUri, isNotNull);
+      expect(launchedUri.toString(), 'https://loddy04.github.io/rakoon-frontend/privacy.html');
+      expect(usedMode, LaunchMode.externalApplication);
+
+      final termsLink = find.text('Syarat & Ketentuan');
+      await tester.scrollUntilVisible(termsLink, 100);
+      await tester.tap(termsLink);
+      await tester.pumpAndSettle();
+
+      expect(launchedUri, isNotNull);
+      expect(launchedUri.toString(), 'https://loddy04.github.io/rakoon-frontend/terms.html');
+      expect(usedMode, LaunchMode.externalApplication);
+    });
+
+    testWidgets('shows friendly SnackBar when link launch fails in Bantuan', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: DocumentViewerPage(
+            content: helpContent,
+            launchUrlFn: (url, {mode = LaunchMode.platformDefault}) async {
+              return false;
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final privacyLink = find.text('Kebijakan Privasi');
+      await tester.scrollUntilVisible(privacyLink, 100);
+      await tester.tap(privacyLink);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tidak dapat membuka halaman. Periksa koneksi internet.'), findsOneWidget);
     });
   });
 
@@ -80,6 +119,23 @@ void main() {
       expect(size.width, greaterThanOrEqualTo(48.0));
       expect(size.height, greaterThanOrEqualTo(48.0));
     });
+
+    testWidgets('document link rows have touch target >= 48dp', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: DocumentViewerPage(content: helpContent),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final privacyTile = find.byKey(const Key('document_link_kebijakan_privasi'));
+      await tester.scrollUntilVisible(privacyTile, 100);
+      expect(privacyTile, findsOneWidget);
+      final size = tester.getSize(privacyTile);
+      expect(size.height, greaterThanOrEqualTo(48.0));
+    });
   });
 
   group('DocumentViewerPage - Responsive Layout Verification', () {
@@ -96,7 +152,7 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
-            home: DocumentViewerPage(content: privacyPolicyContent),
+            home: DocumentViewerPage(content: helpContent),
           ),
         );
         await tester.pumpAndSettle();
