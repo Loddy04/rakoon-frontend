@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
-import 'package:rakoon_frontend/features/auth/presentation/widgets/login_form.dart' show GoogleSignInNote, googleLoginErrorMessage;
+import 'package:rakoon_frontend/features/auth/presentation/widgets/google_sign_in_button.dart' show GoogleSignInNote, googleLoginErrorMessage;
 import 'package:rakoon_frontend/features/admin/presentation/pages/admin_product_photo_page.dart';
 import 'package:rakoon_frontend/features/admin/presentation/pages/admin_store_claims_page.dart';
 import 'package:rakoon_frontend/features/merchant/presentation/pages/merchant_dashboard_page.dart';

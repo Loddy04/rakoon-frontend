@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:network_image_mock/network_image_mock.dart';
-import 'package:rakoon_frontend/features/auth/presentation/widgets/login_form.dart';
+import 'package:rakoon_frontend/features/auth/presentation/widgets/google_sign_in_button.dart';
 import 'package:rakoon_frontend/features/budget_shopping/budget_shopping_screen.dart';
 import 'package:rakoon_frontend/features/nearby/nearby_stores_screen.dart';
 import 'package:rakoon_frontend/features/price_check/presentation/pages/price_check_catalog_page.dart';
@@ -13,11 +13,11 @@ import 'package:rakoon_frontend/services/recommendation_service.dart';
 
 void main() {
   group('Touch targets >= 48x48 and Tooltips/Semantics', () {
-    testWidgets('login_form google_login_button has touch target >= 48dp height', (tester) async {
+    testWidgets('google_sign_in_button google_login_button has touch target >= 48dp height', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: LoginForm(onSuccess: () {}),
+            body: GoogleSignInButton(onSuccess: () {}),
           ),
         ),
       );

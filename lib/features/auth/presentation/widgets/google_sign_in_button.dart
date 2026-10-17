@@ -43,23 +43,23 @@ String googleLoginErrorMessage(Object error) {
 }
 
 /// Login hanya lewat Google (provider email/password dimatikan di Supabase).
-class LoginForm extends StatefulWidget {
+class GoogleSignInButton extends StatefulWidget {
   final VoidCallback? onSuccess;
 
   /// Hanya untuk test: pengganti AuthService.signInWithGoogle.
   final Future<AuthResponse> Function()? signInWithGoogle;
 
-  const LoginForm({
+  const GoogleSignInButton({
     super.key,
     this.onSuccess,
     this.signInWithGoogle,
   });
 
   @override
-  State<LoginForm> createState() => _LoginFormState();
+  State<GoogleSignInButton> createState() => _GoogleSignInButtonState();
 }
 
-class _LoginFormState extends State<LoginForm> {
+class _GoogleSignInButtonState extends State<GoogleSignInButton> {
   bool _isGoogleLoading = false;
   String? _errorMessage;
 

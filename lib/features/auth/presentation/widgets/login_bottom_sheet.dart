@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:rakoon_frontend/features/auth/presentation/widgets/login_form.dart';
+import 'package:rakoon_frontend/features/auth/presentation/widgets/google_sign_in_button.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show AuthResponse;
 
@@ -185,7 +185,7 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    LoginForm(
+                    GoogleSignInButton(
                       onSuccess: _handleSuccess,
                       signInWithGoogle: widget.signInWithGoogle,
                     ),
