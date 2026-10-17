@@ -1161,42 +1161,6 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Sparkle Pill Badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8.0,
-                          vertical: 3.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF163E27),
-                          borderRadius: BorderRadius.circular(16.0),
-                          border: Border.all(
-                            color: const Color(0xFF3B8256),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.auto_awesome_rounded,
-                              color: Color(0xFF86EFAC),
-                              size: 13,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Rakoon AI',
-                              style: GoogleFonts.outfit(
-                                color: const Color(0xFF86EFAC),
-                                fontSize: 11.0,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-
                       Text(
                         'Smart Shelf Scan\nPindai Rak Belanja',
                         style: GoogleFonts.outfit(
