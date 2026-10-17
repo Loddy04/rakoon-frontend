@@ -7,6 +7,7 @@ import 'package:http/testing.dart';
 import 'package:network_image_mock/network_image_mock.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/ads_service.dart';
 import 'package:rakoon_frontend/services/auth_service.dart';
 import 'package:rakoon_frontend/features/merchant/presentation/pages/merchant_dashboard_page.dart';
@@ -1302,13 +1303,13 @@ void main() {
       test('extractErrorMessage handles plain-text 500 without FormatException', () {
         final resp = http.Response('Internal Server Error', 500);
         final msg = AdsService.extractErrorMessage(resp);
-        expect(msg, 'Terjadi kesalahan pada server. Silakan coba lagi.');
+        expect(msg, serverErrorMessage);
       });
 
       test('extractErrorMessage handles HTML 502/503 without FormatException', () {
         final resp = http.Response('<html><body>502 Bad Gateway</body></html>', 502);
         final msg = AdsService.extractErrorMessage(resp);
-        expect(msg, 'Terjadi kesalahan pada server. Silakan coba lagi.');
+        expect(msg, serverErrorMessage);
       });
 
       test('extractErrorMessage extracts detail from structured JSON error', () {
@@ -1326,7 +1327,7 @@ void main() {
           400,
         );
         final msg = AdsService.extractErrorMessage(resp);
-        expect(msg, 'Terjadi kesalahan pada server. Silakan coba lagi.');
+        expect(msg, serverErrorMessage);
       });
 
       test('AdsService.claimStore throws Exception with friendly server message on 500 without FormatException', () async {
@@ -1344,7 +1345,7 @@ void main() {
             isA<Exception>().having(
               (e) => e.toString(),
               'message',
-              contains('Terjadi kesalahan pada server. Silakan coba lagi.'),
+              contains(serverErrorMessage),
             ),
           ),
         );
@@ -1404,7 +1405,7 @@ void main() {
         }
 
         // Must display friendly Indonesian error (inside the claim form)
-        expect(find.text('Terjadi kesalahan pada server. Silakan coba lagi.'), findsOneWidget);
+        expect(find.text(serverErrorMessage), findsOneWidget);
         // Must NOT display FormatException or raw Internal Server Error
         expect(find.textContaining('FormatException'), findsNothing);
       });

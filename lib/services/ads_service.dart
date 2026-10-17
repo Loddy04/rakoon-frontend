@@ -1409,7 +1409,7 @@ class AdsService {
               detailStr.toLowerCase().contains('syntax error') ||
               detailStr.toLowerCase().contains('traceback') ||
               detailStr.toLowerCase().contains('internal server error')) {
-            return 'Terjadi kesalahan pada server. Silakan coba lagi.';
+            return serverErrorMessage;
           }
           if (statusCode == 422 || detail is List || detailStr.startsWith('[{')) {
             return 'Alasan penolakan tidak valid atau belum diisi dengan benar.';
@@ -1423,7 +1423,7 @@ class AdsService {
 
     // 2. Respons server error (5xx) non-JSON
     if (statusCode >= 500) {
-      return 'Terjadi kesalahan pada server. Silakan coba lagi.';
+      return serverErrorMessage;
     }
 
     if (statusCode == 422) {
