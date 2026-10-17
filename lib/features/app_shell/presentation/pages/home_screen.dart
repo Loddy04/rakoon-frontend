@@ -857,7 +857,7 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       const SizedBox(height: 12.0),
 
                       SizedBox(
-                        height: 260,
+                        height: 250,
                         child: ListenableBuilder(
                           listenable: _catalogProvider,
                           builder: (context, _) {
@@ -963,6 +963,7 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
                                 return ProductCard(
                                   product: recommendedProd,
+                                  isBestValue: index == 0,
                                   onTap: () =>
                                       _navigateToProductDetail(recommendedProd),
                                 );

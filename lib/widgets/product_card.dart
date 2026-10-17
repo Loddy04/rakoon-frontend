@@ -17,6 +17,10 @@ class ProductCard extends StatelessWidget {
   final VoidCallback? onTap;
   final double width;
   final EdgeInsetsGeometry? margin;
+  final bool isBestValue;
+  final bool showFavorite;
+  final bool isFavorite;
+  final VoidCallback? onFavoriteTap;
 
   const ProductCard({
     super.key,
@@ -24,6 +28,10 @@ class ProductCard extends StatelessWidget {
     this.onTap,
     this.width = 175,
     this.margin,
+    this.isBestValue = false,
+    this.showFavorite = false,
+    this.isFavorite = false,
+    this.onFavoriteTap,
   });
 
   /// Format distance to lowercase units: 'm' and 'km' (per UI_RULES.md) with straight-line prefix '± '.
@@ -77,14 +85,89 @@ class ProductCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16.0),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 10.0),
+            padding: const EdgeInsets.all(8.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. Container Gambar Produk + Badges
+                // 1. Container Gambar Produk + Badges & Tombol Aksi
                 Stack(
                   children: [
                     _buildImageContainer(),
+                    if (isBestValue)
+                      Positioned(
+                        top: 6,
+                        left: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEBF5EE),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFFD1FAE5), width: 0.8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.06),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.auto_awesome_rounded,
+                                size: 10,
+                                color: Color(0xFF00875A),
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                'Best Value',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF00875A),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    if (showFavorite)
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: onFavoriteTap,
+                            borderRadius: BorderRadius.circular(14),
+                            child: Container(
+                              width: 26,
+                              height: 26,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.08),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                isFavorite
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_border_rounded,
+                                size: 15,
+                                color: isFavorite
+                                    ? const Color(0xFFEF4444)
+                                    : const Color(0xFF6B7280),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     if (product.stale)
                       Positioned(
                         left: 6,
@@ -93,16 +176,16 @@ class ProductCard extends StatelessWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 8.0),
+                const SizedBox(height: 6.0),
 
-                // 2. Nama Produk (SizedBox fixed height 40.0, maxLines: 2)
+                // 2. Nama Produk (FontWeight.w700, 13sp, #0D2818, maxLines: 2)
                 SizedBox(
-                  height: 40.0,
+                  height: 36.0,
                   child: Text(
                     product.nama,
                     style: GoogleFonts.outfit(
                       fontSize: 13.0,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       color: const Color(0xFF0D2818),
                       height: 1.25,
                     ),
@@ -110,23 +193,33 @@ class ProductCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(height: 2.0),
+                const SizedBox(height: 3.0),
 
-                // 3. Satuan / Varian Produk (Text abu-abu, maxLines: 1)
-                Text(
-                  sizeInfo,
-                  style: GoogleFonts.outfit(
-                    fontSize: 11.0,
-                    color: const Color(0xFF6B6B6B),
-                    fontWeight: FontWeight.w400,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                // 3. Ukuran & Satuan (Pill kecil warna #F3F4F6, teks #4B5563, 10.5sp)
+                if (sizeInfo.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 1.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(5.0),
+                    ),
+                    child: Text(
+                      sizeInfo,
+                      style: GoogleFonts.outfit(
+                        fontSize: 10.5,
+                        color: const Color(0xFF4B5563),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  )
+                else
+                  const SizedBox(height: 17.0),
 
-                const Spacer(),
+                const SizedBox(height: 6.0),
 
-                // 4. Harga Produk (Tebal & Jelas, tanpa tombol +)
+                // 4. Harga Produk (FontWeight.w800, 15sp, #0D2818)
                 Text(
                   formattedPrice,
                   style: GoogleFonts.outfit(
@@ -138,17 +231,17 @@ class ProductCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 6.0),
+                const SizedBox(height: 4.0),
 
-                // 5. Metadata Toko & Jarak (Baris Paling Bawah)
+                // 5. Metadata Toko & Jarak (1 baris rapat, logo 14x14, nama toko, jarak)
                 Row(
                   children: [
                     SizedBox(
-                      width: 16,
-                      height: 16,
+                      width: 14,
+                      height: 14,
                       child: BrandAssets.buildStoreLogo(
                         product.namaToko,
-                        size: 16,
+                        size: 14,
                         borderRadius: 3,
                       ),
                     ),

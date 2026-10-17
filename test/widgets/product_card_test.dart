@@ -138,5 +138,150 @@ void main() {
       );
       expect(find.byType(PriceFreshnessLabel), findsNothing);
     });
+
+    testWidgets('ProductCard shows Best Value badge when isBestValue is true', (tester) async {
+      final product = RecommendedProduct(
+        id: 'test-bv',
+        nama: 'MINYAK GORENG SANIA 2L',
+        kategori: 'Minyak Goreng',
+        harga: 34000,
+        ukuran: 2,
+        satuan: 'L',
+        namaToko: 'SUPERINDO',
+        jarakKm: 1.2,
+        updatedAt: '2026-10-15T10:00:00Z',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: ProductCard(
+                product: product,
+                isBestValue: true,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Best Value'), findsOneWidget);
+      expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
+    });
+
+    testWidgets('ProductCard shows favorite button and handles onFavoriteTap', (tester) async {
+      var tapped = false;
+      final product = RecommendedProduct(
+        id: 'test-fav',
+        nama: 'SUSU ULTRA MILK 1000ML',
+        kategori: 'Susu',
+        harga: 19500,
+        namaToko: 'INDOMARET',
+        updatedAt: '2026-10-15T10:00:00Z',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: ProductCard(
+                product: product,
+                showFavorite: true,
+                isFavorite: false,
+                onFavoriteTap: () => tapped = true,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.favorite_border_rounded));
+      expect(tapped, isTrue);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: ProductCard(
+                product: product,
+                showFavorite: true,
+                isFavorite: true,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
+    });
+
+    testWidgets('ProductCard displays size pill with formatted size and unit', (tester) async {
+      final product = RecommendedProduct(
+        id: 'test-size',
+        nama: 'MAMA LEMON 780ML',
+        kategori: 'Pembersih',
+        harga: 12500,
+        ukuran: 780,
+        satuan: 'ml',
+        namaToko: 'ALFAMART',
+        updatedAt: '2026-10-15T10:00:00Z',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: ProductCard(product: product),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('780 ml'), findsOneWidget);
+      expect(find.text('Rp 12.500'), findsOneWidget);
+    });
+
+    testWidgets('ProductCard renders without overflow in a 236dp height cell and 360dp width screen', (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      final product = RecommendedProduct(
+        id: 'test-overflow',
+        nama: 'KECAP MANIS BANGO REFILL 550ML',
+        kategori: 'Bumbu',
+        harga: 24500,
+        ukuran: 550,
+        satuan: 'ml',
+        namaToko: 'INDOMARET BABARSARI',
+        jarakKm: 0.9,
+        updatedAt: '2026-10-15T10:00:00Z',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 160,
+                height: 236,
+                child: ProductCard(
+                  product: product,
+                  width: double.infinity,
+                  isBestValue: true,
+                  showFavorite: true,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('KECAP MANIS BANGO REFILL 550ML'), findsOneWidget);
+      expect(find.text('550 ml'), findsOneWidget);
+      expect(find.text('Rp 24.500'), findsOneWidget);
+    });
   });
 }
