@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/features/history/data/models/price_history_item.dart';
 import 'package:rakoon_frontend/features/price_check/data/models/product_catalog_model.dart';
 import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/services/stores_service.dart';
 
 class PriceCheckService {
-  static const String defaultBaseUrl = 'http://10.0.2.2:8000';
+  /// Default Base URL resolved from central AppConfig.backendBaseUrl.
+  static String get defaultBaseUrl => AppConfig.backendBaseUrl;
 
   static Future<List<CatalogProduct>> getCatalogProducts({
     String? search,

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/core/config/app_config.dart';
 
 import '../models/price_history_item.dart';
 
@@ -41,11 +42,11 @@ class PriceHistoryRepository {
 
   PriceHistoryRepository({
     http.Client? client,
-    this.baseUrl = const String.fromEnvironment(
-      'API_BASE_URL',
-      defaultValue: 'https://rakoon-backend.onrender.com',
-    ),
-  }) : client = client ?? http.Client();
+    String? baseUrl,
+  })  : client = client ?? http.Client(),
+        baseUrl = (baseUrl != null && baseUrl.isNotEmpty)
+            ? baseUrl
+            : AppConfig.backendBaseUrl;
 
   Future<PriceHistoryResponse> getPriceHistory({
     required dynamic productId,

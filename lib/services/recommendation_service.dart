@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/services/api_error_messages.dart';
 
 class RecommendationCandidate {
@@ -237,10 +238,8 @@ class RecommendedProduct {
 }
 
 class RecommendationService {
-  static String defaultBaseUrl = const String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'https://rakoon-backend.onrender.com',
-  );
+  /// Default Base URL resolved from central AppConfig.backendBaseUrl.
+  static String get defaultBaseUrl => AppConfig.backendBaseUrl;
 
   /// Sends product candidates to POST /recommendation/evaluate
   static Future<RecommendationResponse> evaluateRecommendation({
