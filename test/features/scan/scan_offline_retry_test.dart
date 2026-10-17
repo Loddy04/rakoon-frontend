@@ -64,15 +64,21 @@ void main() {
     if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
   });
 
-  for (final failure in <String, Object Function()>{
-    'SocketException': () => const SocketException('Failed host lookup'),
-    'TimeoutException': () => TimeoutException('slow'),
+  for (final failure in <String, ({Object Function() error, String expectedMessage})>{
+    'SocketException': (
+      error: () => const SocketException('Failed host lookup'),
+      expectedMessage: noConnectionMessage,
+    ),
+    'TimeoutException': (
+      error: () => TimeoutException('slow'),
+      expectedMessage: timeoutErrorMessage,
+    ),
   }.entries) {
-    testWidgets('${failure.key}: shows the offline message and retries the same photo without re-picking', (tester) async {
+    testWidgets('${failure.key}: shows the appropriate message and retries the same photo without re-picking', (tester) async {
       var scanCalls = 0;
       final client = MockClient((request) async {
         scanCalls++;
-        throw failure.value();
+        throw failure.value.error();
       });
       final picker = _CountingPicker(XFile(photo.path));
 
@@ -83,7 +89,7 @@ void main() {
       await tester.tap(find.byKey(const Key('gallery_picker_fallback_btn')));
       await tester.pumpAndSettle();
 
-      expect(find.text(noConnectionMessage), findsOneWidget);
+      expect(find.text(failure.value.expectedMessage), findsOneWidget);
       expect(find.byKey(const Key('retry_scan_button')), findsOneWidget);
       expect(scanCalls, 1);
 
@@ -92,7 +98,7 @@ void main() {
 
       expect(scanCalls, 2); // resent the kept photo
       expect(picker.picks, 1); // never asked for a new one
-      expect(find.text(noConnectionMessage), findsOneWidget);
+      expect(find.text(failure.value.expectedMessage), findsOneWidget);
       expect(photo.existsSync(), isTrue);
     });
   }

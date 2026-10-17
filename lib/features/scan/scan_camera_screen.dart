@@ -274,7 +274,9 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
     try {
       final XFile? photo = await _picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 85,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 80,
       );
 
       if (!mounted) return;
@@ -638,7 +640,7 @@ class _ScanCameraScreenState extends State<ScanCameraScreen>
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Menganalisis rak...',
+                  'Menganalisis foto...',
                   style: AppTextStyles.titleSmall.copyWith(color: Colors.white),
                   textAlign: TextAlign.center,
                 ),
