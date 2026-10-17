@@ -64,7 +64,7 @@ const DocumentContent helpContent = DocumentContent(
         'Jika mengalami kendala, pertanyaan teknis, atau memiliki saran perbaikan aplikasi, Anda dapat menghubungi tim pengembang melalui:',
       ],
       bulletPoints: [
-        'Email Pengembang: ayyasheufrat2@gmail.com',
+        'Email Pengembang: rakoon935@gmail.com',
         'Tim Pengembang RAKOON (Rak Pintar & Komparasi Harga Belanja Cerdas)',
       ],
     ),
