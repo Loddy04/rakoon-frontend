@@ -47,7 +47,7 @@
           Ketentuan & Syarat Penggunaan
         </div>
         <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Ketentuan Layanan (Terms of Service)</h1>
-        <p class="text-sm text-slate-500 mt-2">Terakhir diperbarui: 30 September 2026</p>
+        <p class="text-sm text-slate-500 mt-2">Terakhir diperbarui: 17 Oktober 2026</p>
       </div>
 
       <div class="prose prose-slate max-w-none space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base">
@@ -62,7 +62,7 @@
         <section>
           <h2 class="text-xl font-bold text-slate-900 mb-2">2. Deskripsi Layanan</h2>
           <p>
-            RAKOON adalah aplikasi pendukung keputusan belanja konsumen yang menyediakan fitur pemindaian label harga rak berbasis Vision-Language Model (VLM), normalisasi nilai harga per unit (Rp/g, Rp/ml), komparasi harga multi-ritel terdekat, dan rekomendasi alokasi anggaran belanja harian.
+            RAKOON adalah aplikasi pendukung keputusan belanja konsumen yang menyediakan fitur pemindaian label harga rak berbasis Vision-Language Model (VLM), normalisasi nilai harga per unit (Rp/g, Rp/ml), komparasi harga multi-ritel terdekat, dan rekomendasi alokasi anggaran belanja harian. Bagi pemilik toko, RAKOON juga menyediakan modul mitra untuk mengklaim atau mendaftarkan toko dan memasang iklan banner promosi.
           </p>
         </section>
 
@@ -76,20 +76,63 @@
         <section>
           <h2 class="text-xl font-bold text-slate-900 mb-2">4. Akun Pengguna & Kewajiban</h2>
           <p>
-            Anda bertanggung jawab untuk menjaga kerahasiaan akun Anda dan tidak menyalahgunakan layanan aplikasi untuk tindakan yang melanggar hukum, merusak sistem, atau memanipulasi data komparasi harga.
+            Anda bertanggung jawab untuk menjaga kerahasiaan akun Anda dan tidak menyalahgunakan layanan aplikasi untuk tindakan yang melanggar hukum, merusak sistem, atau memanipulasi data komparasi harga. Pemindaian rak mengharuskan Anda masuk (login) dan frekuensinya dibatasi per akun.
           </p>
         </section>
 
         <section>
-          <h2 class="text-xl font-bold text-slate-900 mb-2">5. Hak Kekayaan Intelektual</h2>
+          <h2 class="text-xl font-bold text-slate-900 mb-2">5. Konten dan Harga Kontribusi Pengguna</h2>
           <p>
-            Perangkat lunak RAKOON dirilis di bawah lisensi sumber terbuka (open-source MIT License). Seluruh merek dagang ritel dan logo pihak ketiga yang ditampilkan di dalam aplikasi adalah hak milik dari pemiliknya masing-masing dan hanya digunakan untuk keperluan identifikasi komparasi harga.
+            Harga yang Anda konfirmasi setelah memindai rak menjadi kontribusi bagi data harga bersama yang dapat dilihat pengguna lain. Anda menyatakan hanya mengirim harga yang benar-benar Anda lihat di toko dan tidak mengirim data palsu atau menyesatkan. Harga yang tampak jauh di luar kewajaran dapat ditandai menunggu verifikasi dan tidak langsung dipakai dalam perbandingan. RAKOON dapat memoderasi, menandai, atau menghapus harga dan konten lain yang dinilai tidak wajar, keliru, atau melanggar ketentuan ini. Data hasil kontribusi pengguna dan hasil bacaan AI tidak dijamin akurat, lengkap, atau terkini.
           </p>
         </section>
 
         <section>
-          <h2 class="text-xl font-bold text-slate-900 mb-2">6. Kontak</h2>
+          <h2 class="text-xl font-bold text-slate-900 mb-2">6. Mitra Toko: Klaim, Pengajuan, dan Verifikasi</h2>
           <p>
+            Pemilik atau pengelola toko dapat mengklaim toko yang sudah ada di katalog atau mengajukan toko baru. Pemohon wajib memberikan data yang benar, termasuk nama, nomor telepon, peran, dokumen legalitas usaha, dan foto tampak depan toko. Setiap klaim dan pengajuan diperiksa oleh admin RAKOON sebelum disetujui; tidak ada jaminan bahwa permohonan akan disetujui atau waktu pemeriksaannya.
+          </p>
+          <ul class="list-disc pl-6 space-y-2 mt-2">
+            <li>Satu toko hanya dapat memiliki satu pemilik terverifikasi, dan satu akun hanya dapat menjadi pemilik terverifikasi satu toko.</li>
+            <li>Admin dapat menolak klaim atau pengajuan dengan menyertakan alasan penolakan. Klaim yang ditolak dapat diajukan kembali sebagai klaim baru.</li>
+            <li>Dokumen dan foto yang Anda unggah dipakai hanya untuk verifikasi dan diperlakukan sesuai <a href="privacy.html" class="text-brand-600 font-semibold underline">Kebijakan Privasi</a>.</li>
+            <li>Data toko yang disetujui, termasuk nama, alamat, dan lokasi, ditampilkan kepada pengguna lain di aplikasi.</li>
+          </ul>
+          <!-- KEPUTUSAN PEMILIK: mekanisme pencabutan status mitra terverifikasi (dan jejak audit penolakan klaim) belum ditetapkan di PRD. Tentukan syarat dan prosesnya, lalu tulis di sini. -->
+          <p class="mt-2">
+            RAKOON dapat menolak atau menangguhkan klaim, pengajuan, atau akses mitra yang terbukti memakai data palsu, melanggar ketentuan ini, atau menyalahgunakan layanan. Tata cara pencabutan status mitra yang sudah terverifikasi belum ditetapkan secara tertulis.
+          </p>
+        </section>
+
+        <section>
+          <h2 class="text-xl font-bold text-slate-900 mb-2">7. Iklan Banner dan Pembayaran</h2>
+          <p>
+            Mitra toko yang sudah terverifikasi dapat membuat kampanye iklan banner yang tampil di beranda aplikasi kepada pengguna di sekitar toko. Paket durasi dan harga ditampilkan di aplikasi sebelum Anda membayar. Kampanye dibuat dengan status menunggu pembayaran dan baru tayang setelah pembayarannya terverifikasi sistem; masa tayang dihitung sejak pembayaran terverifikasi.
+          </p>
+          <ul class="list-disc pl-6 space-y-2 mt-2">
+            <li>Pembayaran diproses oleh pihak ketiga (Xendit). RAKOON tidak menyimpan data kartu atau rekening Anda.</li>
+            <li>Saat ini pembayaran berjalan pada mode uji (<em>sandbox</em>) Xendit, sehingga transaksi tidak memproses uang sungguhan.</li>
+            <li>Anda bertanggung jawab atas isi, gambar, dan klaim promosi pada banner Anda, dan menjamin Anda berhak memakainya.</li>
+            <li>Menghapus kampanye tidak mengembalikan pembayaran.</li>
+          </ul>
+          <!-- KEPUTUSAN PEMILIK: kebijakan refund, pembatalan, dan perpanjangan kampanye, serta moderasi konten banner sebelum/sesudah tayang (PRD 6.9 menandainya PERLU KONFIRMASI TIM). Tentukan lalu perbarui paragraf ini. -->
+          <p class="mt-2">
+            RAKOON dapat menolak atau menurunkan banner yang dinilai menyesatkan, melanggar hukum, atau melanggar ketentuan ini. Kebijakan pengembalian dana, pembatalan, dan perpanjangan kampanye selain yang disebut di atas belum ditetapkan secara tertulis.
+          </p>
+        </section>
+
+        <section>
+          <h2 class="text-xl font-bold text-slate-900 mb-2">8. Hak Kekayaan Intelektual</h2>
+          <p>
+            <!-- KEPUTUSAN PEMILIK: lisensi. Tidak ada berkas LICENSE di repositori backend maupun frontend. DOKUMEN_ADOPSI_LISENSI.md (root) menyatakan MIT, tetapi nama pemegang hak cipta masih placeholder dan lembar pengesahan belum ditandatangani. Finalisasi dokumen itu dan tambahkan berkas LICENSE sebelum kalimat ini dianggap final. -->
+            Tim pengembang RAKOON mengadopsi lisensi sumber terbuka MIT License untuk kode sumber RAKOON. Berkas lisensi resmi dan nama pemegang hak cipta belum dipublikasikan di repositori kode. Seluruh merek dagang ritel dan logo pihak ketiga yang ditampilkan di dalam aplikasi adalah hak milik dari pemiliknya masing-masing dan hanya digunakan untuk keperluan identifikasi komparasi harga.
+          </p>
+        </section>
+
+        <section>
+          <h2 class="text-xl font-bold text-slate-900 mb-2">9. Kontak</h2>
+          <p>
+            <!-- KEPUTUSAN PEMILIK: kontak resmi. Email ini adalah alamat pengembang yang sudah ada sejak versi sebelumnya (alamat pribadi satu anggota tim). Putuskan apakah dipakai sebagai kontak resmi atau diganti alamat tim/organisasi. -->
             Pertanyaan mengenai Ketentuan Layanan ini dapat dikirimkan melalui email ke: <a href="mailto:ayyasheufrat2@gmail.com" class="text-brand-600 font-semibold underline">ayyasheufrat2@gmail.com</a>.
           </p>
         </section>
