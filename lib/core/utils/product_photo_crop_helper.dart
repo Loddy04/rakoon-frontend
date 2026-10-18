@@ -22,20 +22,29 @@ Rect computeCenterZoomRect(double imageWidth, double imageHeight, double zoom) {
   return Rect.fromLTWH(left, top, side, side);
 }
 
-/// Renders a square PNG image of 1024x1024 (or 768px fallback if > 4.5 MB)
+/// Target dimension in pixels for the default rendered square product photo.
+const double defaultProductPhotoTargetDimension = 768.0;
+
+/// Fallback dimension in pixels if the rendered photo exceeds the threshold.
+const double fallbackProductPhotoTargetDimension = 512.0;
+
+/// Threshold in bytes (1.5 MB) triggering fallback to [fallbackProductPhotoTargetDimension].
+const int defaultProductPhotoMaxBytesThreshold = 1572864; // 1.5 * 1024 * 1024
+
+/// Renders a square PNG image of 768x768 (or 512px fallback if > 1.5 MB)
 /// from [imageBytes] zoomed according to [zoom].
 Future<Uint8List> renderSquareZoomedPhoto(
   Uint8List imageBytes,
   double zoom, {
-  int maxBytesThreshold = 4718592, // 4.5 MB
+  int maxBytesThreshold = defaultProductPhotoMaxBytesThreshold,
 }) async {
   final Codec codec = await instantiateImageCodec(imageBytes);
   final FrameInfo frameInfo = await codec.getNextFrame();
   final Image sourceImage = frameInfo.image;
 
-  var bytes = await _renderAtSize(sourceImage, 1024.0, zoom);
+  var bytes = await _renderAtSize(sourceImage, defaultProductPhotoTargetDimension, zoom);
   if (bytes.lengthInBytes > maxBytesThreshold) {
-    bytes = await _renderAtSize(sourceImage, 768.0, zoom);
+    bytes = await _renderAtSize(sourceImage, fallbackProductPhotoTargetDimension, zoom);
   }
   return bytes;
 }

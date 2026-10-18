@@ -18,32 +18,38 @@ Future<Uint8List> _createSolidImageBytes(int width, int height, Color color) asy
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('renderSquareZoomedPhoto tests (Tugas 3)', () {
-    test('renders square 1024x1024 PNG with transparent empty borders and colored center on portrait 3:4 at zoom 1.0', () async {
+  group('renderSquareZoomedPhoto tests (Tugas 1 - 768px default, 512px fallback, 1.5MB threshold)', () {
+    test('named constants are correctly configured for 768px default, 512px fallback, and 1.5MB threshold', () {
+      expect(defaultProductPhotoTargetDimension, 768.0);
+      expect(fallbackProductPhotoTargetDimension, 512.0);
+      expect(defaultProductPhotoMaxBytesThreshold, 1572864); // 1.5 * 1024 * 1024
+    });
+
+    test('renders square 768x768 PNG with transparent empty borders and colored center on portrait 3:4 at zoom 1.0', () async {
       // 600x800 solid blue image
       const sourceColor = Color(0xFF0000FF);
       final sourceBytes = await _createSolidImageBytes(600, 800, sourceColor);
 
       final renderedBytes = await renderSquareZoomedPhoto(sourceBytes, 1.0);
-      expect(renderedBytes.lengthInBytes, lessThan(4.5 * 1024 * 1024));
+      expect(renderedBytes.lengthInBytes, lessThan(defaultProductPhotoMaxBytesThreshold));
 
       final codec = await ui.instantiateImageCodec(renderedBytes);
       final frame = await codec.getNextFrame();
       final renderedImage = frame.image;
 
-      expect(renderedImage.width, 1024);
-      expect(renderedImage.height, 1024);
+      expect(renderedImage.width, 768);
+      expect(renderedImage.height, 768);
 
       final rawData = await renderedImage.toByteData(format: ui.ImageByteFormat.rawRgba);
       expect(rawData, isNotNull);
 
-      // Pixel in empty margin area (x: 50, y: 512) must be transparent (alpha 0)
-      final emptyIndex = (512 * 1024 + 50) * 4;
+      // Pixel in empty margin area (x: 30, y: 384) must be transparent (alpha 0)
+      final emptyIndex = (384 * 768 + 30) * 4;
       final emptyAlpha = rawData!.getUint8(emptyIndex + 3);
       expect(emptyAlpha, 0, reason: 'Pixel in empty margin should have alpha 0');
 
-      // Center pixel (x: 512, y: 512) must have source color (blue, alpha 255)
-      final centerIndex = (512 * 1024 + 512) * 4;
+      // Center pixel (x: 384, y: 384) must have source color (blue, alpha 255)
+      final centerIndex = (384 * 768 + 384) * 4;
       final r = rawData.getUint8(centerIndex);
       final g = rawData.getUint8(centerIndex + 1);
       final b = rawData.getUint8(centerIndex + 2);
@@ -55,22 +61,22 @@ void main() {
       expect(g, 0);
     });
 
-    test('re-renders at 768px when output would exceed 4.5 MB', () async {
+    test('re-renders at 512px when output would exceed 1.5 MB threshold', () async {
       final sourceBytes = await _createSolidImageBytes(500, 500, Colors.green);
 
-      // We test the threshold fallback parameter
+      // Force fallback by supplying a small threshold (e.g. 10 bytes)
       final renderedBytes = await renderSquareZoomedPhoto(
         sourceBytes,
         1.25,
-        maxBytesThreshold: 10, // Force fallback to 768
+        maxBytesThreshold: 10,
       );
 
       final codec = await ui.instantiateImageCodec(renderedBytes);
       final frame = await codec.getNextFrame();
       final renderedImage = frame.image;
 
-      expect(renderedImage.width, 768);
-      expect(renderedImage.height, 768);
+      expect(renderedImage.width, 512);
+      expect(renderedImage.height, 512);
     });
   });
 }
