@@ -17,6 +17,19 @@ class BrandAssets {
   static const String miloCalcium = 'assets/logo/img/Milo Calcium.png';
   static const String pucukHarum = 'assets/logo/img/Pucuk Harum.png';
 
+  static final RegExp _wordHilo = RegExp(r'\bhilo\b');
+  static final RegExp _wordMilo = RegExp(r'\bmilo\b');
+  static final RegExp _miloExcludedVariants = RegExp(
+    r'\b(bar|batangan|bundle|box|sachet|botol|bottled|bottle|drink)\b',
+  );
+  static final RegExp _wordUltraMilk = RegExp(r'\b(ultra\s*milk|ultramilk|susu\s+ultra)\b');
+  static final RegExp _wordGreenfields = RegExp(r'\bgreenfields?\b');
+  static final RegExp _wordIndomie = RegExp(r'\bindomie\b');
+  static final RegExp _wordBimoli = RegExp(r'\bbimoli\b');
+  static final RegExp _wordPucukHarum = RegExp(r'\b(pucuk\s*harum|teh\s*pucuk|pucuk)\b');
+  static final RegExp _wordCitro = RegExp(r'\bcitro\b');
+  static final RegExp _wordAirMineral = RegExp(r'\b(air\s*mineral|aqua|le\s*minerale)\b');
+
   /// Returns matching store logo asset path if known, otherwise null.
   static String? getStoreAsset(String? storeName) {
     if (storeName == null || storeName.trim().isEmpty) return null;
@@ -34,68 +47,45 @@ class BrandAssets {
   }
 
   /// Returns matching product image asset path if known, otherwise null.
+  /// Matches on whole brand word boundaries without false positive cross-brand matches.
   static String? getProductAsset(String? productName, [String? category]) {
-    final lowerName = (productName ?? '').toLowerCase();
-    final lowerCat = (category ?? '').toLowerCase();
+    if (productName == null || productName.trim().isEmpty) return null;
+    final lowerName = productName.trim().toLowerCase();
 
-    // 1. Air Mineral / Minuman Botol
-    if (lowerName.contains('mineral') ||
-        lowerName.contains('air ') ||
-        lowerName.contains('air mineral') ||
-        lowerName.contains('aqua') ||
-        lowerName.contains('le minerale') ||
-        lowerName.contains('pocari')) {
+    // 1. Air Mineral (Air Mineral, Aqua, Le Minerale)
+    if (_wordAirMineral.hasMatch(lowerName)) {
       return airMineral;
     }
 
     // 2. Teh / Pucuk Harum / Citro Green Tea
-    if (lowerName.contains('citro') || lowerName.contains('green tea')) {
+    if (_wordCitro.hasMatch(lowerName)) {
       return citroGreenTea;
     }
-    if (lowerName.contains('pucuk') ||
-        lowerName.contains('teh ') ||
-        lowerName.contains('tea') ||
-        lowerName.contains('harum') ||
-        lowerName.contains('botol teh')) {
+    if (_wordPucukHarum.hasMatch(lowerName)) {
       return pucukHarum;
     }
 
-    // 3. Susu / Dairy (Greenfields, Milo, Ultra Milk)
-    if (lowerName.contains('greenfield')) {
+    // 3. Susu / Dairy (Greenfields, Milo Calcium, Ultra Milk)
+    if (_wordGreenfields.hasMatch(lowerName)) {
       return greenfields;
     }
-    if (lowerName.contains('milo') || lowerName.contains('cokelat') || lowerName.contains('calcium')) {
-      return miloCalcium;
+    if (_wordMilo.hasMatch(lowerName) && !_wordHilo.hasMatch(lowerName)) {
+      if (!_miloExcludedVariants.hasMatch(lowerName)) {
+        return miloCalcium;
+      }
+      return null;
     }
-    if (lowerName.contains('ultra') ||
-        lowerName.contains('milk') ||
-        lowerName.contains('susu') ||
-        lowerName.contains('dancow') ||
-        lowerName.contains('dairy') ||
-        lowerCat.contains('susu')) {
+    if (_wordUltraMilk.hasMatch(lowerName)) {
       return ultramilk;
     }
 
-    // 4. Mie Instan
-    if (lowerName.contains('indomie') ||
-        lowerName.contains('mie') ||
-        lowerName.contains('sedaap') ||
-        lowerName.contains('sedap') ||
-        lowerName.contains('ramen') ||
-        lowerName.contains('noodle') ||
-        lowerCat.contains('instan')) {
+    // 4. Mie Instan (Indomie)
+    if (_wordIndomie.hasMatch(lowerName)) {
       return indomie;
     }
 
-    // 5. Minyak Goreng / Makanan Pokok
-    if (lowerName.contains('bimoli') ||
-        lowerName.contains('minyak') ||
-        lowerName.contains('sania') ||
-        lowerName.contains('filma') ||
-        lowerName.contains('sunco') ||
-        lowerName.contains('fortune') ||
-        lowerName.contains('tropical') ||
-        lowerCat.contains('minyak')) {
+    // 5. Minyak Goreng (Bimoli)
+    if (_wordBimoli.hasMatch(lowerName)) {
       return bimoli;
     }
 
