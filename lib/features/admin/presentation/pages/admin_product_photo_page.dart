@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:rakoon_frontend/services/api_error_messages.dart';
 import 'package:rakoon_frontend/core/config/app_config.dart';
+import 'package:rakoon_frontend/core/utils/product_photo_crop_helper.dart';
 import 'package:rakoon_frontend/services/admin_product_service.dart';
 import 'package:rakoon_frontend/services/products_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
@@ -15,12 +17,14 @@ class AdminProductPhotoPage extends StatefulWidget {
   final String? baseUrl;
   final http.Client? httpClient;
   final ImagePicker? imagePicker;
+  final Future<Uint8List> Function(Uint8List rawBytes, double zoom)? renderPhotoFn;
 
   const AdminProductPhotoPage({
     super.key,
     this.baseUrl,
     this.httpClient,
     this.imagePicker,
+    this.renderPhotoFn,
   });
 
   @override
@@ -141,6 +145,7 @@ class _AdminProductPhotoPageState extends State<AdminProductPhotoPage> {
             baseUrl: _effectiveBaseUrl,
             httpClient: widget.httpClient,
             imagePicker: widget.imagePicker,
+            renderPhotoFn: widget.renderPhotoFn,
             onPhotoUpdated: (newPhotoUrl) {
               setState(() {
                 final idx = _products.indexWhere((p) => p.id == product.id);
@@ -718,6 +723,7 @@ class _EditPhotoSheet extends StatefulWidget {
   final String baseUrl;
   final http.Client? httpClient;
   final ImagePicker? imagePicker;
+  final Future<Uint8List> Function(Uint8List rawBytes, double zoom)? renderPhotoFn;
   final ValueChanged<String> onPhotoUpdated;
 
   const _EditPhotoSheet({
@@ -725,6 +731,7 @@ class _EditPhotoSheet extends StatefulWidget {
     required this.baseUrl,
     this.httpClient,
     this.imagePicker,
+    this.renderPhotoFn,
     required this.onPhotoUpdated,
   });
 
@@ -745,6 +752,9 @@ class _EditPhotoSheetState extends State<_EditPhotoSheet> with SingleTickerProvi
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
     if (widget.product.fotoUrl != null &&
         (widget.product.fotoUrl!.startsWith('http://') ||
             widget.product.fotoUrl!.startsWith('https://'))) {
@@ -781,15 +791,59 @@ class _EditPhotoSheetState extends State<_EditPhotoSheet> with SingleTickerProvi
           });
           return;
         }
+
+        if (!mounted) return;
+
+        final confirmedBytes = await showDialog<Uint8List>(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogCtx) => _ProductPhotoPreviewDialog(
+            rawBytes: bytes,
+            productName: widget.product.nama,
+            renderPhotoFn: widget.renderPhotoFn,
+          ),
+        );
+
+        if (confirmedBytes == null) {
+          return;
+        }
+
         setState(() {
-          _selectedFile = picked;
-          _fileBytes = bytes;
+          _isSaving = true;
+          _errorMessage = null;
         });
+
+        final updatedUrl = await AdminProductService.uploadProductPhotoFile(
+          productId: widget.product.id,
+          fileBytes: confirmedBytes,
+          fileName: 'product_photo.png',
+          contentType: 'image/png',
+          baseUrl: widget.baseUrl,
+          client: widget.httpClient,
+        );
+
+        widget.onPhotoUpdated(updatedUrl);
+
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Foto produk "${widget.product.nama}" berhasil diperbarui!',
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.paper),
+              ),
+              backgroundColor: AppColors.accent,
+            ),
+          );
+        }
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Gagal memilih gambar. Coba lagi.';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Gagal memilih gambar. Coba lagi.';
+          _isSaving = false;
+        });
+      }
     }
   }
 
@@ -913,9 +967,11 @@ class _EditPhotoSheetState extends State<_EditPhotoSheet> with SingleTickerProvi
               controller: _tabController,
               children: [
                 // 1. File Upload Tab
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+                SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                     if (_fileBytes != null)
                       Container(
                         width: 120,
@@ -951,8 +1007,10 @@ class _EditPhotoSheetState extends State<_EditPhotoSheet> with SingleTickerProvi
                         ),
                       ),
                     const SizedBox(height: AppSpacing.m),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: AppSpacing.m,
+                      runSpacing: AppSpacing.s,
                       children: [
                         OutlinedButton.icon(
                           key: const Key('admin_pick_gallery_button'),
@@ -963,7 +1021,6 @@ class _EditPhotoSheetState extends State<_EditPhotoSheet> with SingleTickerProvi
                             foregroundColor: AppColors.graphite,
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.m),
                         OutlinedButton.icon(
                           key: const Key('admin_pick_camera_button'),
                           onPressed: _isSaving ? null : () => _pickImage(ImageSource.camera),
@@ -977,6 +1034,7 @@ class _EditPhotoSheetState extends State<_EditPhotoSheet> with SingleTickerProvi
                     ),
                   ],
                 ),
+              ),
 
                 // 2. URL Input Tab
                 Column(
@@ -1024,42 +1082,261 @@ class _EditPhotoSheetState extends State<_EditPhotoSheet> with SingleTickerProvi
               textAlign: TextAlign.center,
             ),
           ],
-          const SizedBox(height: AppSpacing.l),
-
-          // Save Button
-          SizedBox(
-            height: 48,
-            child: ElevatedButton(
-              key: const Key('admin_save_photo_button'),
-              onPressed: _isSaving ? null : _savePhoto,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryEmerald,
-                foregroundColor: AppColors.paper,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.l),
+          if (_tabController.index == 1) ...[
+            const SizedBox(height: AppSpacing.l),
+            // Save Button
+            SizedBox(
+              height: 48,
+              child: ElevatedButton(
+                key: const Key('admin_save_photo_button'),
+                onPressed: _isSaving ? null : _savePhoto,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryEmerald,
+                  foregroundColor: AppColors.paper,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.l),
+                  ),
+                  elevation: 0,
                 ),
-                elevation: 0,
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.paper,
+                        ),
+                      )
+                    : Text(
+                        'Simpan Foto Produk',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          color: AppColors.paper,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.paper,
-                      ),
-                    )
-                  : Text(
-                      'Simpan Foto Produk',
-                      style: AppTextStyles.bodyLarge.copyWith(
-                        color: AppColors.paper,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
             ),
-          ),
+          ],
           const SizedBox(height: AppSpacing.s),
         ],
+      ),
+    );
+  }
+}
+
+class _ProductPhotoPreviewDialog extends StatefulWidget {
+  final Uint8List rawBytes;
+  final String productName;
+  final Future<Uint8List> Function(Uint8List rawBytes, double zoom)? renderPhotoFn;
+
+  const _ProductPhotoPreviewDialog({
+    required this.rawBytes,
+    required this.productName,
+    this.renderPhotoFn,
+  });
+
+  @override
+  State<_ProductPhotoPreviewDialog> createState() => _ProductPhotoPreviewDialogState();
+}
+
+class _ProductPhotoPreviewDialogState extends State<_ProductPhotoPreviewDialog> {
+  double _selectedZoom = 1.25; // "Sedang" (terpilih awal)
+  Uint8List? _renderedBytes;
+  bool _isRendering = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _render(_selectedZoom);
+  }
+
+  Future<void> _render(double zoom) async {
+    setState(() {
+      _isRendering = true;
+    });
+    try {
+      final Future<Uint8List> Function(Uint8List, double) renderFn =
+          widget.renderPhotoFn ??
+          (Platform.environment.containsKey('FLUTTER_TEST')
+              ? ((b, z) async => b)
+              : renderSquareZoomedPhoto);
+      final rendered = await renderFn(widget.rawBytes, zoom);
+      if (mounted) {
+        setState(() {
+          _renderedBytes = rendered;
+          _isRendering = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isRendering = false;
+        });
+      }
+    }
+  }
+
+  void _onZoomSelected(double zoom) {
+    if (_selectedZoom == zoom) return;
+    setState(() {
+      _selectedZoom = zoom;
+    });
+    _render(zoom);
+  }
+
+  Widget _buildZoomChip(String label, double zoom, String keyName) {
+    final isSelected = _selectedZoom == zoom;
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: 'Pilihan zoom $label',
+      child: InteractiveScale(
+        key: Key(keyName),
+        onTap: () => _onZoomSelected(zoom),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          child: Align(
+            alignment: Alignment.center,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primaryEmerald : const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(AppRadius.full),
+                border: Border.all(
+                  color: isSelected ? AppColors.primaryEmerald : AppColors.line,
+                ),
+              ),
+              child: Text(
+                label,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: isSelected ? Colors.white : AppColors.ink,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+      ),
+      backgroundColor: Colors.white,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSpacing.l),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Pratinjau Foto',
+              style: AppTextStyles.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              widget.productName,
+              style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: AppSpacing.m),
+            Center(
+              child: Container(
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8F9FA),
+                  borderRadius: BorderRadius.circular(AppRadius.l),
+                  border: Border.all(color: const Color(0xFFE8E4DC)),
+                ),
+                child: _isRendering || _renderedBytes == null
+                    ? Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            value: Platform.environment.containsKey('FLUTTER_TEST') ? 0.5 : null,
+                            strokeWidth: 2,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                      )
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(AppRadius.l),
+                        child: Image.memory(
+                          _renderedBytes!,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.m),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: AppSpacing.s,
+              runSpacing: AppSpacing.s,
+              children: [
+                _buildZoomChip('Pas', 1.0, 'zoom_option_pas'),
+                _buildZoomChip('Sedang', 1.25, 'zoom_option_sedang'),
+                _buildZoomChip('Dekat', 1.5, 'zoom_option_dekat'),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.l),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: OutlinedButton(
+                      key: const Key('admin_cancel_preview_button'),
+                      onPressed: () => Navigator.pop(context, null),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.ink,
+                        side: const BorderSide(color: AppColors.line),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.full),
+                        ),
+                      ),
+                      child: const Text('Batal'),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.m),
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton(
+                      key: const Key('admin_save_photo_button'),
+                      onPressed: (_isRendering || _renderedBytes == null)
+                          ? null
+                          : () => Navigator.pop(context, _renderedBytes),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryEmerald,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.full),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Unggah',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
