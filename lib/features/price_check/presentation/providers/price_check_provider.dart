@@ -30,6 +30,8 @@ class PriceCheckProvider extends ChangeNotifier {
   PriceHistoryResponse? _historyResponse;
   PriceCompareResponse? _comparisonResponse;
   String _selectedRange = '1m';
+  bool _isAutoSelected3m = false;
+  bool _userManuallySelectedRange = false;
   bool _isDisposed = false;
 
   static const List<String> categories = [
@@ -58,6 +60,7 @@ class PriceCheckProvider extends ChangeNotifier {
   PriceHistoryResponse? get historyResponse => _historyResponse;
   PriceCompareResponse? get comparisonResponse => _comparisonResponse;
   String get selectedRange => _selectedRange;
+  bool get isAutoSelected3m => _isAutoSelected3m;
 
   bool get isLoading => _status == PriceCheckStatus.loading;
   bool get isLoadingMore => _isLoadingMore;
@@ -174,9 +177,11 @@ class PriceCheckProvider extends ChangeNotifier {
     double? userLat,
     double? userLng,
     String range = '1m',
+    bool? allowAutoFallback,
     String? baseUrl,
     http.Client? client,
   }) async {
+    final canFallback = allowAutoFallback ?? (!_userManuallySelectedRange && range == '1m');
     _selectedRange = range;
     _detailStatus = PriceCheckStatus.loading;
     _detailErrorMessage = null;
@@ -199,6 +204,32 @@ class PriceCheckProvider extends ChangeNotifier {
       );
 
       if (_isDisposed) return;
+
+      if (canFallback && (history == null || history.trend.isEmpty)) {
+        try {
+          final history3m = await PriceCheckService.getPriceHistory(
+            productId: productId,
+            range: '3m',
+            baseUrl: baseUrl,
+            client: client,
+          );
+
+          if (_isDisposed) return;
+
+          if (history3m != null && history3m.trend.isNotEmpty) {
+            _historyResponse = history3m;
+            _comparisonResponse = comparison;
+            _selectedRange = '3m';
+            _isAutoSelected3m = true;
+            _detailStatus = PriceCheckStatus.success;
+            return;
+          }
+        } catch (_) {
+          // Gracefully fall back to 1m response if 3m request fails
+        }
+      }
+
+      _isAutoSelected3m = false;
       _historyResponse = history;
       _comparisonResponse = comparison;
       _detailStatus = PriceCheckStatus.success;
@@ -219,12 +250,15 @@ class PriceCheckProvider extends ChangeNotifier {
     String? baseUrl,
     http.Client? client,
   }) {
+    _userManuallySelectedRange = true;
+    _isAutoSelected3m = false;
     _selectedRange = range;
     fetchProductDetail(
       productId: productId,
       userLat: userLat,
       userLng: userLng,
       range: range,
+      allowAutoFallback: false,
       baseUrl: baseUrl,
       client: client,
     );

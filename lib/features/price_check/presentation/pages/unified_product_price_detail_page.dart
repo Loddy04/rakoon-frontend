@@ -501,10 +501,14 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
 
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 6,
           children: [
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
                   width: 8,
@@ -947,24 +951,31 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                             return Padding(
                               padding: const EdgeInsets.only(right: 8),
                               child: InteractiveScale(
+                                key: Key('range_button_${opt['value']}'),
                                 onTap: () => _onRangeChanged(opt['value']!),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    gradient: isSelected
-                                        ? const LinearGradient(
-                                            colors: [Color(0xFF0D2818), Color(0xFF2E6644)],
-                                          )
-                                        : null,
-                                    color: isSelected ? null : const Color(0xFFF3F4F6),
-                                    borderRadius: BorderRadius.circular(14.0),
-                                  ),
-                                  child: Text(
-                                    opt['label']!,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 11.5,
-                                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                      color: isSelected ? Colors.white : const Color(0xFF4B5563),
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                                  child: Align(
+                                    alignment: Alignment.center,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        gradient: isSelected
+                                            ? const LinearGradient(
+                                                colors: [Color(0xFF0D2818), Color(0xFF2E6644)],
+                                              )
+                                            : null,
+                                        color: isSelected ? null : const Color(0xFFF3F4F6),
+                                        borderRadius: BorderRadius.circular(14.0),
+                                      ),
+                                      child: Text(
+                                        opt['label']!,
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 11.5,
+                                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                          color: isSelected ? Colors.white : const Color(0xFF4B5563),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -972,6 +983,17 @@ class _UnifiedProductPriceDetailPageState extends State<UnifiedProductPriceDetai
                             );
                           }).toList(),
                         ),
+                        if (_priceCheckProvider.isAutoSelected3m) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Belum ada pembaruan 30 hari terakhir.',
+                            key: const Key('auto_range_fallback_note'),
+                            style: GoogleFonts.outfit(
+                              fontSize: 11.0,
+                              color: const Color(0xFF6B7280),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 10),
 
                         // Store filter chips (Maksimal 4 opsi: Semua Toko + 3 toko terdekat)
