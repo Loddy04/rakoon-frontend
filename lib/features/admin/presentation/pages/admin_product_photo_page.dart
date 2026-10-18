@@ -13,6 +13,12 @@ import 'package:rakoon_frontend/services/products_service.dart';
 import 'package:rakoon_frontend/theme/app_theme.dart';
 import 'package:rakoon_frontend/widgets/interactive_scale.dart';
 
+/// Maximum width and height for admin product photo picker.
+const double adminProductPhotoMaxDimension = 2048.0;
+
+/// JPEG quality setting for admin product photo picker.
+const int adminProductPhotoQuality = 90;
+
 class AdminProductPhotoPage extends StatefulWidget {
   final String? baseUrl;
   final http.Client? httpClient;
@@ -778,9 +784,9 @@ class _EditPhotoSheetState extends State<_EditPhotoSheet> with SingleTickerProvi
       final picker = widget.imagePicker ?? ImagePicker();
       final picked = await picker.pickImage(
         source: source,
-        maxWidth: 1200,
-        maxHeight: 1200,
-        imageQuality: 85,
+        maxWidth: adminProductPhotoMaxDimension,
+        maxHeight: adminProductPhotoMaxDimension,
+        imageQuality: adminProductPhotoQuality,
       );
 
       if (picked != null) {

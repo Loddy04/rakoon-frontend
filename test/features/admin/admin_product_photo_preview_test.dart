@@ -21,6 +21,10 @@ final validPngBytes = Uint8List.fromList([
 
 class _FakeImagePicker extends ImagePicker {
   final XFile fileToReturn;
+  double? lastMaxWidth;
+  double? lastMaxHeight;
+  int? lastImageQuality;
+
   _FakeImagePicker(this.fileToReturn);
 
   @override
@@ -32,6 +36,9 @@ class _FakeImagePicker extends ImagePicker {
     CameraDevice preferredCameraDevice = CameraDevice.rear,
     bool requestFullMetadata = true,
   }) async {
+    lastMaxWidth = maxWidth;
+    lastMaxHeight = maxHeight;
+    lastImageQuality = imageQuality;
     return fileToReturn;
   }
 }
@@ -328,6 +335,38 @@ void main() {
       expect(find.text('Pratinjau Foto'), findsNothing);
       expect(urlUpdateCalled, isTrue);
       expect(find.textContaining('berhasil diperbarui'), findsOneWidget);
+    });
+
+    test('admin product photo picker named constants are defined', () {
+      expect(adminProductPhotoMaxDimension, 2048.0);
+      expect(adminProductPhotoQuality, 90);
+    });
+
+    testWidgets('admin image picker uses 2048px max dimension and 90 quality', (tester) async {
+      final fakePicker = _FakeImagePicker(XFile.fromData(validPngBytes, name: 'teh.jpg'));
+      final client = createMockClient();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AdminProductPhotoPage(
+            baseUrl: 'http://localhost:8000',
+            httpClient: client,
+            imagePicker: fakePicker,
+            renderPhotoFn: (bytes, zoom) async => validPngBytes,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('edit_photo_btn_prod-1')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('admin_pick_gallery_button')));
+      await tester.pumpAndSettle();
+
+      expect(fakePicker.lastMaxWidth, 2048.0);
+      expect(fakePicker.lastMaxHeight, 2048.0);
+      expect(fakePicker.lastImageQuality, 90);
     });
   });
 }
