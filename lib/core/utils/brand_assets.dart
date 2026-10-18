@@ -22,7 +22,7 @@ class BrandAssets {
   static final RegExp _miloExcludedVariants = RegExp(
     r'\b(bar|batangan|bundle|box|sachet|botol|bottled|bottle|drink)\b',
   );
-  static final RegExp _wordUltraMilk = RegExp(r'\b(ultra\s*milk|ultramilk|susu\s+ultra)\b');
+  static final RegExp _wordUltra = RegExp(r'\bultra\b');
   static final RegExp _wordGreenfields = RegExp(r'\bgreenfields?\b');
   static final RegExp _wordIndomie = RegExp(r'\bindomie\b');
   static final RegExp _wordBimoli = RegExp(r'\bbimoli\b');
@@ -75,7 +75,7 @@ class BrandAssets {
       }
       return null;
     }
-    if (_wordUltraMilk.hasMatch(lowerName)) {
+    if (_wordUltra.hasMatch(lowerName)) {
       return ultramilk;
     }
 

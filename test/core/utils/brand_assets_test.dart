@@ -23,14 +23,23 @@ void main() {
       expect(BrandAssets.getProductAsset('Milo Calcium'), BrandAssets.miloCalcium);
     });
 
-    test('Ultra Milk Cokelat matches Ultra Milk asset, NOT Milo asset (removed loose cokelat keyword)', () {
-      expect(BrandAssets.getProductAsset('Ultra Milk Cokelat'), BrandAssets.ultramilk);
-      expect(BrandAssets.getProductAsset('Ultra Milk Cokelat'), isNot(BrandAssets.miloCalcium));
+    test('non-Ultra milk products fall back to icon (null)', () {
+      expect(BrandAssets.getProductAsset('Milk U Original'), isNull);
+      expect(BrandAssets.getProductAsset('MilkU - Chocolate'), isNull);
+      expect(BrandAssets.getProductAsset('MilkU - Milk'), isNull);
+      expect(BrandAssets.getProductAsset('Milku'), isNull);
+      expect(BrandAssets.getProductAsset('Oatside Fresh Milk'), isNull);
+      expect(BrandAssets.getProductAsset('Oatside Protein'), isNull);
+      expect(BrandAssets.getProductAsset('Good Milk Indomilk'), isNull);
+      expect(BrandAssets.getProductAsset('Indomilk Dalgona Coffee'), isNull);
     });
 
-    test('Ultra Milk variants match Ultra Milk asset', () {
-      expect(BrandAssets.getProductAsset('Ultra Milk Strawberry'), BrandAssets.ultramilk);
+    test('Ultra products match ultramilk asset on whole word ultra', () {
       expect(BrandAssets.getProductAsset('Ultra Milk Sachet'), BrandAssets.ultramilk);
+      expect(BrandAssets.getProductAsset('Ultra Milk Cokelat'), BrandAssets.ultramilk);
+      expect(BrandAssets.getProductAsset('Ultra Milk Strawberry'), BrandAssets.ultramilk);
+      expect(BrandAssets.getProductAsset('Ultra Milk Oatmeal'), BrandAssets.ultramilk);
+      expect(BrandAssets.getProductAsset('Ultra Mimi Kids'), BrandAssets.ultramilk);
     });
 
     test('Other specified brand products match their respective assets on word boundaries', () {
