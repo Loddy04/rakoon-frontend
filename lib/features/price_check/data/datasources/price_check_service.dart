@@ -104,7 +104,7 @@ class PriceCheckService {
     required String productId,
     double? lat,
     double? lng,
-    double radiusKm = 5.0,
+    double? radiusKm,
     String? baseUrl,
     http.Client? client,
   }) async {
@@ -119,7 +119,7 @@ class PriceCheckService {
     if (lat != null && lng != null) {
       queryParams['lat'] = lat.toString();
       queryParams['lng'] = lng.toString();
-      queryParams['radius_km'] = radiusKm.toString();
+      if (radiusKm != null) queryParams['radius_km'] = radiusKm.toString();
     }
 
     final uri = Uri.parse('$cleanBaseUrl/price/compare/$productId').replace(

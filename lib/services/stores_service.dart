@@ -78,7 +78,7 @@ class StoresService {
   static Future<NearbyStoresResponse> getNearbyStores({
     required double lat,
     required double lng,
-    double radiusKm = 5.0,
+    double? radiusKm,
     required String baseUrl,
     http.Client? client,
   }) async {
@@ -91,7 +91,7 @@ class StoresService {
       queryParameters: {
         'lat': lat.toString(),
         'lng': lng.toString(),
-        'radius_km': radiusKm.toString(),
+        if (radiusKm != null) 'radius_km': radiusKm.toString(),
       },
     );
 
@@ -122,7 +122,7 @@ class StoresService {
     required String productId,
     required double lat,
     required double lng,
-    double radiusKm = 5.0,
+    double? radiusKm,
     required String baseUrl,
   }) async {
     final cleanBaseUrl = baseUrl.endsWith('/')
@@ -133,7 +133,7 @@ class StoresService {
       queryParameters: {
         'lat': lat.toString(),
         'lng': lng.toString(),
-        'radius_km': radiusKm.toString(),
+        if (radiusKm != null) 'radius_km': radiusKm.toString(),
       },
     );
 

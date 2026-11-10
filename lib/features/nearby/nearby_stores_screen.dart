@@ -216,6 +216,12 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
       // Position camera so pins are in the visible upper area above the bottom sheet
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
+        // Toko terdekat jauh (>50 km): arahkan kamera ke toko itu agar pin terlihat.
+        final nearest = response.stores.isNotEmpty ? response.stores.first : null;
+        if (nearest != null && nearest.jarakKm > 50) {
+          _mapController.move(LatLng(nearest.lat - 0.007, nearest.lng), 13.5);
+          return;
+        }
         _mapController.move(
           LatLng(position.latitude - 0.007, position.longitude),
           13.5,
@@ -1319,7 +1325,7 @@ class _NearbyStoresScreenState extends State<NearbyStoresScreen> with WidgetsBin
           ),
           const SizedBox(height: 8),
           Text(
-            'Tidak ada toko terdeteksi di sekitar Anda.',
+            'Belum ada toko terdaftar.',
             style: GoogleFonts.outfit(color: const Color(0xFF6B7280), fontSize: 13),
           ),
         ],
