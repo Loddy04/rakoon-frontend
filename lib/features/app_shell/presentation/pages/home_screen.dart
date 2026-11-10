@@ -16,6 +16,7 @@ import 'package:rakoon_frontend/services/stores_service.dart';
 import 'package:rakoon_frontend/services/ads_service.dart';
 import 'package:rakoon_frontend/core/config/app_config.dart';
 import 'package:rakoon_frontend/core/utils/brand_assets.dart';
+import 'package:rakoon_frontend/core/utils/route_launcher.dart';
 import 'package:rakoon_frontend/features/price_check/presentation/providers/price_check_provider.dart';
 import 'package:rakoon_frontend/features/recommendation/presentation/providers/recommendation_provider.dart';
 import 'package:rakoon_frontend/services/recommendation_service.dart';
@@ -1640,9 +1641,23 @@ class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     ),
                     const SizedBox(height: 14),
                     ElevatedButton.icon(
-                      onPressed: () {
+                      onPressed: () async {
                         Navigator.pop(ctx);
-                        _navigateToNearbyStores();
+                        final lat = banner.storeLat;
+                        final lng = banner.storeLng;
+                        if (lat == null || lng == null) {
+                          _navigateToNearbyStores();
+                          return;
+                        }
+                        final pos = await LocationService.getFreshPosition();
+                        if (!mounted) return;
+                        await launchStoreRoute(
+                          context,
+                          lat: lat,
+                          lng: lng,
+                          storeName: banner.storeNama,
+                          origin: pos,
+                        );
                       },
                       icon: const Icon(Icons.directions_rounded, size: 18),
                       label: const Text('Lihat Rute / Lokasi Toko'),
